@@ -37,6 +37,15 @@ The `Site/` folder contains a fully functional quest board app (~2,500 lines JSX
 
 ---
 
+
+## Next Recommended Task
+
+Start with **Phase 1 — Data Layer & API**. The current site already works as a localStorage-backed quest board, but Town Crier and Guild Member features should wait until the shared data shape is in place.
+
+Before or alongside Phase 1, keep `README.md` and `CLAUDE.md` explicit about what exists now versus what is planned so contributors do not mistake roadmap items for shipped features.
+
+---
+
 ## Phase 1 — Data Layer & API
 
 **Goal:** Replace localStorage with a shared Azure Blob Storage document via an Azure Function, so the whole team uses one live dataset.

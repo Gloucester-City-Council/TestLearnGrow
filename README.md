@@ -6,67 +6,84 @@ A fun, friendly team tool for the SW Test & Learn Network. Part project board, p
 
 ---
 
-## What It Does
+## Current MVP
 
-**Quest Board** — Post tasks, ideas, and learning goals as quests. Claim them, track progress, and earn XP when they're done. Filter by type: Bounties (tasks to do), Idea Scrolls (pitches to discuss), and Learning Quests (things to explore).
+The current app is a browser-run quest board with local persistence:
 
-**Town Crier** — A noticeboard for announcements, updates, and shout-outs from the guild. Anyone can post.
+**Quest Board** — Post workplace quests, claim or release open quests, add progress updates, complete owned quests, and earn XP.
 
-**Guild Members** — Top Trumps-style cards for every member. See what people know, what they're learning, and what to talk to them about. A quick way to find the right person or start a conversation.
+**Leaderboard** — Completed quests award XP and rank guild members by total score.
+
+**Mock Entra sign-in** — Pick from seven seeded demo accounts, or join as a custom demo user. Production Microsoft Entra/MSAL auth is planned but not wired yet.
+
+**Local/offline storage** — Data currently persists to localStorage on one device. Shared Azure Blob Storage is planned in the roadmap.
+
+---
+
+## Planned Roadmap
+
+The roadmap in `BUILD.md` tracks the target product:
+
+* Quest types: Bounties, Idea Scrolls, and Learning Quests.
+* Town Crier announcement board.
+* Guild Member Top Trumps-style profile cards.
+* Azure Function API backed by a single Azure Blob Storage JSON document.
+* Search, quest-count badges, XP-on-update, and save-failure toasts.
 
 ---
 
 ## Tech Stack
 
-| Layer | What |
-|---|---|
-| Frontend | React 18 (CDN), Babel Standalone (in-browser JSX), plain CSS |
-| Storage | Azure Blob Storage (single JSON document) |
-| API | Azure Function (HTTP trigger) — reads/writes the blob |
-| Auth | Microsoft Entra ID (mocked for dev; MSAL-ready for prod) |
-| Build tools | None — open `Site/Side Quest Board.html` in a browser |
+| Layer | Current | Planned |
+|---|---|---|
+| Frontend | React 18 CDN, Babel Standalone, plain CSS | Same unless the project explicitly chooses a build system later |
+| Storage | localStorage fallback via `Store` | Azure Blob Storage single JSON document |
+| API | None yet | Azure Function HTTP trigger |
+| Auth | Mock account picker | Microsoft Entra ID / MSAL |
+| Build tools | None | None |
 
 ---
 
 ## Getting Started (Local Dev)
 
-1. Clone the repo
-2. Open `Site/Side Quest Board.html` in a browser
-3. That's it — it runs from the filesystem using localStorage as a fallback
+The app has no build step. Serve the `Site/` folder with any static file server:
 
-To connect to the real shared data:
-1. Copy `Site/config.example.js` → `Site/config.js`
-2. Fill in your Azure Function URL
-3. Refresh — data now reads/writes from the shared blob
+```bash
+cd Site
+python3 -m http.server 8000
+```
+
+Then open:
+
+```text
+http://localhost:8000/Side%20Quest%20Board.html
+```
+
+Opening `Site/Side Quest Board.html` directly from the filesystem may work in some browsers, but a local static server is more reliable because the page loads external JSX files through Babel Standalone.
 
 ---
 
 ## Folder Structure
 
-```
+```text
 SWsidequests/
 ├── Site/                        # All frontend files
-│   ├── Side Quest Board.html    # Entry point — open this
-│   ├── quest-data.jsx           # Data schemas, storage layer, seed data
+│   ├── Side Quest Board.html    # Entry point
+│   ├── quest-data.jsx           # Data utilities, local storage shim, seed data
 │   ├── quest-components.jsx     # Shared UI components
-│   ├── quest-app-1.jsx          # Sign-in, PostQuest, PostAnnouncement modals
-│   ├── quest-app-2.jsx          # Main app, routing, all section views
-│   ├── quest-styles.css         # Full theme (1100+ lines)
-│   ├── config.example.js        # API config template
-│   ├── config.js                # Your local config (git-ignored)
+│   ├── quest-app-1.jsx          # Sign-in and PostQuest modal
+│   ├── quest-app-2.jsx          # Root App, quest detail, state and handlers
+│   ├── quest-styles.css         # Full theme
 │   └── avatars/                 # Pixel-art member portraits
-├── api/                         # Azure Function
-│   ├── function.js              # GET/POST handler for blob data
-│   └── host.json                # Function host config
-├── BUILD.md                     # Detailed build plan and progress
+├── BUILD.md                     # Detailed roadmap and phase plan
 ├── CLAUDE.md                    # Codebase guide for AI-assisted development
 └── README.md                    # You are here
 ```
+
+Planned but not yet present: `api/`, `Site/config.example.js`, and `Site/config.js`.
 
 ---
 
 ## Contributing
 
-Sign in, pick a quest, and get after it. Or post one. That's the whole loop.
-
-For code contributions — see `BUILD.md` for what's planned and `CLAUDE.md` for how the codebase is structured.
+For product direction, start with `BUILD.md`. For implementation conventions, read `CLAUDE.md` before editing the site.
