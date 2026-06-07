@@ -175,7 +175,7 @@ function App() {
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   const signIn = async (acct) => {
-    await Store.set(“sw-session”, acct);
+    await Store.set("sw-session", acct);
     setUser(acct);
     /* ensure they appear on the leaderboard roster */
     setBoard((b) => {
@@ -185,13 +185,13 @@ function App() {
       return nb;
     });
   };
-  const signOut = async () => { await Store.set(“sw-session”, null); setUser(null); setOpenQuestId(null); setPosting(false); };
+  const signOut = async () => { await Store.set("sw-session", null); setUser(null); setOpenQuestId(null); setPosting(false); };
 
   const createQuest = (q) => {
     setQuests([q, ...quests]);
     Store.saveQuest(q);
     setPosting(false);
-    showToast(“Quest posted to the board!”);
+    showToast("Quest posted to the board!");
   };
 
   const addUpdate = (qid, text) => {
@@ -216,20 +216,20 @@ function App() {
       Store.saveLeaderboard(nb);
       return nb;
     });
-    showToast(`Quest claimed — “${quest.title}” is yours!`);
+    showToast(`Quest claimed — "${quest.title}" is yours!`);
   };
 
   const releaseQuest = (quest) => {
     if (!user || quest.owner_oid !== user.oid) return;
-    const released = { ...quest, owner_name: “”, owner_oid: null, owner_email: “”, claimed_at: null };
+    const released = { ...quest, owner_name: "", owner_oid: null, owner_email: "", claimed_at: null };
     setQuests(quests.map((q) => q.quest_id === quest.quest_id ? released : q));
     Store.saveQuest(released);
-    showToast(“Quest released back to the open pool.”);
+    showToast("Quest released back to the open pool.");
   };
 
   const closeQuest = (quest) => {
     if (!user || quest.owner_oid !== user.oid) return;
-    const closed = { ...quest, status: “completed”, closed_at: new Date().toISOString() };
+    const closed = { ...quest, status: "completed", closed_at: new Date().toISOString() };
     setQuests(quests.map((q) => q.quest_id === quest.quest_id ? closed : q));
     Store.saveQuest(closed);
     const nb = { ...board };
