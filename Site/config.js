@@ -4,5 +4,5 @@
 // Without an API the app falls back to localStorage automatically.
 
 window.SW_CONFIG = {
-  API_URL: '/api/data',
+  API_URL: '/api',
 };

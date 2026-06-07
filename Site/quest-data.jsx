@@ -11,105 +11,117 @@ function nano(n = 10) {
   return s;
 }
 
-/* ---------- blob storage: single JSON document via Azure Function API ---------- */
+/* ---------- blob storage: per-quest blobs + leaderboard via Azure Function API ---------- */
 const blobStorage = (() => {
-  function apiUrl() {
+  function base() {
     return (typeof window !== "undefined" && window.SW_CONFIG && window.SW_CONFIG.API_URL)
       ? window.SW_CONFIG.API_URL
       : null;
   }
 
-  async function load() {
-    const url = apiUrl();
-    if (url) {
+  async function loadQuests() {
+    const b = base();
+    if (b) {
       try {
-        const res = await fetch(url, { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          if (data && typeof data === "object" && !data.error) return data;
-        }
-      } catch (e) { /* fall through to localStorage */ }
+        const res = await fetch(b + "/quests", { cache: "no-store" });
+        if (res.ok) return await res.json();
+      } catch (e) { /* fall through */ }
     }
-    // localStorage fallback — migrate from old per-key format if present
+    // localStorage fallback — also migrates old single-doc and legacy formats
     try {
-      const raw = localStorage.getItem("sw::blob-doc");
+      const raw = localStorage.getItem("sw::quests");
       if (raw) return JSON.parse(raw);
-      // migrate old separate keys into the full-document shape
-      const quests = JSON.parse(localStorage.getItem("sw::sw-quests") || "null");
-      const leaderboard = JSON.parse(localStorage.getItem("sw::sw-leaderboard") || "null");
-      const config = JSON.parse(localStorage.getItem("sw::sw-schema-config") || "null");
-      const schema = JSON.parse(localStorage.getItem("sw::sw-schema-quest") || "null");
-      if (quests || leaderboard) {
-        const doc = { quests: quests || [], leaderboard: leaderboard || {}, config: config || null, schema: schema || null, announcements: [], members: [] };
-        localStorage.setItem("sw::blob-doc", JSON.stringify(doc));
-        return doc;
-      }
+      const oldDoc = localStorage.getItem("sw::blob-doc");
+      if (oldDoc) { const d = JSON.parse(oldDoc); if (d.quests) return d.quests; }
+      const legacy = localStorage.getItem("sw::sw-quests");
+      if (legacy) return JSON.parse(legacy);
     } catch (e) {}
-    return {};
+    return null;
   }
 
-  async function save(doc) {
-    const url = apiUrl();
-    if (url) {
+  async function saveQuest(quest) {
+    const b = base();
+    if (b) {
       try {
-        const res = await fetch(url, {
+        const res = await fetch(`${b}/quests/${quest.quest_id}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(doc),
+          body: JSON.stringify(quest),
         });
         if (res.ok) return;
-      } catch (e) { /* fall through to localStorage */ }
+      } catch (e) { /* fall through */ }
     }
-    try { localStorage.setItem("sw::blob-doc", JSON.stringify(doc)); } catch (e) {}
+    // localStorage fallback — upsert into the quests array
+    try {
+      const raw = localStorage.getItem("sw::quests");
+      const arr = raw ? JSON.parse(raw) : [];
+      const idx = arr.findIndex((q) => q.quest_id === quest.quest_id);
+      if (idx >= 0) arr[idx] = quest; else arr.unshift(quest);
+      localStorage.setItem("sw::quests", JSON.stringify(arr));
+    } catch (e) {}
   }
 
-  return { load, save };
+  async function loadLeaderboard() {
+    const b = base();
+    if (b) {
+      try {
+        const res = await fetch(b + "/leaderboard", { cache: "no-store" });
+        if (res.ok) return await res.json();
+      } catch (e) { /* fall through */ }
+    }
+    try {
+      const raw = localStorage.getItem("sw::leaderboard");
+      if (raw) return JSON.parse(raw);
+      const oldDoc = localStorage.getItem("sw::blob-doc");
+      if (oldDoc) { const d = JSON.parse(oldDoc); if (d.leaderboard) return d.leaderboard; }
+      const legacy = localStorage.getItem("sw::sw-leaderboard");
+      if (legacy) return JSON.parse(legacy);
+    } catch (e) {}
+    return null;
+  }
+
+  async function saveLeaderboard(lb) {
+    const b = base();
+    if (b) {
+      try {
+        const res = await fetch(b + "/leaderboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(lb),
+        });
+        if (res.ok) return;
+      } catch (e) { /* fall through */ }
+    }
+    try { localStorage.setItem("sw::leaderboard", JSON.stringify(lb)); } catch (e) {}
+  }
+
+  return { loadQuests, saveQuest, loadLeaderboard, saveLeaderboard };
 })();
 
-/* ---------- Store: key/value interface backed by the blob document ----------
-   Mapping of legacy per-key names → blob document field names.
-   sw-session is always per-device (localStorage only — never in the shared blob). */
-const KEY_MAP = {
-  "sw-quests":       "quests",
-  "sw-leaderboard":  "leaderboard",
-  "sw-schema-config":"config",
-  "sw-schema-quest": "schema",
+/* ---------- Store: session + convenience wrappers used by the App ----------
+   sw-session is always per-device (localStorage only — never shared). */
+const Store = {
+  async loadAll() {
+    const [quests, leaderboard] = await Promise.all([
+      blobStorage.loadQuests(),
+      blobStorage.loadLeaderboard(),
+    ]);
+    return { quests, leaderboard };
+  },
+  saveQuest:       (quest) => blobStorage.saveQuest(quest),
+  saveLeaderboard: (lb)    => blobStorage.saveLeaderboard(lb),
+  async get(key) {
+    if (key === "sw-session") {
+      try { const raw = localStorage.getItem("sw::sw-session"); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+    }
+    return null;
+  },
+  async set(key, value) {
+    if (key === "sw-session") {
+      try { localStorage.setItem("sw::sw-session", JSON.stringify(value)); } catch (e) {}
+    }
+  },
 };
-
-const Store = (() => {
-  let _cache = null;
-  let _loading = null;
-
-  async function _ensureLoaded() {
-    if (_cache !== null) return;
-    if (_loading) { await _loading; return; }
-    let resolve;
-    _loading = new Promise(r => { resolve = r; });
-    blobStorage.load().then(doc => { _cache = doc; _loading = null; resolve(); });
-    await _loading;
-  }
-
-  return {
-    async get(key) {
-      if (key === "sw-session") {
-        try { const raw = localStorage.getItem("sw::sw-session"); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
-      }
-      await _ensureLoaded();
-      const docKey = KEY_MAP[key] || key;
-      return (_cache[docKey] !== undefined) ? _cache[docKey] : null;
-    },
-    async set(key, value) {
-      if (key === "sw-session") {
-        try { localStorage.setItem("sw::sw-session", JSON.stringify(value)); } catch (e) {}
-        return;
-      }
-      await _ensureLoaded();
-      const docKey = KEY_MAP[key] || key;
-      _cache[docKey] = value;
-      await blobStorage.save(_cache);
-    },
-  };
-})();
 
 /* ---------- default schemas (from build plan) ---------- */
 const DEFAULT_QUEST_SCHEMA = {
