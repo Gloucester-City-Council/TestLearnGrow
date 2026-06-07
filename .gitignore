@@ -70,8 +70,7 @@ web_modules/
 .env.*
 !.env.example
 
-# Local site config (contains Azure Function URL — never commit)
-Site/config.js
+# Site/config.js is now committed (contains only /api/data, no secrets)
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -145,5 +144,5 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
-# Local SW Side Quests API config
-Site/config.js
+# Site/config.js is committed with the default /api/data path for Azure Static Web Apps.
+# It contains no secrets. For local dev against a local Function, edit it directly.

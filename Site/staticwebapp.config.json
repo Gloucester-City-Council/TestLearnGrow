@@ -1,0 +1,22 @@
+{
+  "routes": [
+    {
+      "route": "/",
+      "rewrite": "/Side Quest Board.html"
+    },
+    {
+      "route": "/*",
+      "rewrite": "/Side Quest Board.html",
+      "statusCode": 200
+    }
+  ],
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/Side Quest Board.html",
+      "statusCode": 200
+    }
+  },
+  "mimeTypes": {
+    ".jsx": "text/babel"
+  }
+}

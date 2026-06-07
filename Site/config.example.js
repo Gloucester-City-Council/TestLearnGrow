@@ -1,12 +1,16 @@
-// Copy this file to config.js and fill in your Azure Function URL.
-// config.js is git-ignored — never commit real URLs or credentials.
+// config.js is committed with API_URL: '/api/data' for Azure Static Web Apps deployment.
+// That path works because SWA serves the API on the same domain — no secrets needed.
 //
-// Without config.js the app runs in local-only mode using localStorage.
+// For local dev against a local Azure Function (func start):
+//   Change API_URL to 'http://localhost:7071/api/data'
+//
+// Without an API (pure local dev), leave API_URL empty or absent and the app
+// falls back to localStorage automatically.
 
 window.SW_CONFIG = {
-  API_URL: 'https://YOUR_FUNCTION_APP.azurewebsites.net/api/data',
+  API_URL: '/api/data',
 
-  // Optional — override the display name and season label shown in the UI
+  // Optional — override display strings shown in the UI
   // network_name: 'South West Test & Learn Network',
   // season_label: 'Season 3 — The Reorganisation Arc',
 };

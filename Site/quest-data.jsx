@@ -11,28 +11,105 @@ function nano(n = 10) {
   return s;
 }
 
-/* ---------- storage shim (mimics window.storage shared API) ---------- */
-const Store = {
-  async get(key) {
+/* ---------- blob storage: single JSON document via Azure Function API ---------- */
+const blobStorage = (() => {
+  function apiUrl() {
+    return (typeof window !== "undefined" && window.SW_CONFIG && window.SW_CONFIG.API_URL)
+      ? window.SW_CONFIG.API_URL
+      : null;
+  }
+
+  async function load() {
+    const url = apiUrl();
+    if (url) {
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data === "object" && !data.error) return data;
+        }
+      } catch (e) { /* fall through to localStorage */ }
+    }
+    // localStorage fallback — migrate from old per-key format if present
     try {
-      if (typeof window !== "undefined" && window.storage && window.storage.get) {
-        return await window.storage.get(key, { shared: true });
+      const raw = localStorage.getItem("sw::blob-doc");
+      if (raw) return JSON.parse(raw);
+      // migrate old separate keys into the full-document shape
+      const quests = JSON.parse(localStorage.getItem("sw::sw-quests") || "null");
+      const leaderboard = JSON.parse(localStorage.getItem("sw::sw-leaderboard") || "null");
+      const config = JSON.parse(localStorage.getItem("sw::sw-schema-config") || "null");
+      const schema = JSON.parse(localStorage.getItem("sw::sw-schema-quest") || "null");
+      if (quests || leaderboard) {
+        const doc = { quests: quests || [], leaderboard: leaderboard || {}, config: config || null, schema: schema || null, announcements: [], members: [] };
+        localStorage.setItem("sw::blob-doc", JSON.stringify(doc));
+        return doc;
       }
-    } catch (e) { /* fall through */ }
-    try {
-      const raw = localStorage.getItem("sw::" + key);
-      return raw == null ? null : JSON.parse(raw);
-    } catch (e) { return null; }
-  },
-  async set(key, value) {
-    try {
-      if (typeof window !== "undefined" && window.storage && window.storage.set) {
-        return await window.storage.set(key, value, { shared: true });
-      }
-    } catch (e) { /* fall through */ }
-    try { localStorage.setItem("sw::" + key, JSON.stringify(value)); } catch (e) {}
-  },
+    } catch (e) {}
+    return {};
+  }
+
+  async function save(doc) {
+    const url = apiUrl();
+    if (url) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(doc),
+        });
+        if (res.ok) return;
+      } catch (e) { /* fall through to localStorage */ }
+    }
+    try { localStorage.setItem("sw::blob-doc", JSON.stringify(doc)); } catch (e) {}
+  }
+
+  return { load, save };
+})();
+
+/* ---------- Store: key/value interface backed by the blob document ----------
+   Mapping of legacy per-key names → blob document field names.
+   sw-session is always per-device (localStorage only — never in the shared blob). */
+const KEY_MAP = {
+  "sw-quests":       "quests",
+  "sw-leaderboard":  "leaderboard",
+  "sw-schema-config":"config",
+  "sw-schema-quest": "schema",
 };
+
+const Store = (() => {
+  let _cache = null;
+  let _loading = null;
+
+  async function _ensureLoaded() {
+    if (_cache !== null) return;
+    if (_loading) { await _loading; return; }
+    let resolve;
+    _loading = new Promise(r => { resolve = r; });
+    blobStorage.load().then(doc => { _cache = doc; _loading = null; resolve(); });
+    await _loading;
+  }
+
+  return {
+    async get(key) {
+      if (key === "sw-session") {
+        try { const raw = localStorage.getItem("sw::sw-session"); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+      }
+      await _ensureLoaded();
+      const docKey = KEY_MAP[key] || key;
+      return (_cache[docKey] !== undefined) ? _cache[docKey] : null;
+    },
+    async set(key, value) {
+      if (key === "sw-session") {
+        try { localStorage.setItem("sw::sw-session", JSON.stringify(value)); } catch (e) {}
+        return;
+      }
+      await _ensureLoaded();
+      const docKey = KEY_MAP[key] || key;
+      _cache[docKey] = value;
+      await blobStorage.save(_cache);
+    },
+  };
+})();
 
 /* ---------- default schemas (from build plan) ---------- */
 const DEFAULT_QUEST_SCHEMA = {
@@ -252,6 +329,6 @@ function fullDate(iso) {
 }
 
 Object.assign(window, {
-  nano, Store, DEFAULT_QUEST_SCHEMA, DEFAULT_CONFIG, MOCK_ACCOUNTS, AVATARS, avatarFor,
+  nano, blobStorage, Store, DEFAULT_QUEST_SCHEMA, DEFAULT_CONFIG, MOCK_ACCOUNTS, AVATARS, avatarFor,
   rankFor, nextRank, seedQuests, seedLeaderboard, timeAgo, fullDate,
 });
