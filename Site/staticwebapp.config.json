@@ -2,14 +2,12 @@
   "routes": [
     {
       "route": "/*",
-      "rewrite": "/index.html",
-      "statusCode": 200
+      "rewrite": "/index.html"
     }
   ],
   "responseOverrides": {
     "404": {
-      "rewrite": "/index.html",
-      "statusCode": 200
+      "rewrite": "/index.html"
     }
   },
   "mimeTypes": {
