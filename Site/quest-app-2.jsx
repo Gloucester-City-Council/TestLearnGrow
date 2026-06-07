@@ -162,6 +162,16 @@ function App() {
     })();
   }, []);
 
+  /* ---- poll every 30 s for updates from other users ---- */
+  uE(() => {
+    const id = setInterval(async () => {
+      const { quests: qs, leaderboard: lb } = await Store.loadAll();
+      if (qs) setQuests(qs);
+      if (lb) setBoard(lb);
+    }, 30000);
+    return () => clearInterval(id);
+  }, []);
+
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   const signIn = async (acct) => {
