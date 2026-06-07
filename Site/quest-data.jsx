@@ -11,26 +11,115 @@ function nano(n = 10) {
   return s;
 }
 
-/* ---------- storage shim (mimics window.storage shared API) ---------- */
+/* ---------- blob storage: per-quest blobs + leaderboard via Azure Function API ---------- */
+const blobStorage = (() => {
+  function base() {
+    return (typeof window !== "undefined" && window.SW_CONFIG && window.SW_CONFIG.API_URL)
+      ? window.SW_CONFIG.API_URL
+      : null;
+  }
+
+  async function loadQuests() {
+    const b = base();
+    if (b) {
+      try {
+        const res = await fetch(b + "/quests", { cache: "no-store" });
+        if (res.ok) return await res.json();
+      } catch (e) { /* fall through */ }
+    }
+    // localStorage fallback — also migrates old single-doc and legacy formats
+    try {
+      const raw = localStorage.getItem("sw::quests");
+      if (raw) return JSON.parse(raw);
+      const oldDoc = localStorage.getItem("sw::blob-doc");
+      if (oldDoc) { const d = JSON.parse(oldDoc); if (d.quests) return d.quests; }
+      const legacy = localStorage.getItem("sw::sw-quests");
+      if (legacy) return JSON.parse(legacy);
+    } catch (e) {}
+    return null;
+  }
+
+  async function saveQuest(quest) {
+    const b = base();
+    if (b) {
+      try {
+        const res = await fetch(`${b}/quests/${quest.quest_id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(quest),
+        });
+        if (res.ok) return;
+      } catch (e) { /* fall through */ }
+    }
+    // localStorage fallback — upsert into the quests array
+    try {
+      const raw = localStorage.getItem("sw::quests");
+      const arr = raw ? JSON.parse(raw) : [];
+      const idx = arr.findIndex((q) => q.quest_id === quest.quest_id);
+      if (idx >= 0) arr[idx] = quest; else arr.unshift(quest);
+      localStorage.setItem("sw::quests", JSON.stringify(arr));
+    } catch (e) {}
+  }
+
+  async function loadLeaderboard() {
+    const b = base();
+    if (b) {
+      try {
+        const res = await fetch(b + "/leaderboard", { cache: "no-store" });
+        if (res.ok) return await res.json();
+      } catch (e) { /* fall through */ }
+    }
+    try {
+      const raw = localStorage.getItem("sw::leaderboard");
+      if (raw) return JSON.parse(raw);
+      const oldDoc = localStorage.getItem("sw::blob-doc");
+      if (oldDoc) { const d = JSON.parse(oldDoc); if (d.leaderboard) return d.leaderboard; }
+      const legacy = localStorage.getItem("sw::sw-leaderboard");
+      if (legacy) return JSON.parse(legacy);
+    } catch (e) {}
+    return null;
+  }
+
+  async function saveLeaderboard(lb) {
+    const b = base();
+    if (b) {
+      try {
+        const res = await fetch(b + "/leaderboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(lb),
+        });
+        if (res.ok) return;
+      } catch (e) { /* fall through */ }
+    }
+    try { localStorage.setItem("sw::leaderboard", JSON.stringify(lb)); } catch (e) {}
+  }
+
+  return { loadQuests, saveQuest, loadLeaderboard, saveLeaderboard };
+})();
+
+/* ---------- Store: session + convenience wrappers used by the App ----------
+   sw-session is always per-device (localStorage only — never shared). */
 const Store = {
+  async loadAll() {
+    const [quests, leaderboard] = await Promise.all([
+      blobStorage.loadQuests(),
+      blobStorage.loadLeaderboard(),
+    ]);
+    return { quests, leaderboard };
+  },
+  saveQuest:       (quest) => blobStorage.saveQuest(quest),
+  saveLeaderboard: (lb)    => blobStorage.saveLeaderboard(lb),
   async get(key) {
-    try {
-      if (typeof window !== "undefined" && window.storage && window.storage.get) {
-        return await window.storage.get(key, { shared: true });
-      }
-    } catch (e) { /* fall through */ }
-    try {
-      const raw = localStorage.getItem("sw::" + key);
-      return raw == null ? null : JSON.parse(raw);
-    } catch (e) { return null; }
+    if (key === "sw-session") {
+      try { const raw = localStorage.getItem("sw::sw-session"); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+    }
+    return null;
   },
   async set(key, value) {
-    try {
-      if (typeof window !== "undefined" && window.storage && window.storage.set) {
-        return await window.storage.set(key, value, { shared: true });
-      }
-    } catch (e) { /* fall through */ }
-    try { localStorage.setItem("sw::" + key, JSON.stringify(value)); } catch (e) {}
+    if (key === "sw-session") {
+      try { localStorage.setItem("sw::sw-session", JSON.stringify(value)); } catch (e) {}
+    }
   },
 };
 
@@ -252,6 +341,6 @@ function fullDate(iso) {
 }
 
 Object.assign(window, {
-  nano, Store, DEFAULT_QUEST_SCHEMA, DEFAULT_CONFIG, MOCK_ACCOUNTS, AVATARS, avatarFor,
+  nano, blobStorage, Store, DEFAULT_QUEST_SCHEMA, DEFAULT_CONFIG, MOCK_ACCOUNTS, AVATARS, avatarFor,
   rankFor, nextRank, seedQuests, seedLeaderboard, timeAgo, fullDate,
 });

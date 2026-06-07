@@ -143,53 +143,63 @@ function App() {
   const [celebrate, setCelebrate] = uS(null);
   const [toast, setToast] = uS(null);
 
-  /* ---- mount: load schemas + data, write defaults if missing ---- */
+  /* ---- mount: load all data; seed once if blob/localStorage is empty ---- */
   uE(() => {
     (async () => {
-      let cfg = await Store.get("sw-schema-config");
-      if (!cfg) { cfg = DEFAULT_CONFIG; await Store.set("sw-schema-config", cfg); }
-      let sch = await Store.get("sw-schema-quest");
-      if (!sch) { sch = DEFAULT_QUEST_SCHEMA; await Store.set("sw-schema-quest", sch); }
-      let qs = await Store.get("sw-quests");
-      let lb = await Store.get("sw-leaderboard");
-      if (!qs) { qs = seedQuests(); await Store.set("sw-quests", qs); }
-      if (!lb) { lb = seedLeaderboard(qs); await Store.set("sw-leaderboard", lb); }
-
+      let { quests: qs, leaderboard: lb } = await Store.loadAll();
+      if (!qs || qs.length === 0) {
+        qs = seedQuests();
+        await Promise.all(qs.map((q) => Store.saveQuest(q)));
+      }
+      if (!lb || Object.keys(lb).length === 0) {
+        lb = seedLeaderboard(qs);
+        await Store.saveLeaderboard(lb);
+      }
       const sess = await Store.get("sw-session");
-      setConfig(cfg); setSchema(sch); setQuests(qs); setBoard(lb);
+      setConfig(DEFAULT_CONFIG); setSchema(DEFAULT_QUEST_SCHEMA); setQuests(qs); setBoard(lb);
       if (sess) setUser(sess);
       setLoading(false);
     })();
   }, []);
 
+  /* ---- poll every 30 s for updates from other users ---- */
+  uE(() => {
+    const id = setInterval(async () => {
+      const { quests: qs, leaderboard: lb } = await Store.loadAll();
+      if (qs) setQuests(qs);
+      if (lb) setBoard(lb);
+    }, 30000);
+    return () => clearInterval(id);
+  }, []);
+
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   const signIn = async (acct) => {
-    await Store.set("sw-session", acct);
+    await Store.set(“sw-session”, acct);
     setUser(acct);
     /* ensure they appear on the leaderboard roster */
     setBoard((b) => {
       if (b[acct.oid]) return b;
       const nb = { ...b, [acct.oid]: { oid: acct.oid, name: acct.name, xp: 0 } };
-      Store.set("sw-leaderboard", nb);
+      Store.saveLeaderboard(nb);
       return nb;
     });
   };
-  const signOut = async () => { await Store.set("sw-session", null); setUser(null); setOpenQuestId(null); setPosting(false); };
-
-  const persistQuests = (next) => { setQuests(next); Store.set("sw-quests", next); };
-  const persistBoard = (next) => { setBoard(next); Store.set("sw-leaderboard", next); };
+  const signOut = async () => { await Store.set(“sw-session”, null); setUser(null); setOpenQuestId(null); setPosting(false); };
 
   const createQuest = (q) => {
-    persistQuests([q, ...quests]);
+    setQuests([q, ...quests]);
+    Store.saveQuest(q);
     setPosting(false);
-    showToast("Quest posted to the board!");
+    showToast(“Quest posted to the board!”);
   };
 
   const addUpdate = (qid, text) => {
+    const orig = quests.find((q) => q.quest_id === qid);
     const upd = { id: nano(), author_name: user.name, author_oid: user.oid, text, timestamp: new Date().toISOString() };
-    const next = quests.map((q) => q.quest_id === qid ? { ...q, updates: [...q.updates, upd] } : q);
-    persistQuests(next);
+    const updated = { ...orig, updates: [...orig.updates, upd] };
+    setQuests(quests.map((q) => q.quest_id === qid ? updated : q));
+    Store.saveQuest(updated);
     if (config.features.xp_on_update) {
       // optional flag — off by default per config
     }
@@ -197,37 +207,36 @@ function App() {
 
   const claimQuest = (quest) => {
     if (!user) return;
-    const next = quests.map((q) => q.quest_id === quest.quest_id
-      ? { ...q, owner_name: user.name, owner_oid: user.oid, owner_email: user.username, claimed_at: new Date().toISOString() }
-      : q);
-    persistQuests(next);
+    const claimed = { ...quest, owner_name: user.name, owner_oid: user.oid, owner_email: user.username, claimed_at: new Date().toISOString() };
+    setQuests(quests.map((q) => q.quest_id === quest.quest_id ? claimed : q));
+    Store.saveQuest(claimed);
     setBoard((b) => {
       if (b[user.oid]) return b;
       const nb = { ...b, [user.oid]: { oid: user.oid, name: user.name, xp: 0 } };
-      Store.set("sw-leaderboard", nb);
+      Store.saveLeaderboard(nb);
       return nb;
     });
     showToast(`Quest claimed — “${quest.title}” is yours!`);
   };
 
   const releaseQuest = (quest) => {
-    if (!user || quest.owner_oid !== user.oid) return; // only the owner may release
-    const next = quests.map((q) => q.quest_id === quest.quest_id
-      ? { ...q, owner_name: "", owner_oid: null, owner_email: "", claimed_at: null }
-      : q);
-    persistQuests(next);
-    showToast("Quest released back to the open pool.");
+    if (!user || quest.owner_oid !== user.oid) return;
+    const released = { ...quest, owner_name: “”, owner_oid: null, owner_email: “”, claimed_at: null };
+    setQuests(quests.map((q) => q.quest_id === quest.quest_id ? released : q));
+    Store.saveQuest(released);
+    showToast(“Quest released back to the open pool.”);
   };
 
   const closeQuest = (quest) => {
-    if (!user || quest.owner_oid !== user.oid) return; // ownership guard
-    const next = quests.map((q) => q.quest_id === quest.quest_id
-      ? { ...q, status: "completed", closed_at: new Date().toISOString() } : q);
-    persistQuests(next);
+    if (!user || quest.owner_oid !== user.oid) return;
+    const closed = { ...quest, status: “completed”, closed_at: new Date().toISOString() };
+    setQuests(quests.map((q) => q.quest_id === quest.quest_id ? closed : q));
+    Store.saveQuest(closed);
     const nb = { ...board };
     if (!nb[quest.owner_oid]) nb[quest.owner_oid] = { oid: quest.owner_oid, name: quest.owner_name, xp: 0 };
     nb[quest.owner_oid] = { ...nb[quest.owner_oid], xp: nb[quest.owner_oid].xp + quest.xp_reward };
-    persistBoard(nb);
+    setBoard(nb);
+    Store.saveLeaderboard(nb);
     setOpenQuestId(null);
     setCelebrate({ xp: quest.xp_reward, title: quest.title });
   };
