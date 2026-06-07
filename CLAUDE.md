@@ -6,7 +6,7 @@ This file is for AI-assisted development. It describes how the codebase is struc
 
 ## Project Overview
 
-A single-page web app for the South West Test & Learn Network. The current MVP is a fun RPG-themed quest board with mock sign-in, localStorage persistence, quest updates, XP, and a leaderboard. No build tools — CDN React + Babel, runs directly in a browser.
+A single-page web app for the South West Test & Learn Network. The current MVP is a fun RPG-themed quest board with mock sign-in, localStorage persistence, quest updates, XP, and a leaderboard. No build tools — CDN React + Babel, runs directly in a browser. The design output code lives in `Site/` (capital `S`).
 
 Planned but not yet present: announcements (Phase 3), guild member profiles (Phase 4), Azure Blob persistence and Azure Function API (Phase 1). See `BUILD.md` for the full phase plan.
 
@@ -24,7 +24,7 @@ Planned but not yet present: announcements (Phase 3), guild member profiles (Pha
 | `quest-app-1.jsx` | Modal forms for the MVP: `SignIn` and `PostQuest`. Phase 3–4 add `PostAnnouncement` and `EditMemberCard`. |
 | `quest-app-2.jsx` | Root App component. All MVP state, filtering, data loading, and action handlers live here. Phase 3–4 add multi-section navigation. |
 | `quest-styles.css` | Complete theme. CSS variables at `:root`, then layout, then per-component blocks. Responsive via media queries. No CSS-in-JS. |
-| `config.js` | Git-ignored. Exports `window.SW_CONFIG = { API_URL: '...' }`. If absent, the app falls back to localStorage. Copy from `config.example.js` to create. |
+| `config.js` | Git-ignored future Phase 1 local config. It should export `window.SW_CONFIG = { API_URL: '...' }`, but the current HTML does not load it yet. Wire it in before relying on it. |
 | `config.example.js` | Committed template for `config.js`. |
 
 ### `api/` — Planned (Phase 1)
@@ -41,7 +41,7 @@ Not present yet. Phase 1 adds:
 ## Tech Stack Rules
 
 - **No build tools.** No npm, no webpack, no vite. Everything runs in-browser via CDN.
-- **CDN scripts** are loaded in `Side Quest Board.html` in this order: React → ReactDOM → Babel → app JSX files.
+- **CDN scripts** are loaded in `Side Quest Board.html` in this order: React → ReactDOM → Babel → app JSX files. If Phase 1 adds `config.js`, load it before `quest-data.jsx` and make the script optional/failure-tolerant for local dev.
 - **JSX is transpiled at runtime** by Babel Standalone. Files must have `type="text/babel"` in the script tag.
 - **No ES modules** (`import`/`export`) in frontend JSX — components are global variables accessed directly. Functions and components defined in earlier-loaded files are available in later-loaded files.
 - **CSS variables** for all colours and spacing. Never hardcode hex values in component styles — reference variables such as `var(--gold)` and `var(--card)`.
@@ -63,8 +63,9 @@ User action → handler in App → derive next state → Store.set(key, value) +
 - **All state lives in App.** No context, no Redux. Props only.
 - **Every write** updates React state and persists the changed key through `Store.set`.
 - **`Store`** is defined in `quest-data.jsx`. It checks for `window.storage` first, then falls back to localStorage under `sw::` keys.
+- **Current config caveat:** `config.example.js` exists, but `Side Quest Board.html` does not yet load `config.js`, and `Store` does not consume `window.SW_CONFIG` yet. Do not assume API-backed storage works until Phase 1 wires this.
 
-**Planned change (Phase 1):** replace the per-key `Store` shape with `blobStorage.load()` / `blobStorage.save(fullData)`, using `window.SW_CONFIG.API_URL` when configured and localStorage fallback when absent.
+**Planned change (Phase 1):** replace the per-key `Store` shape with `blobStorage.load()` / `blobStorage.save(fullData)`, using `window.SW_CONFIG.API_URL` when configured and localStorage fallback when absent. Include a one-time migration/fallback path for existing per-key localStorage demo data.
 
 ---
 
@@ -168,7 +169,7 @@ window.SW_CONFIG = {
 }
 ```
 
-If `API_URL` is absent or empty the app silently falls back to localStorage — this is the default dev/offline mode.
+Planned Phase 1 behaviour: if `API_URL` is absent or empty, the app should silently fall back to localStorage — this is the intended default dev/offline mode. Current MVP behaviour is localStorage-only because `config.js` is not loaded yet.
 
 ---
 
@@ -186,6 +187,7 @@ If `API_URL` is absent or empty the app silently falls back to localStorage — 
 ## What Not To Do
 
 - Don't add a build system. If the complexity demands one, that's a separate conversation.
+- Don't rename `Site/` to lowercase `site/` without updating every command, doc, and deployment path; casing matters in this environment.
 - Don't use ES module syntax (`import`/`export`) in any `Site/` file.
 - Don't add new npm dependencies to the frontend — use CDN if a library is genuinely needed.
 - Don't split state into multiple stores or contexts — keep it in App.
