@@ -12,8 +12,6 @@ A lightweight team site for the South West Test & Learn Network that does three 
 2. **Broadcasts updates** — a noticeboard for announcements and shout-outs
 3. **Connects people** — Top Trumps-style member cards showing expertise, stretch goals, and conversation starters
 
-Fun and friendly is not optional. The RPG aesthetic is the product.
-
 ---
 
 ## Current State
@@ -27,22 +25,13 @@ The `Site/` folder contains a fully functional quest board app (~2,500 lines JSX
 | XP system + leaderboard | ✅ Done |
 | Sign-in (mock Entra, 7 seed accounts) | ✅ Done |
 | Mobile responsive layout | ✅ Done |
-| Quest types (Bounty / Idea / Learning) | 🔲 To do |
-| Town Crier announcements section | 🔲 To do |
-| Guild Member cards (Top Trumps) | 🔲 To do |
-| Azure Blob Storage persistence | 🔲 To do |
-| Azure Function API layer | 🔲 To do |
-| XP-on-update (config flag exists, not wired) | 🔲 To do |
-| Quest search/filter by text | 🔲 To do |
-
----
-
-
-## Next Recommended Task
-
-Start with **Phase 1 — Data Layer & API**. The current site already works as a localStorage-backed quest board, but Town Crier and Guild Member features should wait until the shared data shape is in place.
-
-Before or alongside Phase 1, keep `README.md` and `CLAUDE.md` explicit about what exists now versus what is planned so contributors do not mistake roadmap items for shipped features.
+| Quest types (Bounty / Idea / Learning) | 🔲 Planned (Phase 2) |
+| Town Crier announcements section | 🔲 Planned (Phase 3) |
+| Guild Member cards (Top Trumps) | 🔲 Planned (Phase 4) |
+| Azure Blob Storage persistence | 🔲 Planned (Phase 1) |
+| Azure Function API layer | 🔲 Planned (Phase 1) |
+| XP-on-update (config flag exists, not wired) | 🔲 Planned (Phase 5) |
+| Quest search/filter by text | 🔲 Planned (Phase 5) |
 
 ---
 
@@ -106,7 +95,7 @@ window.SW_CONFIG = { API_URL: 'https://YOUR_FUNCTION.azurewebsites.net/api/data'
 - [ ] PostQuest form shows type picker
 - [ ] Cards display correct type indicator
 - [ ] Filter tabs work for each type
-- [ ] Existing quests without `type` field treated as "bounty" (backwards compat)
+- [ ] Existing quests without `type` treated as `"bounty"` (backwards compat)
 
 ---
 
@@ -197,9 +186,9 @@ See `CLAUDE.md` for full codebase conventions. Key constraints:
 
 ---
 
-## What You'll Need (Azure Setup)
+## Azure Setup
 
-To connect the live shared data:
+To connect live shared data:
 
 1. Azure Storage account with a container (e.g. `sw-sidequests`)
 2. Azure Function App (consumption plan, Node.js 20)
