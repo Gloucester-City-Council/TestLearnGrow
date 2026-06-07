@@ -56,7 +56,7 @@ python3 -m http.server 8000
 Then open:
 
 ```
-http://localhost:8000/Side%20Quest%20Board.html
+http://localhost:8000/
 ```
 
 Opening the HTML file directly from the filesystem may work in some browsers, but a local static server is more reliable because Babel Standalone loads the JSX files as external scripts.
@@ -68,7 +68,7 @@ Opening the HTML file directly from the filesystem may work in some browsers, bu
 ```
 SWsidequests/
 ├── Site/                        # All frontend files
-│   ├── Side Quest Board.html    # Entry point
+│   ├── index.html               # Entry point
 │   ├── quest-data.jsx           # Data utilities, local storage shim, seed data
 │   ├── quest-components.jsx     # Shared UI components
 │   ├── quest-app-1.jsx          # Sign-in and PostQuest modal
