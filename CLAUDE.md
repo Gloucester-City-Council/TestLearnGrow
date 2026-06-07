@@ -18,7 +18,7 @@ Planned but not yet present: announcements (Phase 3), guild member profiles (Pha
 
 | File | Role |
 |---|---|
-| `Side Quest Board.html` | Entry point. Loads CDN scripts (React, Babel), then the JSX files in order, then mounts the app. |
+| `index.html` | Entry point. Loads CDN scripts (React, Babel), then the JSX files in order, then mounts the app. |
 | `quest-data.jsx` | Data layer. Local storage abstraction (`Store`), seed data, mock accounts, avatar map, and utility functions. Phase 1 replaces this with `blobStorage`. |
 | `quest-components.jsx` | Shared presentational components. Icons (SVG), Avatar, XpBadge, StatusBadge, QuestCard, Modal, Leaderboard, QuestComplete celebration, Toast. No business logic. |
 | `quest-app-1.jsx` | Modal forms for the MVP: `SignIn` and `PostQuest`. Phase 3–4 add `PostAnnouncement` and `EditMemberCard`. |
@@ -41,7 +41,7 @@ Not present yet. Phase 1 adds:
 ## Tech Stack Rules
 
 - **No build tools.** No npm, no webpack, no vite. Everything runs in-browser via CDN.
-- **CDN scripts** are loaded in `Side Quest Board.html` in this order: React → ReactDOM → Babel → app JSX files. If Phase 1 adds `config.js`, load it before `quest-data.jsx` and make the script optional/failure-tolerant for local dev.
+- **CDN scripts** are loaded in `index.html` in this order: React → ReactDOM → Babel → app JSX files. If Phase 1 adds `config.js`, load it before `quest-data.jsx` and make the script optional/failure-tolerant for local dev.
 - **JSX is transpiled at runtime** by Babel Standalone. Files must have `type="text/babel"` in the script tag.
 - **No ES modules** (`import`/`export`) in frontend JSX — components are global variables accessed directly. Functions and components defined in earlier-loaded files are available in later-loaded files.
 - **CSS variables** for all colours and spacing. Never hardcode hex values in component styles — reference variables such as `var(--gold)` and `var(--card)`.
@@ -63,7 +63,7 @@ User action → handler in App → derive next state → Store.set(key, value) +
 - **All state lives in App.** No context, no Redux. Props only.
 - **Every write** updates React state and persists the changed key through `Store.set`.
 - **`Store`** is defined in `quest-data.jsx`. It checks for `window.storage` first, then falls back to localStorage under `sw::` keys.
-- **Current config caveat:** `config.example.js` exists, but `Side Quest Board.html` does not yet load `config.js`, and `Store` does not consume `window.SW_CONFIG` yet. Do not assume API-backed storage works until Phase 1 wires this.
+- **Current config caveat:** `config.example.js` exists, but `index.html` does not yet load `config.js`, and `Store` does not consume `window.SW_CONFIG` yet. Do not assume API-backed storage works until Phase 1 wires this.
 
 **Planned change (Phase 1):** replace the per-key `Store` shape with `blobStorage.load()` / `blobStorage.save(fullData)`, using `window.SW_CONFIG.API_URL` when configured and localStorage fallback when absent. Include a one-time migration/fallback path for existing per-key localStorage demo data.
 
