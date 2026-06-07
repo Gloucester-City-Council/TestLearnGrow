@@ -16,7 +16,7 @@ A lightweight team site for the South West Test & Learn Network that does three 
 
 ## Current State
 
-The `Site/` folder contains a fully functional quest board app (~2,500 lines JSX + CSS). It works in a browser with no build tools. Everything currently persists to localStorage (single device only).
+The `Site/` folder (capital `S`) contains the runnable design output: a fully functional quest board app (~2,500 lines JSX + CSS). It works in a browser with no build tools. Everything currently persists to localStorage (single device only).
 
 | Feature | Status |
 |---|---|
@@ -35,6 +35,21 @@ The `Site/` folder contains a fully functional quest board app (~2,500 lines JSX
 
 ---
 
+
+## Review Findings & Proposed Changes
+
+A review of `README.md`, `CLAUDE.md`, and the current `Site/` code surfaced a few alignment fixes that should happen alongside the roadmap:
+
+| Area | Finding | Proposed change | Priority |
+|---|---|---|---|
+| Config loading | `Site/config.example.js` documents `window.SW_CONFIG`, but `Side Quest Board.html` does not load `config.js`, and `Store` currently only checks `window.storage` then localStorage. | In Phase 1, add an optional `config.js` script before the JSX files and merge `window.SW_CONFIG` into `DEFAULT_CONFIG` before using `API_URL`. Until then, document config as future-facing. | High |
+| Storage model | Current code persists separate keys (`sw-quests`, `sw-leaderboard`, schema/config/session), while Phase 1 plans one Blob JSON document. | Build a migration path that reads existing per-key localStorage data once and writes the full document shape (`quests`, `leaderboard`, `announcements`, `members`). | High |
+| Folder casing | The user-facing phrase "site folder" can be mistaken for lowercase `site/`, but the repo directory is `Site/`. | Keep docs and commands using `Site/`; mention that casing matters on Linux/macOS. | Medium |
+| Roadmap order | Phases 2–4 add fields/collections that will need shared persistence. | Complete Phase 1 before adding announcements or member cards, or add them against the planned full-document storage shape from the start. | Medium |
+| Current filters | The app currently filters by quest state (`ALL`, `AVAILABLE`, `CLAIMED`, `COMPLETED`), not quest type. | When Phase 2 lands, either replace or combine filters so type filters and state filters do not regress current availability workflows. | Medium |
+
+---
+
 ## Phase 1 — Data Layer & API
 
 **Goal:** Replace localStorage with a shared Azure Blob Storage document via an Azure Function, so the whole team uses one live dataset.
@@ -49,7 +64,7 @@ The `Site/` folder contains a fully functional quest board app (~2,500 lines JSX
 
 **`api/host.json`** — Standard Azure Functions host config
 
-**`Site/config.example.js`** — Template:
+**`Site/config.example.js`** — Template (currently present, but not loaded by the HTML until this phase wires it):
 ```js
 window.SW_CONFIG = { API_URL: 'https://YOUR_FUNCTION.azurewebsites.net/api/data' }
 ```
@@ -57,6 +72,7 @@ window.SW_CONFIG = { API_URL: 'https://YOUR_FUNCTION.azurewebsites.net/api/data'
 **`Site/quest-data.jsx`** — Replace `window.storage` localStorage shim with `blobStorage`:
 - `blobStorage.load()` — async GET from API_URL (or localStorage fallback)
 - `blobStorage.save(data)` — async POST full JSON (or localStorage fallback)
+- Optional local migration from existing `sw::sw-quests` / `sw::sw-leaderboard` localStorage keys into the full-document shape
 
 **Blob document shape:**
 ```json
@@ -73,6 +89,7 @@ window.SW_CONFIG = { API_URL: 'https://YOUR_FUNCTION.azurewebsites.net/api/data'
 - [ ] `blobStorage.load()` returns correct data from blob (or falls back gracefully)
 - [ ] `blobStorage.save()` writes changes and they persist on reload
 - [ ] Two browser tabs see the same data after a page refresh
+- [ ] Existing localStorage-only demo data migrates or falls back without a blank-board surprise
 
 ---
 
@@ -88,13 +105,13 @@ window.SW_CONFIG = { API_URL: 'https://YOUR_FUNCTION.azurewebsites.net/api/data'
   - 💡 Idea Scroll — a pitch or suggestion to discuss
   - 📖 Learning Quest — something to explore or upskill
 - Update `QuestCard` in `quest-components.jsx` to show type badge/icon
-- Extend filter tabs in `quest-app-2.jsx`: ALL / BOUNTIES / IDEAS / LEARNING / COMPLETED
+- Extend filter controls in `quest-app-2.jsx` without losing current state filters (`ALL`, `AVAILABLE`, `CLAIMED`, `COMPLETED`): add type filters for BOUNTIES / IDEAS / LEARNING or use separate state + type controls
 - Add card style variants to `quest-styles.css` (subtle colour edge per type)
 
 ### Done when
 - [ ] PostQuest form shows type picker
 - [ ] Cards display correct type indicator
-- [ ] Filter tabs work for each type
+- [ ] Type filters work and current availability/completed workflows still work
 - [ ] Existing quests without `type` treated as `"bounty"` (backwards compat)
 
 ---
