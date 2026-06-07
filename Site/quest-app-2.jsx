@@ -73,14 +73,14 @@ function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, o
       <p className="detail-desc">{quest.description}</p>
 
       {available && claimable && (
-        <div className="locked-field" style={{ marginTop: 16, borderColor: "var(--gold)", borderStyle: "solid", background: "#171530" }}>
+        <div className="locked-field" style={{ marginTop: 16, borderColor: "var(--gold)", borderStyle: "solid", background: "var(--callout)" }}>
           <Icon.Flag style={{ color: "var(--amber)" }} />
           <span>This bounty is <strong style={{ color: "var(--amber)" }}>unclaimed</strong>. Claim it to take ownership — only the claimant can complete it and earn the <strong style={{ color: "var(--xp-hi)" }}>{quest.xp_reward} XP</strong>.</span>
         </div>
       )}
 
       {confirming && !done && (
-        <div className="locked-field" style={{ marginTop: 16, borderColor: "var(--gold)", borderStyle: "solid", background: "#171530" }}>
+        <div className="locked-field" style={{ marginTop: 16, borderColor: "var(--gold)", borderStyle: "solid", background: "var(--callout)" }}>
           <Icon.Trophy style={{ color: "var(--amber)" }} />
           <span>Sealing this quest awards <strong style={{ color: "var(--xp-hi)" }}>{quest.xp_reward} XP</strong> to your name on the leaderboard. This cannot be undone.</span>
         </div>

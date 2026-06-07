@@ -6,7 +6,7 @@ This file is for AI-assisted development. It describes how the codebase is struc
 
 ## Project Overview
 
-A single-page web app for the South West Test & Learn Network. Fun RPG-themed team tool: quest board, announcements, and guild member profiles. No build tools — CDN React + Babel, runs directly in a browser.
+A single-page web app for the South West Test & Learn Network. The current MVP is a fun RPG-themed quest board with mock sign-in, localStorage persistence, quest updates, XP, and a leaderboard. Announcements, guild member profiles, Azure Blob persistence, and the Azure Function API are planned roadmap items. No build tools — CDN React + Babel, runs directly in a browser.
 
 ---
 
@@ -17,15 +17,17 @@ A single-page web app for the South West Test & Learn Network. Fun RPG-themed te
 | File | Role |
 |---|---|
 | `Side Quest Board.html` | Entry point. Loads CDN scripts (React, Babel), then the JSX files in order, then mounts the app. |
-| `quest-data.jsx` | Data layer. Schemas (quest, announcement, member), storage abstraction (`blobStorage`), seed data, utility functions (nano ID, relative time, XP calculations). |
+| `quest-data.jsx` | Data layer. Current local storage abstraction (`Store`), seed data, mock accounts, avatar map, and utility functions (nano ID, relative time, XP calculations). Planned future work replaces this with `blobStorage`. |
 | `quest-components.jsx` | Shared presentational components. Icons (SVG), Avatar, XpBadge, StatusBadge, QuestCard, Modal, Leaderboard, QuestComplete celebration, Toast. No business logic. |
-| `quest-app-1.jsx` | Modal forms. SignIn, PostQuest (with type picker), PostAnnouncement, EditMemberCard. Each exports a single component. |
-| `quest-app-2.jsx` | Root App component. All section state, navigation, data fetching, and action handlers live here. Renders the three sections. Calls `ReactDOM.createRoot`. |
+| `quest-app-1.jsx` | Modal forms currently used by the MVP: `SignIn`, schema field rendering, and `PostQuest`. Planned future work adds `PostAnnouncement` and `EditMemberCard`. |
+| `quest-app-2.jsx` | Root App component and quest detail modal. All MVP state, filtering, data loading, and action handlers live here. Calls `ReactDOM.createRoot`. Planned future work adds multi-section navigation. |
 | `quest-styles.css` | Complete theme. CSS variables at `:root`, then layout, then per-component blocks. Responsive via media queries. No CSS-in-JS. |
-| `config.js` | Git-ignored. Exports `window.SW_CONFIG = { API_URL: '...' }`. If absent, app falls back to localStorage. |
-| `config.example.js` | Committed template for `config.js`. |
+| `config.js` | Planned Phase 1 file. Should be git-ignored and export `window.SW_CONFIG = { API_URL: '...' }`. If absent, the future blob storage layer will fall back to localStorage. |
+| `config.example.js` | Planned Phase 1 committed template for `config.js`. |
 
-### `api/` — Azure Function
+### `api/` — planned Azure Function
+
+The `api/` folder does not exist yet. Phase 1 will add:
 
 | File | Role |
 |---|---|
@@ -40,25 +42,26 @@ A single-page web app for the South West Test & Learn Network. Fun RPG-themed te
 - **CDN scripts** are loaded in `Side Quest Board.html` in this order: React → ReactDOM → Babel → app JSX files.
 - **JSX is transpiled at runtime** by Babel Standalone. Files must have `type="text/babel"` in the script tag.
 - **No ES modules** (`import`/`export`) in frontend JSX — components are global variables accessed directly. Functions and components defined in earlier-loaded files are available in later-loaded files.
-- **CSS variables** for all colours and spacing. Never hardcode hex values in component styles — reference `var(--color-gold)` etc.
+- **CSS variables** for all colours and spacing. Never hardcode hex values in component styles — reference variables such as `var(--gold)` and `var(--card)` where possible.
 
 ---
 
 ## State & Data Flow
 
 ```
-blobStorage.load()
+Store.get()
     ↓
-App (quest-app-2.jsx) — holds all state: quests, announcements, members, leaderboard, session, activeSection
+App (quest-app-2.jsx) — holds current MVP state: quests, leaderboard, session, filter, modal state
     ↓
 Props passed down to section components and modals
     ↓
-User action → handler in App → mutate state → blobStorage.save(fullData) → setState
+User action → handler in App → derive next state → Store.set(key, value) + setState
 ```
 
 - **All state lives in App.** No context, no Redux. Props only.
-- **Every write** calls `blobStorage.save()` immediately after `setState`.
-- **`blobStorage`** is defined in `quest-data.jsx`. It checks `window.SW_CONFIG.API_URL`; if present, does `fetch` GET/POST to the Azure Function; otherwise reads/writes localStorage under `sw::` keys.
+- **Every write** updates React state and persists the changed key through `Store.set`.
+- **`Store`** is defined in `quest-data.jsx`. It checks for `window.storage` first, then falls back to localStorage under `sw::` keys.
+- **Planned Phase 1:** replace the per-key `Store` shape with `blobStorage.load()` / `blobStorage.save(fullData)`, using `window.SW_CONFIG.API_URL` when configured and localStorage fallback when absent.
 
 ---
 
@@ -68,27 +71,31 @@ User action → handler in App → mutate state → blobStorage.save(fullData) �
 - **Hooks:** `useState`, `useEffect`, `useRef`, `useMemo`, `useCallback` — all from `React.*` (not destructured imports, since there are no modules).
 - **Modal pattern:** All modals use the shared `Modal` component from `quest-components.jsx`. Pass `onClose` prop; Modal handles Escape key and focus trap.
 - **Icons:** Use `Icon.*` components from `quest-components.jsx`. Add new icons there as SVG components, not inline in feature files.
-- **IDs:** Use `nanoId()` from `quest-data.jsx` for all new record IDs.
-- **Timestamps:** Always store as ISO strings (`new Date().toISOString()`). Display using `relativeTime()` or `formatDate()` from `quest-data.jsx`.
+- **IDs:** Use `nano()` from `quest-data.jsx` for all new record IDs.
+- **Timestamps:** Always store as ISO strings (`new Date().toISOString()`). Display using `timeAgo()` or `fullDate()` from `quest-data.jsx`.
 
 ---
 
 ## Styling Conventions
 
 - **CSS variables** defined in `:root` in `quest-styles.css`. Key ones:
-  - `--bg-deep`, `--bg-card`, `--bg-parchment`
-  - `--color-gold`, `--color-amber`, `--color-xp-green`
-  - `--font-display` (Cinzel), `--font-body` (IM Fell English), `--font-pixel` (Press Start 2P), `--font-mono` (VT323)
+  - `--bg`, `--bg-2`, `--card`, `--card-2`, `--callout`
+  - `--gold`, `--amber`, `--amber-hi`, `--xp`, `--xp-hi`
+  - `--scroll`, `--scroll-2`, `--ink`, `--ink-dim`
+  - `--font-display` (Cinzel), `--font-body` (IM Fell English), `--font-pixel` (Press Start 2P), `--font-num` (VT323)
 - **Add new component styles** at the bottom of `quest-styles.css` in a clearly labelled block.
 - **Responsive breakpoints:** `@media (max-width: 980px)` for tablet/mobile layout switches, `@media (max-width: 768px)` for single-column. Match existing breakpoints.
 - **Animations:** Define keyframes at top of new style block. Respect `prefers-reduced-motion`.
-- **Corner brackets** on cards: use the `.corner-bracket` pseudo-element pattern already in the CSS.
+- **Corner brackets** on cards/modals: reuse the existing `.corner` span pattern (`tl`, `tr`, `bl`, `br`) already in the CSS.
 
 ---
 
 ## Data Schemas
 
 ### Quest
+
+Current MVP quests do not yet include `type`; Phase 2 adds it with a default of `"bounty"` for backwards compatibility.
+
 ```js
 {
   quest_id, title, description,
@@ -102,7 +109,7 @@ User action → handler in App → mutate state → blobStorage.save(fullData) �
 }
 ```
 
-### Announcement
+### Announcement — planned Phase 3
 ```js
 {
   id, title, body,
@@ -112,7 +119,7 @@ User action → handler in App → mutate state → blobStorage.save(fullData) �
 }
 ```
 
-### Member (guild card)
+### Member (guild card) — planned Phase 4
 ```js
 {
   oid,               // matches session/leaderboard oid
@@ -135,16 +142,16 @@ User action → handler in App → mutate state → blobStorage.save(fullData) �
 
 | Function | Purpose |
 |---|---|
-| `nanoId()` | 10-char alphanumeric ID |
-| `relativeTime(isoString)` | "2 hours ago", "yesterday" etc. |
-| `formatDate(isoString)` | Full readable date |
-| `getRank(xp)` | Returns rank label from config XP thresholds |
-| `blobStorage.load()` | Async — fetch all app data |
-| `blobStorage.save(data)` | Async — write full app data |
+| `nano()` | 10-char alphanumeric ID by default |
+| `timeAgo(isoString)` | "2 hours ago", "1 day ago" etc. |
+| `fullDate(isoString)` | Full readable date |
+| `rankFor(xp, ranks)` | Returns rank label from config XP thresholds |
+| `Store.get(key)` | Async — read one app key from `window.storage` or localStorage |
+| `Store.set(key, value)` | Async — write one app key to `window.storage` or localStorage |
 
 ---
 
-## Config Shape (window.SW_CONFIG)
+## Planned Config Shape (window.SW_CONFIG)
 
 ```js
 window.SW_CONFIG = {
@@ -155,11 +162,11 @@ window.SW_CONFIG = {
 }
 ```
 
-If `API_URL` is absent or empty, the app silently falls back to localStorage. This is the dev/offline mode.
+This is planned for Phase 1. In the current MVP, config is loaded from `DEFAULT_CONFIG` / `Store` rather than `window.SW_CONFIG`.
 
 ---
 
-## Azure Function (api/function.js)
+## Planned Azure Function (api/function.js)
 
 - Node.js HTTP trigger, Azure Functions v4 programming model
 - `GET` → reads `sw-data.json` from blob container, returns JSON with CORS headers
