@@ -72,13 +72,15 @@ SWsidequests/
 │   ├── quest-app-1.jsx          # Sign-in and PostQuest modal
 │   ├── quest-app-2.jsx          # Root App, quest detail, state and handlers
 │   ├── quest-styles.css         # Full theme
+│   ├── config.example.js        # API config template — copy to config.js and fill in
+│   ├── config.js                # Your local config (git-ignored)
 │   └── avatars/                 # Pixel-art member portraits
 ├── BUILD.md                     # Detailed roadmap and phase plan
 ├── CLAUDE.md                    # Codebase guide for AI-assisted development
 └── README.md                    # You are here
 ```
 
-Planned but not yet present: `api/`, `Site/config.example.js`, `Site/config.js`.
+Planned but not yet present: `api/`.
 
 ---
 

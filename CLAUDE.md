@@ -24,8 +24,8 @@ Planned but not yet present: announcements (Phase 3), guild member profiles (Pha
 | `quest-app-1.jsx` | Modal forms for the MVP: `SignIn` and `PostQuest`. Phase 3–4 add `PostAnnouncement` and `EditMemberCard`. |
 | `quest-app-2.jsx` | Root App component. All MVP state, filtering, data loading, and action handlers live here. Phase 3–4 add multi-section navigation. |
 | `quest-styles.css` | Complete theme. CSS variables at `:root`, then layout, then per-component blocks. Responsive via media queries. No CSS-in-JS. |
-| `config.js` | Planned (Phase 1). Not present yet. Should be git-ignored. Exports `window.SW_CONFIG = { API_URL: '...' }`. If absent, the blob storage layer falls back to localStorage. |
-| `config.example.js` | Planned (Phase 1). Committed template for `config.js`. |
+| `config.js` | Git-ignored. Exports `window.SW_CONFIG = { API_URL: '...' }`. If absent, the app falls back to localStorage. Copy from `config.example.js` to create. |
+| `config.example.js` | Committed template for `config.js`. |
 
 ### `api/` — Planned (Phase 1)
 
@@ -157,7 +157,7 @@ All schemas below use *planned (Phase N)* to flag fields or records not yet pres
 
 ---
 
-## Planned Config Shape — planned (Phase 1)
+## Config Shape (window.SW_CONFIG)
 
 ```js
 window.SW_CONFIG = {
@@ -168,7 +168,7 @@ window.SW_CONFIG = {
 }
 ```
 
-In the current MVP, config is loaded from `DEFAULT_CONFIG` / `Store` rather than `window.SW_CONFIG`.
+If `API_URL` is absent or empty the app silently falls back to localStorage — this is the default dev/offline mode.
 
 ---
 
