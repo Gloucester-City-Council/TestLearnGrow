@@ -70,6 +70,9 @@ web_modules/
 .env.*
 !.env.example
 
+# Local site config (contains Azure Function URL — never commit)
+Site/config.js
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
