@@ -102,6 +102,35 @@ const Icon = {
       <line x1="16.5" y1="16.5" x2="22" y2="22"/>
     </svg>
   ),
+  Beaker: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...p}>
+      <path d="M9 3h6M9 3v8l-5 9h16L15 11V3"/>
+      <path d="M7 17h10" opacity=".5"/>
+    </svg>
+  ),
+  Calendar: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...p}>
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <path d="M16 2v4M8 2v4M3 10h18"/>
+    </svg>
+  ),
+  Users: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...p}>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+      <path d="M16 3a4 4 0 0 1 0 8M21 21v-2a4 4 0 0 0-3-3.87"/>
+    </svg>
+  ),
+  Lightning: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...p}>
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+    </svg>
+  ),
+  ArrowRight: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...p}>
+      <path d="M5 12h14M12 5l7 7-7 7"/>
+    </svg>
+  ),
 };
 
 /* ---------- initials avatar ---------- */
@@ -135,72 +164,205 @@ function XpBadge({ amount }) {
   );
 }
 
-/* ---------- quest state derivation ---------- */
-function questState(q) {
-  if (q.status === "completed") return "completed";
-  return q.owner_oid ? "claimed" : "available";
+/* ---------- status pill for new item types ---------- */
+const STATUS_PILL_CONFIG = {
+  proposed:         { label: "Proposed",       cls: "proposed" },
+  designing:        { label: "Designing",      cls: "designing" },
+  running:          { label: "Running",        cls: "running" },
+  "wrapping-up":    { label: "Wrapping Up",    cls: "wrapping" },
+  "finding-shared": { label: "Finding Shared", cls: "found" },
+  parked:           { label: "Parked",         cls: "parked" },
+  scheduled:        { label: "Scheduled",      cls: "scheduled" },
+  happened:         { label: "Happened",       cls: "happened" },
+  "output-shared":  { label: "Output Shared",  cls: "found" },
+  open:             { label: "Open",           cls: "challenge-open" },
+  closed:           { label: "Closed",         cls: "parked" },
+};
+
+function StatusPill({ status }) {
+  const cfg = STATUS_PILL_CONFIG[status] || { label: status, cls: "proposed" };
+  return <span className={"status-pill status-pill--" + cfg.cls}>{cfg.label}</span>;
 }
 
-/* ---------- status badge ---------- */
-function StatusBadge({ quest }) {
-  const s = questState(quest);
-  if (s === "completed")
-    return <span className="badge status-completed"><Icon.Check style={{ width: 12, height: 12 }} /> Completed</span>;
-  if (s === "available")
-    return <span className="badge status-available"><Icon.Flag style={{ width: 12, height: 12 }} /> Unclaimed</span>;
-  return <span className="badge status-claimed">◆ In Progress</span>;
-}
-
-/* ---------- quest card ---------- */
-function QuestCard({ quest, onOpen, onMemberClick }) {
-  const s = questState(quest);
-  const done = s === "completed";
-  const available = s === "available";
-  const stateText = done ? "Completed" : available ? "Unclaimed — awaiting a hero" : "In progress";
-  const memberClick = (oid, e) => { if (onMemberClick && oid) { e.stopPropagation(); onMemberClick(oid); } };
+/* ---------- method tags strip ---------- */
+function MethodTags({ tags, max }) {
+  if (!tags || tags.length === 0) return null;
+  const limit = max || 3;
+  const shown = tags.slice(0, limit);
+  const extra = tags.length - limit;
   return (
-    <button className={"quest-card parchment" + (done ? " completed" : "") + (available ? " available" : "")}
-      onClick={() => onOpen(quest)}
-      aria-label={`Open quest: ${quest.title}. ${stateText}. Reward ${quest.xp_reward} XP.`}>
+    <div className="method-tags">
+      {shown.map((t) => <span key={t} className="method-tag">{t}</span>)}
+      {extra > 0 && <span className="method-tag method-tag--more">+{extra}</span>}
+    </div>
+  );
+}
+
+/* ---------- avatar strip ---------- */
+function AvatarStrip({ oids, names, max, onMemberClick }) {
+  const limit = max || 4;
+  const shown = (oids || []).slice(0, limit);
+  const extra = (oids || []).length - limit;
+  return (
+    <div className="avatar-strip">
+      {shown.map((oid, i) => (
+        <button key={oid} className="avatar-strip-btn" title={(names || [])[i] || oid}
+          onClick={(e) => { e.stopPropagation(); onMemberClick && onMemberClick(oid); }}>
+          <Avatar oid={oid} name={(names || [])[i]} cls="mini-avatar" />
+        </button>
+      ))}
+      {extra > 0 && <span className="avatar-strip-extra">+{extra}</span>}
+    </div>
+  );
+}
+
+/* ---------- ExperimentCard ---------- */
+function ExperimentCard({ item, onOpen, onMemberClick }) {
+  const hasTeam = item.team_oids && item.team_oids.length > 0;
+  return (
+    <button className="quest-card parchment item-card item-card--experiment"
+      onClick={() => onOpen(item)}
+      aria-label={"Open experiment: " + item.title + ". Status: " + item.status + "."}>
       <span className="corner tl" /><span className="corner tr" /><span className="corner bl" /><span className="corner br" />
       <div className="card-top">
-        <h3 className="quest-title">{quest.title}</h3>
-        <StatusBadge quest={quest} />
+        <h3 className="quest-title">{item.title}</h3>
+        <StatusPill status={item.status} />
       </div>
-      <p className="quest-desc">{quest.description}</p>
+      {item.question && <p className="item-question">{item.question}</p>}
+      <MethodTags tags={item.method_tags} />
       <div className="card-meta">
-        {available ? (
-          <>
-            <span className="claim-cta"><Icon.Hand /> Claim this quest</span>
-            <span className="poster">Posted by
-              {" "}<span role="button" tabIndex="0" className="name-link"
-                onClick={(e) => memberClick(quest.posted_by_oid, e)}
-                onKeyDown={(e) => e.key === "Enter" && memberClick(quest.posted_by_oid, e)}>
-                {quest.posted_by_name}
-              </span>
-            </span>
-          </>
-        ) : (
-          <span className="owner">
-            <span role="button" tabIndex="0" className="name-link owner-link"
-              onClick={(e) => memberClick(quest.owner_oid, e)}
-              onKeyDown={(e) => e.key === "Enter" && memberClick(quest.owner_oid, e)}
-              title={"View " + quest.owner_name + "'s guild card"}>
-              <Avatar oid={quest.owner_oid} name={quest.owner_name} cls="mini-avatar" />{quest.owner_name}
-            </span>
-          </span>
-        )}
-        <XpBadge amount={quest.xp_reward} />
-        {quest.updates && quest.updates.length > 0 && (
-          <span className="updates"><Icon.Chat /> {quest.updates.length} {quest.updates.length === 1 ? "update" : "updates"}</span>
+        {hasTeam
+          ? <AvatarStrip oids={item.team_oids} names={item.team_names} onMemberClick={onMemberClick} />
+          : <span className="poster" style={{ fontSize: 13, fontStyle: "italic" }}>No team yet</span>
+        }
+        <XpBadge amount={item.xp_reward} />
+        {item.updates && item.updates.length > 0 && (
+          <span className="updates"><Icon.Chat style={{ width: 15, height: 15 }} /> {item.updates.length}</span>
         )}
       </div>
     </button>
   );
 }
 
+/* ---------- SessionCard ---------- */
+function SessionCard({ item, onOpen, onMemberClick }) {
+  const formatLabel = { "in-person": "In Person", remote: "Remote", async: "Async" };
+  return (
+    <button className="quest-card parchment item-card item-card--session"
+      onClick={() => onOpen(item)}
+      aria-label={"Open session: " + item.title + ". Status: " + item.status + "."}>
+      <span className="corner tl" /><span className="corner tr" /><span className="corner bl" /><span className="corner br" />
+      <div className="card-top">
+        <h3 className="quest-title">{item.title}</h3>
+        <StatusPill status={item.status} />
+      </div>
+      {item.topic && <p className="item-question">{item.topic}</p>}
+      <div className="session-meta-row">
+        {item.session_date && (
+          <span className="session-date-badge">
+            <Icon.Calendar style={{ width: 13, height: 13 }} />
+            {fullDate(item.session_date)}
+          </span>
+        )}
+        {item.format && (
+          <span className="session-format-badge">{formatLabel[item.format] || item.format}</span>
+        )}
+      </div>
+      <div className="card-meta">
+        <button className="name-link host-chip"
+          onClick={(e) => { e.stopPropagation(); onMemberClick && onMemberClick(item.host_oid); }}>
+          <Avatar oid={item.host_oid} name={item.host_name} cls="mini-avatar" />
+          {item.host_name}
+        </button>
+        {item.attendee_oids && item.attendee_oids.length > 0 && (
+          <AvatarStrip oids={item.attendee_oids} names={item.attendee_names} max={3} onMemberClick={onMemberClick} />
+        )}
+      </div>
+    </button>
+  );
+}
+
+/* ---------- ChallengeCard ---------- */
+function ChallengeCard({ item, allItems, onOpen, onMemberClick }) {
+  const responses = allItems
+    ? allItems.filter((i) => item.response_ids && item.response_ids.includes(i.item_id))
+    : [];
+  const expCount  = responses.filter((i) => i.item_type === "experiment").length;
+  const sessCount = responses.filter((i) => i.item_type === "session").length;
+  const respText = [
+    expCount  > 0 && (expCount  + " experiment"  + (expCount  !== 1 ? "s" : "")),
+    sessCount > 0 && (sessCount + " session"      + (sessCount !== 1 ? "s" : "")),
+  ].filter(Boolean).join(", ");
+
+  return (
+    <button className="quest-card parchment item-card item-card--challenge"
+      onClick={() => onOpen(item)}
+      aria-label={"Open challenge: " + item.title + "."}>
+      <span className="corner tl" /><span className="corner tr" /><span className="corner bl" /><span className="corner br" />
+      <div className="card-top">
+        <span className="challenge-label"><Icon.Lightning style={{ width: 14, height: 14 }} /> Challenge</span>
+        <StatusPill status={item.status} />
+      </div>
+      <h3 className="quest-title challenge-question">{item.question}</h3>
+      <div className="card-meta">
+        <button className="name-link" style={{ fontSize: 13 }}
+          onClick={(e) => { e.stopPropagation(); onMemberClick && onMemberClick(item.posted_by_oid); }}>
+          {item.posted_by_name}
+        </button>
+        {respText && <span className="response-count">{respText}</span>}
+      </div>
+    </button>
+  );
+}
+
+/* ---------- FindingCard (for the Findings swim lane) ---------- */
+function FindingCard({ item, onOpen, onMemberClick }) {
+  const outcomeLabel = { worked: "It worked", didnt: "Didn't work", inconclusive: "Inconclusive", "too-early": "Too early" };
+  if (item.item_type === "experiment") {
+    return (
+      <button className="quest-card parchment item-card item-card--finding"
+        onClick={() => onOpen(item)}
+        aria-label={"View finding: " + item.title}>
+        <span className="corner tl" /><span className="corner tr" /><span className="corner bl" /><span className="corner br" />
+        <div className="card-top">
+          <h3 className="quest-title">{item.title}</h3>
+          {item.outcome && <span className={"outcome-badge outcome-badge--" + item.outcome}>{outcomeLabel[item.outcome] || item.outcome}</span>}
+        </div>
+        {item.finding && <p className="item-finding">{item.finding}</p>}
+        <div className="card-meta">
+          {item.team_oids && item.team_oids.length > 0 && (
+            <AvatarStrip oids={item.team_oids} names={item.team_names} onMemberClick={onMemberClick} />
+          )}
+          <span className="log-time">{fullDate(item.closed_at || item.updated_at)}</span>
+        </div>
+      </button>
+    );
+  }
+  return (
+    <button className="quest-card parchment item-card item-card--finding"
+      onClick={() => onOpen(item)}
+      aria-label={"View session output: " + item.title}>
+      <span className="corner tl" /><span className="corner tr" /><span className="corner bl" /><span className="corner br" />
+      <div className="card-top">
+        <h3 className="quest-title">{item.title}</h3>
+        <span className="session-format-badge">Session</span>
+      </div>
+      {item.output && <p className="item-finding">{item.output}</p>}
+      <div className="card-meta">
+        <button className="name-link host-chip"
+          onClick={(e) => { e.stopPropagation(); onMemberClick && onMemberClick(item.host_oid); }}>
+          <Avatar oid={item.host_oid} name={item.host_name} cls="mini-avatar" />
+          {item.host_name}
+        </button>
+        <span className="log-time">{fullDate(item.updated_at)}</span>
+      </div>
+    </button>
+  );
+}
+
 /* ---------- modal shell w/ focus trap ---------- */
-function Modal({ title, sub, onClose, children, foot, labelId = "modal-title" }) {
+function Modal({ title, sub, onClose, children, foot, labelId }) {
+  const lid = labelId || "modal-title";
   const ref = useRef(null);
   const prevFocus = useRef(null);
 
@@ -233,14 +395,14 @@ function Modal({ title, sub, onClose, children, foot, labelId = "modal-title" })
 
   return (
     <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal parchment" role="dialog" aria-modal="true" aria-labelledby={labelId} ref={ref}>
+      <div className="modal parchment" role="dialog" aria-modal="true" aria-labelledby={lid} ref={ref}>
         <span className="corner tl" /><span className="corner tr" /><span className="corner bl" /><span className="corner br" />
         <div className="modal-head">
           <div>
-            <h2 id={labelId}>{title}</h2>
+            <h2 id={lid}>{title}</h2>
             {sub && <div className="sub">{sub}</div>}
           </div>
-          <button className="x-close" onClick={onClose} aria-label="Close dialog">✕</button>
+          <button className="x-close" onClick={onClose} aria-label="Close dialog">&#x2715;</button>
         </div>
         <div className="modal-body">{children}</div>
         {foot && <div className="modal-foot">{foot}</div>}
@@ -255,7 +417,7 @@ function Leaderboard({ board, ranks, meOid, maxXp, compact, onMemberClick }) {
   const top = maxXp || (rows[0] ? rows[0].xp : 1);
   const [animate, setAnimate] = useState(false);
   useEffect(() => { const t = setTimeout(() => setAnimate(true), 60); return () => clearTimeout(t); }, []);
-  if (rows.length === 0) return <p className="log-empty">No adventurers have earned XP yet. Close a quest to claim your place.</p>;
+  if (rows.length === 0) return <p className="log-empty">No one has earned XP yet.</p>;
   return (
     <ol className="leaderboard-list">
       {rows.map((r, i) => (
@@ -274,7 +436,7 @@ function Leaderboard({ board, ranks, meOid, maxXp, compact, onMemberClick }) {
             </div>
             <div className="lb-title">{rankFor(r.xp, ranks)}</div>
             {!compact && (
-              <div className="lb-bar-track" role="img" aria-label={`${r.xp} XP`}>
+              <div className="lb-bar-track" role="img" aria-label={r.xp + " XP"}>
                 <div className="lb-bar-fill" style={{ width: animate ? Math.max(4, (r.xp / top) * 100) + "%" : "0%" }} />
               </div>
             )}
@@ -286,7 +448,7 @@ function Leaderboard({ board, ranks, meOid, maxXp, compact, onMemberClick }) {
   );
 }
 
-/* ---------- quest complete celebration ---------- */
+/* ---------- quest/finding complete celebration ---------- */
 function QuestComplete({ xp, title, onDone }) {
   const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   useEffect(() => {
@@ -305,7 +467,7 @@ function QuestComplete({ xp, title, onDone }) {
         <span key={i} className="qc-spark" style={{ "--dx": s.dx, "--dy": s.dy, animationDelay: s.d + "s" }} />
       ))}
       <div className="qc-banner">
-        <p className="qc-title">Quest Complete!</p>
+        <p className="qc-title">Finding Shared!</p>
         <p className="qc-sub">+{xp} XP Awarded</p>
       </div>
     </div>
@@ -317,7 +479,7 @@ function Toast({ msg }) {
   return <div className="toast" role="status"><Icon.Check style={{ width: 16, height: 16 }} /> {msg}</div>;
 }
 
-/* ---------- member / top trumps card ---------- */
+/* ---------- member card ---------- */
 function MemberCard({ member, xp, ranks, isMe, onEdit, inModal }) {
   const skills = member.skills || {};
   const strengths = Object.keys(skills).filter((k) => skills[k] === "strength");
@@ -329,7 +491,6 @@ function MemberCard({ member, xp, ranks, isMe, onEdit, inModal }) {
 
   const inner = (
     <>
-      {/* ---- header ---- */}
       <div className="trump-header">
         <Avatar oid={member.oid} name={member.name} cls="trump-avatar" />
         <div className="trump-header-text">
@@ -347,7 +508,6 @@ function MemberCard({ member, xp, ranks, isMe, onEdit, inModal }) {
         )}
       </div>
 
-      {/* ---- skill bands ---- */}
       {strengths.length > 0 && (
         <div className="trump-band trump-band--strength">
           <div className="trump-band-label"><span className="trump-band-pip" />Core Strengths</div>
@@ -373,7 +533,6 @@ function MemberCard({ member, xp, ranks, isMe, onEdit, inModal }) {
         </div>
       )}
 
-      {/* ---- working with me ---- */}
       {hasAbout && (
         <div className="trump-band trump-band--about">
           <div className="trump-band-label"><span className="trump-band-pip" />Working With Me</div>
@@ -398,7 +557,6 @@ function MemberCard({ member, xp, ranks, isMe, onEdit, inModal }) {
         </div>
       )}
 
-      {/* ---- empty prompt ---- */}
       {empty && (
         <div className="trump-empty">
           {isMe ? (
@@ -412,7 +570,6 @@ function MemberCard({ member, xp, ranks, isMe, onEdit, inModal }) {
         </div>
       )}
 
-      {/* ---- contact footer ---- */}
       {(member.preferred_contact || member.availability) && (
         <div className="trump-footer">
           {member.preferred_contact && (
@@ -437,7 +594,7 @@ function MemberCard({ member, xp, ranks, isMe, onEdit, inModal }) {
   );
 }
 
-/* ---------- member card modal (click portrait / name anywhere) ---------- */
+/* ---------- member card modal ---------- */
 function MemberCardModal({ member, xp, ranks, isMe, onEdit, onClose }) {
   return (
     <Modal title={member.name} labelId="member-view-title"
@@ -451,12 +608,37 @@ function MemberCardModal({ member, xp, ranks, isMe, onEdit, onClose }) {
               </button></>
           : <button className="btn stone block" onClick={onClose}>Close</button>
       }>
-      {/* render card content without its outer shell inside the modal */}
       <MemberCard member={member} xp={xp} ranks={ranks} isMe={false} onEdit={onEdit} inModal />
     </Modal>
   );
 }
 
+/* ---------- "who can help" strip ---------- */
+function WhoCanHelp({ methodTags, allMembers, onMemberClick }) {
+  if (!methodTags || methodTags.length === 0 || !allMembers) return null;
+  const helpers = allMembers.filter((m) => {
+    const skills = m.skills || {};
+    return methodTags.some((tag) => skills[tag] === "strength" || skills[tag] === "mentor");
+  });
+  if (helpers.length === 0) return null;
+  return (
+    <div className="who-help">
+      <span className="who-help-label">Who can help?</span>
+      <div className="who-help-avatars">
+        {helpers.map((m) => (
+          <button key={m.oid} className="avatar-strip-btn" title={m.name}
+            onClick={() => onMemberClick && onMemberClick(m.oid)}>
+            <Avatar oid={m.oid} name={m.name} cls="mini-avatar" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 Object.assign(window, {
-  Icon, initials, Avatar, XpBadge, StatusBadge, QuestCard, Modal, Leaderboard, QuestComplete, Toast, questState, MemberCard, MemberCardModal,
+  Icon, initials, Avatar, XpBadge, StatusPill, MethodTags, AvatarStrip,
+  ExperimentCard, SessionCard, ChallengeCard, FindingCard,
+  Modal, Leaderboard, QuestComplete, Toast,
+  MemberCard, MemberCardModal, WhoCanHelp,
 });
