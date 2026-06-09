@@ -1429,3 +1429,54 @@ input, textarea, select { font-family: var(--font-body); }
 @media (prefers-reduced-motion: reduce) {
   .trump-card { transition: none; }
 }
+
+/* =========================================================
+   GUILD MEMBER FILTER CONTROLS
+   ========================================================= */
+.member-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.member-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+.member-search-icon {
+  position: absolute;
+  left: 10px; top: 50%;
+  transform: translateY(-50%);
+  width: 16px; height: 16px;
+  color: var(--parch-dim);
+  pointer-events: none;
+}
+.member-search {
+  padding-left: 34px !important;
+  padding-right: 32px !important;
+}
+.member-search-clear {
+  position: absolute;
+  right: 10px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--parch-dim);
+  line-height: 1;
+}
+.member-search-clear:hover { color: var(--amber); }
+
+.member-skill-tabs { flex-shrink: 0; }
+
+/* active state tints for skill filter tabs */
+.skill-tab--strength { color: var(--trump-s-hi) !important; border-color: var(--trump-s-hi) !important; background: rgba(26,74,26,.35) !important; }
+.skill-tab--mentor   { color: var(--trump-m-hi) !important; border-color: var(--trump-m-hi) !important; background: rgba(15,46,74,.35) !important; }
+.skill-tab--stretch  { color: var(--trump-x-hi) !important; border-color: var(--trump-x-hi) !important; background: rgba(74,46,0,.35) !important; }
+
+@media (max-width: 768px) {
+  .member-controls { flex-direction: column; align-items: stretch; }
+  .member-search-wrap { min-width: 0; }
+  .member-skill-tabs { width: 100%; }
+  .member-skill-tabs .tab { flex: 1; text-align: center; font-size: 11px; padding: 10px 4px; }
+}

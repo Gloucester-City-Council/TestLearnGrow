@@ -128,6 +128,92 @@ function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, o
   );
 }
 
+/* ============ GUILD MEMBERS SECTION ============ */
+function MembersSection({ allMembers, board, config, user, onEdit }) {
+  const [search, setSearch] = uS("");
+  const [skillFilter, setSkillFilter] = uS("any"); // any | strength | mentor | stretch
+
+  const SKILL_FILTERS = [
+    { key: "any",      label: "All Members" },
+    { key: "strength", label: "Strengths" },
+    { key: "mentor",   label: "Can Mentor" },
+    { key: "stretch",  label: "Stretch Goals" },
+  ];
+
+  const filtered = uM(() => {
+    const q = search.trim().toLowerCase();
+    return allMembers.filter((m) => {
+      if (q) {
+        const inName = m.name.toLowerCase().includes(q);
+        const inRole = (m.role_team || "").toLowerCase().includes(q);
+        const inSkills = Object.keys(m.skills || {}).some((tool) => tool.toLowerCase().includes(q));
+        if (!inName && !inRole && !inSkills) return false;
+      }
+      if (skillFilter !== "any") {
+        const typeMap = { strength: "strength", mentor: "mentor", stretch: "stretch" };
+        const wanted = typeMap[skillFilter];
+        const hasType = Object.values(m.skills || {}).some((v) => v === wanted);
+        if (!hasType) return false;
+      }
+      return true;
+    });
+  }, [allMembers, search, skillFilter]);
+
+  return (
+    <>
+      <p className="flavour">The Adventurers of the South West</p>
+      <div className="divider"><span className="rule" /><Icon.Shield /><span className="rule r" /></div>
+
+      <div className="member-controls">
+        <div className="member-search-wrap">
+          <Icon.Search className="member-search-icon" />
+          <input
+            className="input member-search"
+            placeholder="Search by name, role or skill…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Search members"
+          />
+          {search && (
+            <button className="member-search-clear linklike" onClick={() => setSearch("")} aria-label="Clear search">✕</button>
+          )}
+        </div>
+        <div className="tabs member-skill-tabs" role="tablist" aria-label="Filter by skill type">
+          {SKILL_FILTERS.map(({ key, label }) => (
+            <button key={key} role="tab" aria-selected={skillFilter === key}
+              className={"tab member-skill-tab" + (skillFilter === key ? " skill-tab--" + key : "")}
+              onClick={() => setSkillFilter(key)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="empty">
+          <Icon.Shield />
+          <h3>No members found</h3>
+          <p>Try adjusting your search or filter.</p>
+        </div>
+      ) : (
+        <div className="trump-grid">
+          {filtered.map((m) => (
+            <MemberCard
+              key={m.oid}
+              member={m}
+              xp={(board[m.oid] || {}).xp || 0}
+              ranks={config.xp_ranks}
+              isMe={m.oid === user.oid}
+              onEdit={onEdit}
+            />
+          ))}
+        </div>
+      )}
+      <div style={{ height: 40 }} />
+    </>
+  );
+}
+
 /* ============ MAIN APP ============ */
 function App() {
   const [loading, setLoading] = uS(true);
@@ -395,23 +481,13 @@ function App() {
 
         {/* ======== GUILD MEMBERS SECTION ======== */}
         {activeSection === "members" && (
-          <>
-            <p className="flavour">The Adventurers of the South West</p>
-            <div className="divider"><span className="rule" /><Icon.Shield /><span className="rule r" /></div>
-            <div className="trump-grid">
-              {allMembers.map((m) => (
-                <MemberCard
-                  key={m.oid}
-                  member={m}
-                  xp={(board[m.oid] || {}).xp || 0}
-                  ranks={config.xp_ranks}
-                  isMe={m.oid === user.oid}
-                  onEdit={() => setEditingMember(true)}
-                />
-              ))}
-            </div>
-            <div style={{ height: 40 }} />
-          </>
+          <MembersSection
+            allMembers={allMembers}
+            board={board}
+            config={config}
+            user={user}
+            onEdit={() => setEditingMember(true)}
+          />
         )}
 
       </main>
