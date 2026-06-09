@@ -1,7 +1,7 @@
 /* =========================================================
    APP part 2 — quest detail, main App, mount
    ========================================================= */
-const { useState: uS, useEffect: uE, useRef: uR } = React;
+const { useState: uS, useEffect: uE, useRef: uR, useMemo: uM } = React;
 
 /* ============ QUEST DETAIL (modal) ============ */
 function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, onClaim, onRelease, onClose }) {
@@ -142,6 +142,9 @@ function App() {
   const [mobileView, setMobileView] = uS("board"); // board | leaderboard
   const [celebrate, setCelebrate] = uS(null);
   const [toast, setToast] = uS(null);
+  const [activeSection, setActiveSection] = uS("board");
+  const [members, setMembers] = uS([]);
+  const [editingMember, setEditingMember] = uS(false);
 
   /* ---- mount: load all data; seed once if blob/localStorage is empty ---- */
   uE(() => {
@@ -155,8 +158,9 @@ function App() {
         lb = seedLeaderboard(qs);
         await Store.saveLeaderboard(lb);
       }
-      const sess = await Store.get("sw-session");
+      const [mbrs, sess] = await Promise.all([Store.loadMembers(), Store.get("sw-session")]);
       setConfig(DEFAULT_CONFIG); setSchema(DEFAULT_QUEST_SCHEMA); setQuests(qs); setBoard(lb);
+      setMembers(mbrs || []);
       if (sess) setUser(sess);
       setLoading(false);
     })();
@@ -165,9 +169,13 @@ function App() {
   /* ---- poll every 30 s for updates from other users ---- */
   uE(() => {
     const id = setInterval(async () => {
-      const { quests: qs, leaderboard: lb } = await Store.loadAll();
+      const [{ quests: qs, leaderboard: lb }, mbrs] = await Promise.all([
+        Store.loadAll(),
+        Store.loadMembers(),
+      ]);
       if (qs) setQuests(qs);
       if (lb) setBoard(lb);
+      if (mbrs) setMembers(mbrs);
     }, 30000);
     return () => clearInterval(id);
   }, []);
@@ -241,6 +249,33 @@ function App() {
     setCelebrate({ xp: quest.xp_reward, title: quest.title });
   };
 
+  const saveMember = (updated) => {
+    setMembers((ms) => {
+      const idx = ms.findIndex((m) => m.oid === updated.oid);
+      return idx >= 0 ? ms.map((m) => m.oid === updated.oid ? updated : m) : [...ms, updated];
+    });
+    Store.saveMember(updated);
+    setEditingMember(false);
+    showToast("Guild card updated!");
+  };
+
+  /* ---- computed members list — synthesises blank cards for anyone not yet saved ---- */
+  const allMembers = uM(() => {
+    const byOid = {};
+    (members || []).forEach((m) => { byOid[m.oid] = m; });
+    const oids = new Set([
+      ...MOCK_ACCOUNTS.map((a) => a.oid),
+      ...Object.keys(board),
+    ]);
+    return Array.from(oids).map((oid) => byOid[oid] || {
+      oid,
+      name: MOCK_ACCOUNTS.find((a) => a.oid === oid)?.name || board[oid]?.name || "Adventurer",
+      role_team: "", skills: {}, what_to_know: "", how_i_work_best: "", how_to_get_best: "",
+      preferred_contact: MOCK_ACCOUNTS.find((a) => a.oid === oid)?.username || "",
+      availability: "", updated_at: null,
+    });
+  }, [members, board]);
+
   if (loading) {
     return <div className="signin-stage"><div style={{ textAlign: "center", color: "var(--gold)", fontFamily: "var(--font-display)" }}>
       <div className="crest-lg" style={{ color: "var(--amber)" }}><Icon.Crest /></div>
@@ -264,7 +299,8 @@ function App() {
   const myXp = board[user.oid] ? board[user.oid].xp : 0;
   const maxXp = Math.max(1, ...Object.values(board).map((r) => r.xp));
 
-  const showLeaderboardMobile = config.features.leaderboard && mobileView === "leaderboard";
+  const showLeaderboardMobile = config.features.leaderboard && mobileView === "leaderboard" && activeSection === "board";
+  const myMember = allMembers.find((m) => m.oid === user.oid) || null;
 
   return (
     <div className="app-shell">
@@ -285,63 +321,99 @@ function App() {
             <button className="linklike" onClick={signOut}>Sign out</button>
           </div>
         </div>
+        {/* ---- section nav ---- */}
+        <nav className="section-nav" aria-label="Main sections">
+          <button className={"sn-btn" + (activeSection === "board" ? " active" : "")}
+            onClick={() => setActiveSection("board")}>
+            <Icon.Board style={{ width: 16, height: 16 }} /> Quest Board
+          </button>
+          <button className={"sn-btn" + (activeSection === "members" ? " active" : "")}
+            onClick={() => setActiveSection("members")}>
+            <Icon.Shield style={{ width: 16, height: 16 }} /> Guild Members
+          </button>
+        </nav>
       </header>
 
       <main className="wrap" style={{ flex: 1 }}>
-        {/* mobile leaderboard view */}
-        {showLeaderboardMobile ? (
-          <section aria-label="Leaderboard">
-            <p className="flavour">Hall of Adventurers</p>
-            <div className="divider"><span className="rule" /><Icon.Trophy /><span className="rule r" /></div>
-            <Leaderboard board={board} ranks={config.xp_ranks} meOid={user.oid} maxXp={maxXp} />
-            <div style={{ height: 24 }} />
-          </section>
-        ) : (
+
+        {/* ======== QUEST BOARD SECTION ======== */}
+        {activeSection === "board" && (
+          showLeaderboardMobile ? (
+            <section aria-label="Leaderboard">
+              <p className="flavour">Hall of Adventurers</p>
+              <div className="divider"><span className="rule" /><Icon.Trophy /><span className="rule r" /></div>
+              <Leaderboard board={board} ranks={config.xp_ranks} meOid={user.oid} maxXp={maxXp} />
+              <div style={{ height: 24 }} />
+            </section>
+          ) : (
+            <>
+              <p className="flavour">{config.flavour_text}</p>
+              <div className="divider"><span className="rule" /><Icon.Gem /><span className="rule r" /></div>
+
+              <div className="controls">
+                <div className="tabs" role="tablist" aria-label="Filter quests">
+                  {FILTERS.map((f) => (
+                    <button key={f} role="tab" aria-selected={filter === f} className="tab"
+                      onClick={() => setFilter(f)}>
+                      {f}<span className="count">{counts[f]}</span>
+                    </button>
+                  ))}
+                </div>
+                <span className="spacer" />
+                <button className="btn post-btn" onClick={() => setPosting(true)}>
+                  <Icon.Plus style={{ width: 16, height: 16 }} /> Post New Quest
+                </button>
+              </div>
+
+              <div className={"board-layout" + (config.features.leaderboard ? " with-side" : "")}>
+                <div className="quest-grid">
+                  {shown.length === 0 ? (
+                    <div className="empty">
+                      <Icon.Scroll />
+                      <h3>No quests here yet</h3>
+                      <p>{filter === "COMPLETED" ? "No quests have been sealed. The glory awaits."
+                        : filter === "AVAILABLE" ? "No unclaimed bounties right now. Post one for the guild."
+                        : filter === "CLAIMED" ? "Nothing is in progress. Claim a bounty to begin."
+                        : "The board is quiet. Be the one to post the first quest."}</p>
+                    </div>
+                  ) : shown.map((q) => (
+                    <QuestCard key={q.quest_id} quest={q} onOpen={(qq) => setOpenQuestId(qq.quest_id)} />
+                  ))}
+                </div>
+
+                {config.features.leaderboard && (
+                  <aside className="side-panel" aria-label="Leaderboard">
+                    <h2><Icon.Trophy /> Leaderboard</h2>
+                    <p className="sp-sub">Ranked by total XP earned</p>
+                    <Leaderboard board={board} ranks={config.xp_ranks} meOid={user.oid} maxXp={maxXp} compact />
+                  </aside>
+                )}
+              </div>
+            </>
+          )
+        )}
+
+        {/* ======== GUILD MEMBERS SECTION ======== */}
+        {activeSection === "members" && (
           <>
-            <p className="flavour">{config.flavour_text}</p>
-            <div className="divider"><span className="rule" /><Icon.Gem /><span className="rule r" /></div>
-
-            <div className="controls">
-              <div className="tabs" role="tablist" aria-label="Filter quests">
-                {FILTERS.map((f) => (
-                  <button key={f} role="tab" aria-selected={filter === f} className="tab"
-                    onClick={() => setFilter(f)}>
-                    {f}<span className="count">{counts[f]}</span>
-                  </button>
-                ))}
-              </div>
-              <span className="spacer" />
-              <button className="btn post-btn" onClick={() => setPosting(true)}>
-                <Icon.Plus style={{ width: 16, height: 16 }} /> Post New Quest
-              </button>
+            <p className="flavour">The Adventurers of the South West</p>
+            <div className="divider"><span className="rule" /><Icon.Shield /><span className="rule r" /></div>
+            <div className="trump-grid">
+              {allMembers.map((m) => (
+                <MemberCard
+                  key={m.oid}
+                  member={m}
+                  xp={(board[m.oid] || {}).xp || 0}
+                  ranks={config.xp_ranks}
+                  isMe={m.oid === user.oid}
+                  onEdit={() => setEditingMember(true)}
+                />
+              ))}
             </div>
-
-            <div className={"board-layout" + (config.features.leaderboard ? " with-side" : "")}>
-              <div className="quest-grid">
-                {shown.length === 0 ? (
-                  <div className="empty">
-                    <Icon.Scroll />
-                    <h3>No quests here yet</h3>
-                    <p>{filter === "COMPLETED" ? "No quests have been sealed. The glory awaits."
-                      : filter === "AVAILABLE" ? "No unclaimed bounties right now. Post one for the guild."
-                      : filter === "CLAIMED" ? "Nothing is in progress. Claim a bounty to begin."
-                      : "The board is quiet. Be the one to post the first quest."}</p>
-                  </div>
-                ) : shown.map((q) => (
-                  <QuestCard key={q.quest_id} quest={q} onOpen={(qq) => setOpenQuestId(qq.quest_id)} />
-                ))}
-              </div>
-
-              {config.features.leaderboard && (
-                <aside className="side-panel" aria-label="Leaderboard">
-                  <h2><Icon.Trophy /> Leaderboard</h2>
-                  <p className="sp-sub">Ranked by total XP earned</p>
-                  <Leaderboard board={board} ranks={config.xp_ranks} meOid={user.oid} maxXp={maxXp} compact />
-                </aside>
-              )}
-            </div>
+            <div style={{ height: 40 }} />
           </>
         )}
+
       </main>
 
       {/* ---- footer ---- */}
@@ -353,17 +425,23 @@ function App() {
         <span>Quest Board</span>
       </footer>
 
-      {/* ---- mobile bottom nav (leaderboard as tab) ---- */}
-      {config.features.leaderboard && (
-        <nav className="bottom-nav" aria-label="Sections">
-          <button className="bn-btn" aria-current={mobileView === "board"} onClick={() => setMobileView("board")}>
-            <Icon.Board /> Board
+      {/* ---- mobile bottom nav ---- */}
+      <nav className="bottom-nav" aria-label="Sections">
+        <button className="bn-btn" aria-current={activeSection === "board" && mobileView === "board"}
+          onClick={() => { setActiveSection("board"); setMobileView("board"); }}>
+          <Icon.Board /> Board
+        </button>
+        {config.features.leaderboard && (
+          <button className="bn-btn" aria-current={activeSection === "board" && mobileView === "leaderboard"}
+            onClick={() => { setActiveSection("board"); setMobileView("leaderboard"); }}>
+            <Icon.Trophy /> Ranks
           </button>
-          <button className="bn-btn" aria-current={mobileView === "leaderboard"} onClick={() => setMobileView("leaderboard")}>
-            <Icon.Trophy /> Leaderboard
-          </button>
-        </nav>
-      )}
+        )}
+        <button className="bn-btn" aria-current={activeSection === "members"}
+          onClick={() => setActiveSection("members")}>
+          <Icon.Shield /> Guild
+        </button>
+      </nav>
 
       {/* ---- modals + overlays ---- */}
       {openQuest && (
@@ -374,6 +452,9 @@ function App() {
       {posting && (
         <PostQuest schema={schema} user={user} claimable={config.features.claimable}
           onClose={() => setPosting(false)} onCreate={createQuest} />
+      )}
+      {editingMember && myMember && (
+        <EditMemberCard member={myMember} onClose={() => setEditingMember(false)} onSave={saveMember} />
       )}
       {celebrate && (
         <QuestComplete xp={celebrate.xp} title={celebrate.title} onDone={() => setCelebrate(null)} />
