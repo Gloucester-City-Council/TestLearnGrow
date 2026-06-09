@@ -1072,7 +1072,7 @@ input, textarea, select { font-family: var(--font-body); }
 
   /* full-screen modals on mobile — overlay is fixed/still, body scrolls */
   .overlay { padding: 0; align-items: stretch; overflow: hidden; backdrop-filter: none; }
-  .modal { max-width: none; height: 100dvh; border: 0; background: var(--card); display: flex; flex-direction: column; }
+  .modal { max-width: none; height: 100dvh; border: 0; background: var(--card); display: flex; flex-direction: column; overflow: hidden; width: 100%; }
   .modal .corner { display: none; }
   .modal-head { flex-shrink: 0; }
   .modal-body { flex: 1; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
