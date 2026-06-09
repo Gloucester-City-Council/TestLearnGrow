@@ -4,7 +4,7 @@
 const { useState: uS, useEffect: uE, useRef: uR, useMemo: uM } = React;
 
 /* ============ QUEST DETAIL (modal) ============ */
-function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, onClaim, onRelease, onClose }) {
+function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, onClaim, onRelease, onClose, onMemberClick }) {
   const state = questState(quest);
   const done = state === "completed";
   const available = state === "available";
@@ -61,9 +61,21 @@ function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, o
 
       <div className="card-meta" style={{ marginBottom: 16, paddingTop: 0 }}>
         {available ? (
-          <span className="poster" style={{ fontSize: 14 }}>Posted by {quest.posted_by_name} · {timeAgo(quest.created_at)}</span>
+          <span className="poster" style={{ fontSize: 14 }}>Posted by{" "}
+            <button className="name-link" onClick={() => onMemberClick && onMemberClick(quest.posted_by_oid)}>{quest.posted_by_name}</button>
+            {" "}· {timeAgo(quest.created_at)}
+          </span>
         ) : (
-          <span className="owner"><Avatar oid={quest.owner_oid} name={quest.owner_name} cls="mini-avatar" />{quest.owner_name}{quest.posted_by_oid && quest.posted_by_oid !== quest.owner_oid && <span style={{ color: "var(--ink-faint)", fontSize: 13 }}>&nbsp;· posted by {quest.posted_by_name}</span>}</span>
+          <span className="owner">
+            <button className="name-link owner-link" onClick={() => onMemberClick && onMemberClick(quest.owner_oid)}>
+              <Avatar oid={quest.owner_oid} name={quest.owner_name} cls="mini-avatar" />{quest.owner_name}
+            </button>
+            {quest.posted_by_oid && quest.posted_by_oid !== quest.owner_oid && (
+              <span style={{ color: "var(--ink-faint)", fontSize: 13 }}>&nbsp;· posted by{" "}
+                <button className="name-link" onClick={() => onMemberClick && onMemberClick(quest.posted_by_oid)}>{quest.posted_by_name}</button>
+              </span>
+            )}
+          </span>
         )}
         <span style={{ color: "var(--muted)", fontSize: 14 }}>
           {done ? `Completed ${fullDate(quest.closed_at)}` : available ? "Awaiting a hero" : `Claimed ${timeAgo(quest.claimed_at || quest.created_at)}`}
@@ -96,7 +108,7 @@ function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, o
               {quest.updates.map((u) => (
                 <li className="log-item" key={u.id}>
                   <div className="log-meta">
-                    <span className="log-author">{u.author_name}</span>
+                    <button className="name-link log-author" onClick={() => onMemberClick && onMemberClick(u.author_oid)}>{u.author_name}</button>
                     <span className="log-time">{timeAgo(u.timestamp)}</span>
                   </div>
                   <p className="log-text">{u.text}</p>
@@ -317,6 +329,7 @@ function App() {
   const [activeSection, setActiveSection] = uS("board");
   const [members, setMembers] = uS([]);
   const [editingMember, setEditingMember] = uS(false);
+  const [viewingMember, setViewingMember] = uS(null); // oid | null
 
   /* ---- mount: load all data; seed once if blob/localStorage is empty ---- */
   uE(() => {
@@ -485,9 +498,11 @@ function App() {
             <p className="season-label">{config.season_label}</p>
           </div>
           <div className="user-chip">
-            <Avatar oid={user.oid} name={user.name} cls="avatar" />
+            <button className="user-avatar-btn" onClick={() => setViewingMember(user.oid)} title="View my guild card">
+              <Avatar oid={user.oid} name={user.name} cls="avatar" />
+            </button>
             <span className="user-meta">
-              <span className="user-name">{user.name}</span>
+              <button className="name-link user-name" onClick={() => setViewingMember(user.oid)}>{user.name}</button>
               <span className="user-rank">{rankFor(myXp, config.xp_ranks)} · {myXp.toLocaleString()} XP</span>
             </span>
             <button className="linklike" onClick={signOut}>Sign out</button>
@@ -514,7 +529,7 @@ function App() {
             <section aria-label="Leaderboard">
               <p className="flavour">Hall of Adventurers</p>
               <div className="divider"><span className="rule" /><Icon.Trophy /><span className="rule r" /></div>
-              <Leaderboard board={board} ranks={config.xp_ranks} meOid={user.oid} maxXp={maxXp} />
+              <Leaderboard board={board} ranks={config.xp_ranks} meOid={user.oid} maxXp={maxXp} onMemberClick={setViewingMember} />
               <div style={{ height: 24 }} />
             </section>
           ) : (
@@ -549,7 +564,7 @@ function App() {
                         : "The board is quiet. Be the one to post the first quest."}</p>
                     </div>
                   ) : shown.map((q) => (
-                    <QuestCard key={q.quest_id} quest={q} onOpen={(qq) => setOpenQuestId(qq.quest_id)} />
+                    <QuestCard key={q.quest_id} quest={q} onOpen={(qq) => setOpenQuestId(qq.quest_id)} onMemberClick={setViewingMember} />
                   ))}
                 </div>
 
@@ -557,7 +572,7 @@ function App() {
                   <aside className="side-panel" aria-label="Leaderboard">
                     <h2><Icon.Trophy /> Leaderboard</h2>
                     <p className="sp-sub">Ranked by total XP earned</p>
-                    <Leaderboard board={board} ranks={config.xp_ranks} meOid={user.oid} maxXp={maxXp} compact />
+                    <Leaderboard board={board} ranks={config.xp_ranks} meOid={user.oid} maxXp={maxXp} compact onMemberClick={setViewingMember} />
                   </aside>
                 )}
               </div>
@@ -609,7 +624,7 @@ function App() {
       {openQuest && (
         <QuestDetail quest={openQuest} user={user} schema={schema} config={config}
           onAddUpdate={addUpdate} onCloseQuest={closeQuest} onClaim={claimQuest} onRelease={releaseQuest}
-          onClose={() => setOpenQuestId(null)} />
+          onClose={() => setOpenQuestId(null)} onMemberClick={setViewingMember} />
       )}
       {posting && (
         <PostQuest schema={schema} user={user} claimable={config.features.claimable}
@@ -618,6 +633,20 @@ function App() {
       {editingMember && myMember && (
         <EditMemberCard member={myMember} onClose={() => setEditingMember(false)} onSave={saveMember} />
       )}
+      {viewingMember && (() => {
+        const vm = allMembers.find((m) => m.oid === viewingMember);
+        if (!vm) return null;
+        return (
+          <MemberCardModal
+            member={vm}
+            xp={(board[vm.oid] || {}).xp || 0}
+            ranks={config.xp_ranks}
+            isMe={vm.oid === user.oid}
+            onEdit={() => { setViewingMember(null); setEditingMember(true); }}
+            onClose={() => setViewingMember(null)}
+          />
+        );
+      })()}
       {celebrate && (
         <QuestComplete xp={celebrate.xp} title={celebrate.title} onDone={() => setCelebrate(null)} />
       )}

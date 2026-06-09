@@ -152,11 +152,12 @@ function StatusBadge({ quest }) {
 }
 
 /* ---------- quest card ---------- */
-function QuestCard({ quest, onOpen }) {
+function QuestCard({ quest, onOpen, onMemberClick }) {
   const s = questState(quest);
   const done = s === "completed";
   const available = s === "available";
   const stateText = done ? "Completed" : available ? "Unclaimed — awaiting a hero" : "In progress";
+  const memberClick = (oid, e) => { if (onMemberClick && oid) { e.stopPropagation(); onMemberClick(oid); } };
   return (
     <button className={"quest-card parchment" + (done ? " completed" : "") + (available ? " available" : "")}
       onClick={() => onOpen(quest)}
@@ -171,10 +172,23 @@ function QuestCard({ quest, onOpen }) {
         {available ? (
           <>
             <span className="claim-cta"><Icon.Hand /> Claim this quest</span>
-            <span className="poster">Posted by {quest.posted_by_name}</span>
+            <span className="poster">Posted by
+              {" "}<span role="button" tabIndex="0" className="name-link"
+                onClick={(e) => memberClick(quest.posted_by_oid, e)}
+                onKeyDown={(e) => e.key === "Enter" && memberClick(quest.posted_by_oid, e)}>
+                {quest.posted_by_name}
+              </span>
+            </span>
           </>
         ) : (
-          <span className="owner"><Avatar oid={quest.owner_oid} name={quest.owner_name} cls="mini-avatar" />{quest.owner_name}</span>
+          <span className="owner">
+            <span role="button" tabIndex="0" className="name-link owner-link"
+              onClick={(e) => memberClick(quest.owner_oid, e)}
+              onKeyDown={(e) => e.key === "Enter" && memberClick(quest.owner_oid, e)}
+              title={"View " + quest.owner_name + "'s guild card"}>
+              <Avatar oid={quest.owner_oid} name={quest.owner_name} cls="mini-avatar" />{quest.owner_name}
+            </span>
+          </span>
         )}
         <XpBadge amount={quest.xp_reward} />
         {quest.updates && quest.updates.length > 0 && (
@@ -236,7 +250,7 @@ function Modal({ title, sub, onClose, children, foot, labelId = "modal-title" })
 }
 
 /* ---------- leaderboard rows ---------- */
-function Leaderboard({ board, ranks, meOid, maxXp, compact }) {
+function Leaderboard({ board, ranks, meOid, maxXp, compact, onMemberClick }) {
   const rows = Object.values(board).sort((a, b) => b.xp - a.xp);
   const top = maxXp || (rows[0] ? rows[0].xp : 1);
   const [animate, setAnimate] = useState(false);
@@ -247,10 +261,15 @@ function Leaderboard({ board, ranks, meOid, maxXp, compact }) {
       {rows.map((r, i) => (
         <li key={r.oid} className={"lb-row" + (r.oid === meOid ? " me" : "")}>
           <div className="lb-rank">{i + 1}</div>
-          <Avatar oid={r.oid} name={r.name} cls="lb-avatar" />
+          <button className="lb-member-btn" onClick={() => onMemberClick && onMemberClick(r.oid)}
+            title={"View " + r.name + "'s guild card"} disabled={!onMemberClick}>
+            <Avatar oid={r.oid} name={r.name} cls="lb-avatar" />
+          </button>
           <div className="lb-main">
             <div className="lb-name">
-              {r.name}
+              <button className="name-link" onClick={() => onMemberClick && onMemberClick(r.oid)} disabled={!onMemberClick}>
+                {r.name}
+              </button>
               {r.oid === meOid && <span className="you-tag">YOU</span>}
             </div>
             <div className="lb-title">{rankFor(r.xp, ranks)}</div>
@@ -299,7 +318,7 @@ function Toast({ msg }) {
 }
 
 /* ---------- member / top trumps card ---------- */
-function MemberCard({ member, xp, ranks, isMe, onEdit }) {
+function MemberCard({ member, xp, ranks, isMe, onEdit, inModal }) {
   const skills = member.skills || {};
   const strengths = Object.keys(skills).filter((k) => skills[k] === "strength");
   const mentors   = Object.keys(skills).filter((k) => skills[k] === "mentor");
@@ -308,10 +327,8 @@ function MemberCard({ member, xp, ranks, isMe, onEdit }) {
   const hasAbout  = member.what_to_know || member.how_i_work_best || member.how_to_get_best;
   const empty     = !hasSkills && !hasAbout && !member.role_team;
 
-  return (
-    <div className={"trump-card parchment" + (empty ? " trump-card--empty" : "")}>
-      <span className="corner tl" /><span className="corner tr" /><span className="corner bl" /><span className="corner br" />
-
+  const inner = (
+    <>
       {/* ---- header ---- */}
       <div className="trump-header">
         <Avatar oid={member.oid} name={member.name} cls="trump-avatar" />
@@ -408,10 +425,38 @@ function MemberCard({ member, xp, ranks, isMe, onEdit }) {
           {member.availability && <span>{member.availability}</span>}
         </div>
       )}
+    </>
+  );
+
+  if (inModal) return inner;
+  return (
+    <div className={"trump-card parchment" + (empty ? " trump-card--empty" : "")}>
+      <span className="corner tl" /><span className="corner tr" /><span className="corner bl" /><span className="corner br" />
+      {inner}
     </div>
   );
 }
 
+/* ---------- member card modal (click portrait / name anywhere) ---------- */
+function MemberCardModal({ member, xp, ranks, isMe, onEdit, onClose }) {
+  return (
+    <Modal title={member.name} labelId="member-view-title"
+      sub={member.role_team && <span style={{ color: "var(--muted)", fontSize: 15 }}>{member.role_team}</span>}
+      onClose={onClose}
+      foot={
+        isMe
+          ? <><button className="btn stone" onClick={onClose}>Close</button>
+              <button className="btn" onClick={() => { onClose(); onEdit(); }}>
+                <Icon.Edit style={{ width: 15, height: 15 }} /> Edit My Card
+              </button></>
+          : <button className="btn stone block" onClick={onClose}>Close</button>
+      }>
+      {/* render card content without its outer shell inside the modal */}
+      <MemberCard member={member} xp={xp} ranks={ranks} isMe={false} onEdit={onEdit} inModal />
+    </Modal>
+  );
+}
+
 Object.assign(window, {
-  Icon, initials, Avatar, XpBadge, StatusBadge, QuestCard, Modal, Leaderboard, QuestComplete, Toast, questState, MemberCard,
+  Icon, initials, Avatar, XpBadge, StatusBadge, QuestCard, Modal, Leaderboard, QuestComplete, Toast, questState, MemberCard, MemberCardModal,
 });

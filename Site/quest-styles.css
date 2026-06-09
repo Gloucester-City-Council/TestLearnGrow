@@ -1540,3 +1540,61 @@ input, textarea, select { font-family: var(--font-body); }
   text-underline-offset: 2px;
 }
 .trump-contact-link:hover { color: var(--amber); }
+
+/* =========================================================
+   CLICKABLE NAMES / PORTRAITS — view guild card from anywhere
+   ========================================================= */
+.name-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: transparent;
+  transition: color .12s, text-decoration-color .12s;
+  display: inline;
+}
+.name-link:hover, .name-link:focus-visible {
+  color: var(--amber);
+  text-decoration-color: var(--amber);
+  outline: none;
+}
+/* owner-link wraps avatar + name inline */
+.owner-link {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 7px;
+}
+/* leaderboard avatar click target */
+.lb-member-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  transition: opacity .12s, box-shadow .12s;
+}
+.lb-member-btn:hover { opacity: .85; box-shadow: 0 0 0 2px var(--amber); border-radius: 50%; }
+.lb-member-btn:disabled { cursor: default; }
+/* banner avatar click */
+.user-avatar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 2px;
+  display: flex;
+  transition: opacity .12s;
+}
+.user-avatar-btn:hover { opacity: .85; }
+/* name-link as .user-name keeps the existing style */
+button.user-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--parch);
+}
