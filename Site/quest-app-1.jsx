@@ -126,7 +126,7 @@ function PostExperiment({ user, challengeId, onClose, onCreate }) {
         <Icon.Lock />
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           <Avatar oid={user.oid} name={user.name} cls="mini-avatar" />
-          Posting as <strong style={{ color: "var(--ink)" }}>{user.name}</strong>
+          Posting as <strong style={{ color: "var(--amber)" }}>{user.name}</strong>
         </span>
         <span className="lf-label">From session</span>
       </div>
@@ -262,7 +262,7 @@ function PostSession({ user, challengeId, onClose, onCreate }) {
         <Icon.Lock />
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           <Avatar oid={user.oid} name={user.name} cls="mini-avatar" />
-          Hosting as <strong style={{ color: "var(--ink)" }}>{user.name}</strong>
+          Hosting as <strong style={{ color: "var(--amber)" }}>{user.name}</strong>
         </span>
         <span className="lf-label">From session</span>
       </div>
@@ -344,7 +344,7 @@ function PostChallenge({ user, onClose, onCreate }) {
         <Icon.Lock />
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           <Avatar oid={user.oid} name={user.name} cls="mini-avatar" />
-          Posting as <strong style={{ color: "var(--ink)" }}>{user.name}</strong>
+          Posting as <strong style={{ color: "var(--amber)" }}>{user.name}</strong>
         </span>
         <span className="lf-label">From session</span>
       </div>
