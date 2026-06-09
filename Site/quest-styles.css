@@ -1957,3 +1957,101 @@ button.user-name {
   .board-layout.with-side { grid-template-columns: 1fr 320px; align-items: start; }
 }
 
+
+/* =========================================================
+   BOARD INTRO STRIP
+   ========================================================= */
+.board-intro {
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  padding: 12px 18px;
+  margin-bottom: 20px;
+}
+.board-intro-text {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--parch-dim);
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* =========================================================
+   CARD STATS STRIP — difficulty dots, effort, deadline
+   ========================================================= */
+.card-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 3px 0 6px;
+}
+
+.difficulty-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.difficulty-pip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--ink-dim);
+  background: transparent;
+  display: inline-block;
+}
+.difficulty-pip--filled {
+  background: var(--ink-dim);
+}
+
+.effort-tag {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--ink-faint);
+  padding: 1px 6px;
+  border: 1px solid var(--scroll-line);
+  background: rgba(255,255,255,.06);
+  white-space: nowrap;
+}
+
+.deadline-tag {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--ink-faint);
+  padding: 1px 6px;
+  border: 1px solid var(--scroll-line);
+  background: rgba(255,255,255,.06);
+  white-space: nowrap;
+}
+.deadline-tag--overdue {
+  color: var(--danger-hi);
+  border-color: var(--danger);
+  background: rgba(200,85,42,.1);
+}
+
+/* =========================================================
+   DIFFICULTY PICKER (in PostExperiment form)
+   ========================================================= */
+.difficulty-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+.diff-btn {
+  font-family: var(--font-display);
+  font-size: 12px;
+  padding: 5px 12px;
+  border: 1px solid var(--border-lt);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background .1s, border-color .1s, color .1s;
+}
+.diff-btn:hover { border-color: var(--amber); color: var(--amber); }
+.diff-btn.on {
+  background: rgba(245,200,105,.15);
+  border-color: var(--amber);
+  color: var(--amber);
+}

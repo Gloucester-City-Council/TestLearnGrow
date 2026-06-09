@@ -67,14 +67,26 @@ function ExperimentDetail({ item, user, allMembers, onAddUpdate, onAdvanceStatus
           </button>
         </>
       ) : (
-        <button className="btn" style={{ flex: 1 }} onClick={() => setConfirmShare(true)}>
-          <Icon.Check style={{ width: 16, height: 16 }} /> Share Finding &amp; Award XP
-        </button>
+        <>
+          <button className="btn stone" onClick={() => onAdvanceStatus(item.item_id, "parked")} title="Park this experiment — it stalled, not failed">
+            Park
+          </button>
+          <button className="btn" style={{ flex: 1 }} onClick={() => setConfirmShare(true)}>
+            <Icon.Check style={{ width: 16, height: 16 }} /> Share Finding &amp; Award XP
+          </button>
+        </>
       )
     ) : nextStatus ? (
-      <button className="btn" style={{ flex: 1 }} onClick={() => advanceTo(nextStatus)}>
-        <Icon.ArrowRight style={{ width: 16, height: 16 }} /> {NEXT_LABEL[nextStatus] || nextStatus}
-      </button>
+      <>
+        {item.status !== "proposed" && (
+          <button className="btn stone" onClick={() => onAdvanceStatus(item.item_id, "parked")} title="Park this experiment">
+            Park
+          </button>
+        )}
+        <button className="btn" style={{ flex: 1 }} onClick={() => advanceTo(nextStatus)}>
+          <Icon.ArrowRight style={{ width: 16, height: 16 }} /> {NEXT_LABEL[nextStatus] || nextStatus}
+        </button>
+      </>
     ) : (
       <button className="btn stone block" onClick={onClose}>Close</button>
     )
@@ -141,6 +153,14 @@ function ExperimentDetail({ item, user, allMembers, onAddUpdate, onAdvanceStatus
             ))}
           </div>
         </>
+      )}
+
+      {/* reward */}
+      {item.reward && (
+        <div className="locked-field" style={{ marginTop: 10, background: "rgba(92,205,92,.06)", borderColor: "var(--status-found-hi)" }}>
+          <Icon.Trophy style={{ color: "var(--status-found-hi)", width: 18, height: 18 }} />
+          <span style={{ fontSize: 14 }}><strong style={{ color: "var(--status-found-hi)" }}>Reward:</strong> {item.reward}</span>
+        </div>
       )}
 
       {/* challenge link */}
@@ -998,6 +1018,14 @@ function App() {
             <>
               <p className="flavour">{config.flavour_text}</p>
               <div className="divider"><span className="rule" /><Icon.Gem /><span className="rule r" /></div>
+
+              <div className="board-intro">
+                <p className="board-intro-text">
+                  A shared board for optional test-and-learn work across the South West network.
+                  Browse what colleagues are running, join an experiment, sign up for a session,
+                  or post a challenge to the group.
+                </p>
+              </div>
 
               <div className={"board-layout" + (config.features.leaderboard ? " with-side" : "")}>
                 <div className="swim-board">

@@ -76,6 +76,10 @@ function PostExperiment({ user, challengeId, onClose, onCreate }) {
   const [question, setQuestion] = useS("");
   const [description, setDescription] = useS("");
   const [methodTags, setMethodTags] = useS([]);
+  const [difficulty, setDifficulty] = useS(null);
+  const [effort, setEffort] = useS("");
+  const [reward, setReward] = useS("");
+  const [deadline, setDeadline] = useS("");
   const [assignSelf, setAssignSelf] = useS(true);
   const [errors, setErrors] = useS({});
 
@@ -96,6 +100,11 @@ function PostExperiment({ user, challengeId, onClose, onCreate }) {
   const submit = () => {
     if (!validate()) return;
     const now = new Date().toISOString();
+    let parsedDeadline = null;
+    if (deadline.trim()) {
+      const d = new Date(deadline.trim());
+      if (!isNaN(d.getTime())) parsedDeadline = d.toISOString();
+    }
     onCreate({
       item_id: nano(),
       item_type: "experiment",
@@ -103,6 +112,10 @@ function PostExperiment({ user, challengeId, onClose, onCreate }) {
       question: question.trim(),
       description: description.trim(),
       method_tags: methodTags,
+      difficulty: difficulty || null,
+      effort: effort || null,
+      reward: reward.trim() || null,
+      deadline: parsedDeadline,
       status: "proposed",
       posted_by_name: user.name, posted_by_oid: user.oid,
       team_oids: assignSelf ? [user.oid] : [],
@@ -190,6 +203,48 @@ function PostExperiment({ user, challengeId, onClose, onCreate }) {
       </div>
 
       <div className="field">
+        <label>Complexity</label>
+        <div className="difficulty-picker" role="group" aria-label="Complexity level">
+          {[1,2,3,4,5].map((n) => (
+            <button key={n} type="button"
+              className={"diff-btn" + (difficulty === n ? " on" : "")}
+              onClick={() => setDifficulty(difficulty === n ? null : n)}
+              aria-pressed={difficulty === n}
+              title={"Level " + n}>
+              {"Lv " + n}
+            </button>
+          ))}
+        </div>
+        <p style={{ color: "var(--muted)", fontSize: 13, margin: "4px 0 0" }}>1 = straightforward, 5 = significant complexity. Helps people self-select.</p>
+      </div>
+
+      <div className="field">
+        <label htmlFor="pe-effort">Estimated effort</label>
+        <select id="pe-effort" className="select" value={effort} onChange={(e) => setEffort(e.target.value)}>
+          <option value="">Not specified</option>
+          <option value="&lt; 30 min">&lt; 30 min</option>
+          <option value="1-2 hrs">1-2 hrs</option>
+          <option value="half day">Half day</option>
+          <option value="1-2 days">1-2 days</option>
+          <option value="ongoing">Ongoing</option>
+        </select>
+      </div>
+
+      <div className="field">
+        <label htmlFor="pe-reward">What contributors get <span className="hint">{reward.length}/120</span></label>
+        <input id="pe-reward" className="input" maxLength={120} value={reward}
+          onChange={(e) => setReward(e.target.value)}
+          placeholder="e.g. XP + credit in the writeup, skills development, showcase..." />
+      </div>
+
+      <div className="field">
+        <label htmlFor="pe-deadline">Deadline (optional)</label>
+        <input id="pe-deadline" className="input" type="date" value={deadline}
+          onChange={(e) => setDeadline(e.target.value)} />
+        <p style={{ color: "var(--muted)", fontSize: 13, margin: "4px 0 0" }}>Leave blank for open-ended.</p>
+      </div>
+
+      <div className="field">
         <label>Your role in this</label>
         <div className="choice" role="radiogroup" aria-label="Your role in this experiment">
           <button type="button" role="radio" aria-checked={assignSelf}
@@ -214,6 +269,9 @@ function PostSession({ user, challengeId, onClose, onCreate }) {
   const [topic, setTopic] = useS("");
   const [format, setFormat] = useS("remote");
   const [sessionDate, setSessionDate] = useS("");
+  const [effort, setEffort] = useS("");
+  const [reward, setReward] = useS("");
+  const [deadline, setDeadline] = useS("");
   const [errors, setErrors] = useS({});
 
   const validate = () => {
@@ -232,6 +290,11 @@ function PostSession({ user, challengeId, onClose, onCreate }) {
       const d = new Date(sessionDate.trim());
       if (!isNaN(d.getTime())) parsedDate = d.toISOString();
     }
+    let parsedDeadline = null;
+    if (deadline.trim()) {
+      const dl = new Date(deadline.trim());
+      if (!isNaN(dl.getTime())) parsedDeadline = dl.toISOString();
+    }
     onCreate({
       item_id: nano(),
       item_type: "session",
@@ -240,6 +303,9 @@ function PostSession({ user, challengeId, onClose, onCreate }) {
       host_name: user.name, host_oid: user.oid,
       session_date: parsedDate,
       format: format,
+      effort: effort || null,
+      reward: reward.trim() || null,
+      deadline: parsedDeadline,
       attendee_oids: [],
       attendee_names: [],
       output: "",
@@ -300,6 +366,30 @@ function PostSession({ user, challengeId, onClose, onCreate }) {
           placeholder="e.g. 15 July 2026 or 2026-07-15" />
         <p style={{ color: "var(--muted)", fontSize: 13, margin: "4px 0 0" }}>Leave blank if not yet scheduled.</p>
       </div>
+
+      <div className="field">
+        <label htmlFor="ps-effort">Estimated duration</label>
+        <select id="ps-effort" className="select" value={effort} onChange={(e) => setEffort(e.target.value)}>
+          <option value="">Not specified</option>
+          <option value="&lt; 30 min">&lt; 30 min</option>
+          <option value="1-2 hrs">1-2 hrs</option>
+          <option value="half day">Half day</option>
+          <option value="1-2 days">1-2 days</option>
+        </select>
+      </div>
+
+      <div className="field">
+        <label htmlFor="ps-reward">What attendees get <span className="hint">{reward.length}/120</span></label>
+        <input id="ps-reward" className="input" maxLength={120} value={reward}
+          onChange={(e) => setReward(e.target.value)}
+          placeholder="e.g. Shared notes, 25 XP, peer learning..." />
+      </div>
+
+      <div className="field">
+        <label htmlFor="ps-deadline">Sign-up deadline (optional)</label>
+        <input id="ps-deadline" className="input" type="date" value={deadline}
+          onChange={(e) => setDeadline(e.target.value)} />
+      </div>
     </Modal>
   );
 }
@@ -308,6 +398,7 @@ function PostSession({ user, challengeId, onClose, onCreate }) {
 function PostChallenge({ user, onClose, onCreate }) {
   const [title, setTitle] = useS("");
   const [question, setQuestion] = useS("");
+  const [deadline, setDeadline] = useS("");
   const [errors, setErrors] = useS({});
 
   const validate = () => {
@@ -321,11 +412,17 @@ function PostChallenge({ user, onClose, onCreate }) {
   const submit = () => {
     if (!validate()) return;
     const now = new Date().toISOString();
+    let parsedDeadline = null;
+    if (deadline.trim()) {
+      const d = new Date(deadline.trim());
+      if (!isNaN(d.getTime())) parsedDeadline = d.toISOString();
+    }
     onCreate({
       item_id: nano(),
       item_type: "challenge",
       title: title.trim(),
       question: question.trim(),
+      deadline: parsedDeadline,
       posted_by_name: user.name, posted_by_oid: user.oid,
       response_ids: [],
       status: "open",
@@ -364,6 +461,13 @@ function PostChallenge({ user, onClose, onCreate }) {
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="How might we...? What would happen if...? What's the best way to...?" />
         {errors.question && <div className="field-error" role="alert">{errors.question}</div>}
+      </div>
+
+      <div className="field">
+        <label htmlFor="pc-deadline">Deadline (optional)</label>
+        <input id="pc-deadline" className="input" type="date" value={deadline}
+          onChange={(e) => setDeadline(e.target.value)} />
+        <p style={{ color: "var(--muted)", fontSize: 13, margin: "4px 0 0" }}>When should responses close?</p>
       </div>
     </Modal>
   );

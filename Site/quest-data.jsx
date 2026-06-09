@@ -148,7 +148,16 @@ const blobStorage = (() => {
 
 /* ---------- migrate a legacy quest record to item schema ---------- */
 function migrateItem(q) {
-  if (q.item_type) return q;
+  if (q.item_type) {
+    // backfill new fields added after initial launch
+    return {
+      difficulty: null,
+      effort:     null,
+      reward:     null,
+      deadline:   null,
+      ...q,
+    };
+  }
   return {
     item_id: q.quest_id || q.item_id || nano(),
     item_type: "experiment",
@@ -156,6 +165,10 @@ function migrateItem(q) {
     question: q.description || "",
     description: "",
     method_tags: [],
+    difficulty: null,
+    effort: null,
+    reward: null,
+    deadline: null,
     status: q.status === "completed" ? "finding-shared" : "proposed",
     posted_by_name: q.posted_by_name || "",
     posted_by_oid: q.posted_by_oid || null,
@@ -342,6 +355,10 @@ function seedItems() {
       question: "Will a one-page weekly summary, designed with the team, increase the number of staff who can recall at least one key metric?",
       description: "Co-designed a digest format with four neighbourhood staff over two workshops, then ran it for six weeks. Measure: before/after quiz on three key indicators.",
       method_tags: ["Dashboards", "Journey mapping", "KPIs & measures"],
+      difficulty: 2,
+      effort: "half day",
+      reward: "Showcase at Season 3 retro + 100 XP",
+      deadline: null,
       status: "finding-shared",
       posted_by_name: "Eleanor Pryce", posted_by_oid: "oid-eleanor-9f2a",
       team_oids: ["oid-eleanor-9f2a", "oid-hugh-8b4c"],
@@ -367,6 +384,10 @@ function seedItems() {
       question: "Can an AI-assisted summary reduce the average time a duty worker spends logging a new contact by at least 40%?",
       description: "Testing a lightly prompted LLM that listens to a call recording and drafts a structured summary for the worker to review and edit. Workers spend about 8 minutes per contact on logging currently.",
       method_tags: ["AI", "Process mapping", "KPIs & measures"],
+      difficulty: 4,
+      effort: "1-2 days",
+      reward: "100 XP + learning shared at next show & tell",
+      deadline: new Date(now + 30 * 24 * 3600 * 1000).toISOString(),
       status: "running",
       posted_by_name: "Tomas Aldridge", posted_by_oid: "oid-tomas-4b7c",
       team_oids: ["oid-tomas-4b7c", "oid-priya-1d8e", "oid-marlow-2e9d"],
@@ -392,6 +413,10 @@ function seedItems() {
       question: "Does a structured half-day peer shadow (cross-team, cross-tier) surface more improvement ideas than a standard process review workshop?",
       description: "Pairs of workers from different teams shadow each other for half a day, then log blockers using a simple observation card.",
       method_tags: ["Process mapping", "Peer challenge", "Root cause analysis"],
+      difficulty: 2,
+      effort: "half day",
+      reward: "Credited in the process improvement report + 100 XP",
+      deadline: null,
       status: "designing",
       posted_by_name: "Briar Stroud", posted_by_oid: "oid-briar-5a1f",
       team_oids: ["oid-briar-5a1f"],
@@ -414,6 +439,10 @@ function seedItems() {
       question: "If we rewrite our top-5 most-complained-about letters in plain English, will we see a measurable drop in follow-up contacts within 30 days?",
       description: "Working with a content designer to rewrite five high-volume letters. Measure: 30-day callback rate, compared to a historical baseline.",
       method_tags: ["Demand reduction", "User stories", "KPIs & measures"],
+      difficulty: 3,
+      effort: "1-2 days",
+      reward: "100 XP + content design skills development",
+      deadline: new Date(now + 60 * 24 * 3600 * 1000).toISOString(),
       status: "proposed",
       posted_by_name: "Marlow Finch", posted_by_oid: "oid-marlow-2e9d",
       team_oids: [],
@@ -437,6 +466,9 @@ function seedItems() {
       host_name: "Tomas Aldridge", host_oid: "oid-tomas-4b7c",
       session_date: new Date(now + 7 * 24 * 3600 * 1000).toISOString(),
       format: "remote",
+      effort: "1-2 hrs",
+      reward: "75 XP for host, 25 XP each attendee",
+      deadline: new Date(now + 5 * 24 * 3600 * 1000).toISOString(),
       attendee_oids: ["oid-eleanor-9f2a", "oid-gideon-7c3b", "oid-briar-5a1f"],
       attendee_names: ["Eleanor Pryce", "Gideon Ashworth", "Briar Stroud"],
       output: "",
@@ -457,6 +489,9 @@ function seedItems() {
       host_name: "Eleanor Pryce", host_oid: "oid-eleanor-9f2a",
       session_date: ago(360),
       format: "in-person",
+      effort: "half day",
+      reward: "XP + shared notes circulated afterwards",
+      deadline: null,
       attendee_oids: ["oid-tomas-4b7c", "oid-priya-1d8e", "oid-gideon-7c3b", "oid-marlow-2e9d", "oid-hugh-8b4c"],
       attendee_names: ["Tomas Aldridge", "Priya Nayar", "Gideon Ashworth", "Marlow Finch", "Hugh Pemberton"],
       output: "Three patterns stood out: (1) experiments with a named question before they start close faster and produce cleaner findings; (2) teams of 2-3 outperform solo experimenters; (3) the hardest part is sharing a finding that didn't work — we need to celebrate those more.",

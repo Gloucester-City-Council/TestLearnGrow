@@ -216,6 +216,45 @@ function AvatarStrip({ oids, names, max, onMemberClick }) {
   );
 }
 
+/* ---------- CardStats: compact difficulty + effort + deadline strip ---------- */
+function DifficultyPips({ level }) {
+  if (!level) return null;
+  const pips = [1, 2, 3, 4, 5];
+  return (
+    <span className="difficulty-pips" aria-label={"Complexity level " + level + " of 5"}>
+      {pips.map((n) => (
+        <span key={n} className={"difficulty-pip" + (n <= level ? " difficulty-pip--filled" : "")} />
+      ))}
+    </span>
+  );
+}
+
+function DeadlineTag({ deadline }) {
+  if (!deadline) return null;
+  const d = new Date(deadline);
+  if (isNaN(d.getTime())) return null;
+  const overdue = d < new Date();
+  return (
+    <span className={"deadline-tag" + (overdue ? " deadline-tag--overdue" : "")}>
+      {overdue ? "Overdue" : fullDate(deadline)}
+    </span>
+  );
+}
+
+function CardStats({ item }) {
+  const hasDiff = item.difficulty != null;
+  const hasEffort = item.effort;
+  const hasDeadline = item.deadline;
+  if (!hasDiff && !hasEffort && !hasDeadline) return null;
+  return (
+    <div className="card-stats">
+      {hasDiff && <DifficultyPips level={item.difficulty} />}
+      {hasEffort && <span className="effort-tag">{item.effort}</span>}
+      {hasDeadline && <DeadlineTag deadline={item.deadline} />}
+    </div>
+  );
+}
+
 /* ---------- ExperimentCard ---------- */
 function ExperimentCard({ item, onOpen, onMemberClick }) {
   const hasTeam = item.team_oids && item.team_oids.length > 0;
@@ -228,6 +267,7 @@ function ExperimentCard({ item, onOpen, onMemberClick }) {
         <h3 className="quest-title">{item.title}</h3>
         <StatusPill status={item.status} />
       </div>
+      <CardStats item={item} />
       {item.question && <p className="item-question">{item.question}</p>}
       <MethodTags tags={item.method_tags} />
       <div className="card-meta">
@@ -256,6 +296,7 @@ function SessionCard({ item, onOpen, onMemberClick }) {
         <h3 className="quest-title">{item.title}</h3>
         <StatusPill status={item.status} />
       </div>
+      <CardStats item={item} />
       {item.topic && <p className="item-question">{item.topic}</p>}
       <div className="session-meta-row">
         {item.session_date && (
@@ -638,6 +679,7 @@ function WhoCanHelp({ methodTags, allMembers, onMemberClick }) {
 
 Object.assign(window, {
   Icon, initials, Avatar, XpBadge, StatusPill, MethodTags, AvatarStrip,
+  DifficultyPips, DeadlineTag, CardStats,
   ExperimentCard, SessionCard, ChallengeCard, FindingCard,
   Modal, Leaderboard, QuestComplete, Toast,
   MemberCard, MemberCardModal, WhoCanHelp,
