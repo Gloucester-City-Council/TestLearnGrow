@@ -1,7 +1,7 @@
 /* =========================================================
-   APP — sign-in, board, detail, post, leaderboard
+   APP — sign-in, post forms, edit member card
    ========================================================= */
-const { useState: useS, useEffect: useE, useMemo, useCallback } = React;
+const { useState: useS, useEffect: useE } = React;
 
 /* ============ SIGN-IN (mock Entra ID) ============ */
 function SignIn({ config, onSignedIn }) {
@@ -32,7 +32,7 @@ function SignIn({ config, onSignedIn }) {
             </button>
             <p className="signin-note">
               Access is restricted to network members. You will be identified by your
-              <strong> Microsoft work account</strong> so that quest ownership can be verified.
+              <strong> Microsoft work account</strong> so that ownership can be verified.
             </p>
           </>
         ) : (
@@ -58,7 +58,7 @@ function SignIn({ config, onSignedIn }) {
               <button className="btn block" onClick={useCustom} disabled={!customName.trim()}>Enter the Guild</button>
             </div>
             <p className="signin-note" style={{ marginTop: 14 }}>
-              <button className="linklike" onClick={() => setPicking(false)}>← Back</button>
+              <button className="linklike" onClick={() => setPicking(false)}>Back</button>
             </p>
           </>
         )}
@@ -70,110 +70,301 @@ function SignIn({ config, onSignedIn }) {
   );
 }
 
-/* ============ schema-driven field ============ */
-function SchemaField({ name, def, value, onChange, error }) {
-  const id = "f-" + name;
-  const len = typeof value === "string" ? value.length : 0;
-  return (
-    <div className="field">
-      <label htmlFor={id}>
-        {def.label}{def.required && <span className="req" aria-hidden="true">*</span>}
-        {def.maxLength && def.type === "string" && (
-          <span className="hint">{len}/{def.maxLength}</span>
-        )}
-      </label>
-      {def.type === "enum" ? (
-        <select id={id} className="select" value={value} onChange={(e) => onChange(name, Number(e.target.value))}
-          aria-required={def.required}>
-          <option value="" disabled>Choose…</option>
-          {def.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-      ) : def.ui === "textarea" ? (
-        <textarea id={id} className="textarea" value={value} maxLength={def.maxLength}
-          onChange={(e) => onChange(name, e.target.value)} aria-required={def.required}
-          placeholder={`Describe the ${def.label.toLowerCase()}…`} />
-      ) : (
-        <input id={id} className="input" value={value} maxLength={def.maxLength}
-          onChange={(e) => onChange(name, e.target.value)} aria-required={def.required} />
-      )}
-      {error && <div className="field-error" role="alert">{error}</div>}
-    </div>
-  );
-}
-
-/* ============ POST NEW QUEST ============ */
-function PostQuest({ schema, user, claimable, onClose, onCreate }) {
-  const fields = schema.fields;
-  const [vals, setVals] = useS(() => {
-    const v = {};
-    for (const k in fields) v[k] = fields[k].type === "enum" ? "" : "";
-    return v;
-  });
-  const [assign, setAssign] = useS("self"); // self | open
+/* ============ POST EXPERIMENT ============ */
+function PostExperiment({ user, challengeId, onClose, onCreate }) {
+  const [title, setTitle] = useS("");
+  const [question, setQuestion] = useS("");
+  const [description, setDescription] = useS("");
+  const [methodTags, setMethodTags] = useS([]);
+  const [assignSelf, setAssignSelf] = useS(true);
   const [errors, setErrors] = useS({});
-  const change = (k, val) => setVals((s) => ({ ...s, [k]: val }));
+
+  const toggleTag = (tool) => {
+    setMethodTags((ts) =>
+      ts.includes(tool) ? ts.filter((t) => t !== tool) : ts.length < 5 ? [...ts, tool] : ts
+    );
+  };
 
   const validate = () => {
     const e = {};
-    for (const k in fields) {
-      const d = fields[k]; const val = vals[k];
-      if (d.required && (val === "" || val == null)) e[k] = `${d.label} is required.`;
-      else if (d.type === "string" && d.maxLength && String(val).length > d.maxLength) e[k] = `Must be ${d.maxLength} characters or fewer.`;
-    }
+    if (!title.trim())    e.title    = "Title is required.";
+    if (!question.trim()) e.question = "Question is required.";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const submit = () => {
     if (!validate()) return;
-    const claimNow = !claimable || assign === "self";
-    const nowIso = new Date().toISOString();
+    const now = new Date().toISOString();
     onCreate({
-      quest_id: nano(),
-      title: vals.title.trim(),
-      description: vals.description.trim(),
+      item_id: nano(),
+      item_type: "experiment",
+      title: title.trim(),
+      question: question.trim(),
+      description: description.trim(),
+      method_tags: methodTags,
+      status: "proposed",
       posted_by_name: user.name, posted_by_oid: user.oid,
-      owner_name: claimNow ? user.name : "",
-      owner_oid: claimNow ? user.oid : null,
-      owner_email: claimNow ? user.username : "",
-      status: "open", created_at: nowIso,
-      claimed_at: claimNow ? nowIso : null, closed_at: null,
-      xp_reward: Number(vals.xp_reward),
+      team_oids: assignSelf ? [user.oid] : [],
+      team_names: assignSelf ? [user.name] : [],
+      finding: "", outcome: "",
+      challenge_id: challengeId || null,
+      xp_reward: 100,
+      created_at: now, updated_at: now, closed_at: null,
       updates: [],
     });
   };
 
   return (
-    <Modal title="Post a New Quest" sub="Rally the guild to your cause." onClose={onClose} labelId="post-title"
+    <Modal title="Propose an Experiment" sub="What are you trying to find out?" onClose={onClose} labelId="post-exp-title"
       foot={<>
         <button className="btn stone" onClick={onClose}>Cancel</button>
-        <button className="btn" onClick={submit}><Icon.Scroll style={{ width: 16, height: 16 }} /> Post Quest</button>
+        <button className="btn" onClick={submit}><Icon.Beaker style={{ width: 16, height: 16 }} /> Post Experiment</button>
       </>}>
+
       <div className="locked-field" style={{ marginBottom: 18 }}>
         <Icon.Lock />
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Avatar oid={user.oid} name={user.name} cls="mini-avatar" />Posting as <strong style={{ color: "var(--ink)" }}>{user.name}</strong></span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <Avatar oid={user.oid} name={user.name} cls="mini-avatar" />
+          Posting as <strong style={{ color: "var(--ink)" }}>{user.name}</strong>
+        </span>
         <span className="lf-label">From session</span>
       </div>
-      {Object.keys(fields).map((k) => (
-        <SchemaField key={k} name={k} def={fields[k]} value={vals[k]} onChange={change} error={errors[k]} />
-      ))}
-      {claimable && (
-        <div className="field">
-          <label id="assign-label">Who takes this on?</label>
-          <div className="choice" role="radiogroup" aria-labelledby="assign-label">
-            <button type="button" role="radio" aria-checked={assign === "self"}
-              className={"choice-opt" + (assign === "self" ? " on" : "")} onClick={() => setAssign("self")}>
-              <Icon.Hand />
-              <span><strong>I&rsquo;ll take this on</strong><em>You become the owner and earn the XP.</em></span>
-            </button>
-            <button type="button" role="radio" aria-checked={assign === "open"}
-              className={"choice-opt" + (assign === "open" ? " on" : "")} onClick={() => setAssign("open")}>
-              <Icon.Flag />
-              <span><strong>Post as open bounty</strong><em>Leave it unclaimed for any member to claim.</em></span>
-            </button>
-          </div>
+
+      {challengeId && (
+        <div className="locked-field" style={{ marginBottom: 18, borderColor: "var(--gold)", borderStyle: "solid", background: "var(--callout)" }}>
+          <Icon.Lightning style={{ color: "var(--amber)" }} />
+          <span>Responding to a challenge</span>
         </div>
       )}
+
+      <div className="field">
+        <label htmlFor="pe-title">Experiment Title <span className="req" aria-hidden="true">*</span>
+          <span className="hint">{title.length}/80</span></label>
+        <input id="pe-title" className="input" maxLength={80} value={title}
+          onChange={(e) => setTitle(e.target.value)} placeholder="A short, clear title..." />
+        {errors.title && <div className="field-error" role="alert">{errors.title}</div>}
+      </div>
+
+      <div className="field">
+        <label htmlFor="pe-question">What are we trying to find out? <span className="req" aria-hidden="true">*</span>
+          <span className="hint">{question.length}/300</span></label>
+        <textarea id="pe-question" className="textarea" maxLength={300} value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="If we do X, will Y happen? How does A affect B?..." />
+        {errors.question && <div className="field-error" role="alert">{errors.question}</div>}
+      </div>
+
+      <div className="field">
+        <label htmlFor="pe-desc">Context / method <span className="hint">{description.length}/600</span></label>
+        <textarea id="pe-desc" className="textarea" maxLength={600} value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Brief background, what approach you're planning..." />
+      </div>
+
+      <div className="field">
+        <label>Method tags <span style={{ marginLeft: 8, color: "var(--muted)", fontSize: 13, fontFamily: "var(--font-body)", letterSpacing: 0, textTransform: "none" }}>{methodTags.length}/5 selected</span></label>
+        <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 10px" }}>
+          Tag the tools or methods this experiment uses. Helps others with matching skills find it.
+        </p>
+        {SKILLS.map((cat) => (
+          <div key={cat.category} className="skill-cat">
+            <div className="skill-cat-label">{cat.category}</div>
+            <div className="method-tag-picker">
+              {cat.tools.map((tool) => {
+                const on = methodTags.includes(tool);
+                const disabled = !on && methodTags.length >= 5;
+                return (
+                  <button key={tool} type="button"
+                    className={"method-tag-pick" + (on ? " on" : "") + (disabled ? " disabled" : "")}
+                    onClick={() => { if (!disabled) toggleTag(tool); }}
+                    aria-pressed={on}
+                    disabled={disabled}>
+                    {tool}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="field">
+        <label>Your role in this</label>
+        <div className="choice" role="radiogroup" aria-label="Your role in this experiment">
+          <button type="button" role="radio" aria-checked={assignSelf}
+            className={"choice-opt" + (assignSelf ? " on" : "")} onClick={() => setAssignSelf(true)}>
+            <Icon.Hand />
+            <span><strong>I am on this team</strong><em>Your name will appear as a team member.</em></span>
+          </button>
+          <button type="button" role="radio" aria-checked={!assignSelf}
+            className={"choice-opt" + (!assignSelf ? " on" : "")} onClick={() => setAssignSelf(false)}>
+            <Icon.Flag />
+            <span><strong>Post for others to join</strong><em>Leave the team open for others.</em></span>
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/* ============ POST SESSION ============ */
+function PostSession({ user, challengeId, onClose, onCreate }) {
+  const [title, setTitle] = useS("");
+  const [topic, setTopic] = useS("");
+  const [format, setFormat] = useS("remote");
+  const [sessionDate, setSessionDate] = useS("");
+  const [errors, setErrors] = useS({});
+
+  const validate = () => {
+    const e = {};
+    if (!title.trim()) e.title = "Title is required.";
+    if (!topic.trim()) e.topic = "Topic is required.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const submit = () => {
+    if (!validate()) return;
+    const now = new Date().toISOString();
+    let parsedDate = null;
+    if (sessionDate.trim()) {
+      const d = new Date(sessionDate.trim());
+      if (!isNaN(d.getTime())) parsedDate = d.toISOString();
+    }
+    onCreate({
+      item_id: nano(),
+      item_type: "session",
+      title: title.trim(),
+      topic: topic.trim(),
+      host_name: user.name, host_oid: user.oid,
+      session_date: parsedDate,
+      format: format,
+      attendee_oids: [],
+      attendee_names: [],
+      output: "",
+      status: "proposed",
+      challenge_id: challengeId || null,
+      xp_reward: 75,
+      created_at: now, updated_at: now,
+      updates: [],
+    });
+  };
+
+  return (
+    <Modal title="Propose a Session" sub="Bring the network together around a question." onClose={onClose} labelId="post-sess-title"
+      foot={<>
+        <button className="btn stone" onClick={onClose}>Cancel</button>
+        <button className="btn" onClick={submit}><Icon.Calendar style={{ width: 16, height: 16 }} /> Propose Session</button>
+      </>}>
+
+      <div className="locked-field" style={{ marginBottom: 18 }}>
+        <Icon.Lock />
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <Avatar oid={user.oid} name={user.name} cls="mini-avatar" />
+          Hosting as <strong style={{ color: "var(--ink)" }}>{user.name}</strong>
+        </span>
+        <span className="lf-label">From session</span>
+      </div>
+
+      <div className="field">
+        <label htmlFor="ps-title">Session Title <span className="req" aria-hidden="true">*</span>
+          <span className="hint">{title.length}/80</span></label>
+        <input id="ps-title" className="input" maxLength={80} value={title}
+          onChange={(e) => setTitle(e.target.value)} placeholder="A short title for the session..." />
+        {errors.title && <div className="field-error" role="alert">{errors.title}</div>}
+      </div>
+
+      <div className="field">
+        <label htmlFor="ps-topic">What do you want to think about? <span className="req" aria-hidden="true">*</span>
+          <span className="hint">{topic.length}/300</span></label>
+        <textarea id="ps-topic" className="textarea" maxLength={300} value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+          placeholder="The question, theme, or problem you want to bring to the group..." />
+        {errors.topic && <div className="field-error" role="alert">{errors.topic}</div>}
+      </div>
+
+      <div className="field">
+        <label htmlFor="ps-format">Format</label>
+        <select id="ps-format" className="select" value={format} onChange={(e) => setFormat(e.target.value)}>
+          <option value="remote">Remote</option>
+          <option value="in-person">In Person</option>
+          <option value="async">Async</option>
+        </select>
+      </div>
+
+      <div className="field">
+        <label htmlFor="ps-date">Date (optional)</label>
+        <input id="ps-date" className="input" value={sessionDate}
+          onChange={(e) => setSessionDate(e.target.value)}
+          placeholder="e.g. 15 July 2026 or 2026-07-15" />
+        <p style={{ color: "var(--muted)", fontSize: 13, margin: "4px 0 0" }}>Leave blank if not yet scheduled.</p>
+      </div>
+    </Modal>
+  );
+}
+
+/* ============ POST CHALLENGE ============ */
+function PostChallenge({ user, onClose, onCreate }) {
+  const [title, setTitle] = useS("");
+  const [question, setQuestion] = useS("");
+  const [errors, setErrors] = useS({});
+
+  const validate = () => {
+    const e = {};
+    if (!title.trim())    e.title    = "Title is required.";
+    if (!question.trim()) e.question = "Question is required.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const submit = () => {
+    if (!validate()) return;
+    const now = new Date().toISOString();
+    onCreate({
+      item_id: nano(),
+      item_type: "challenge",
+      title: title.trim(),
+      question: question.trim(),
+      posted_by_name: user.name, posted_by_oid: user.oid,
+      response_ids: [],
+      status: "open",
+      created_at: now,
+    });
+  };
+
+  return (
+    <Modal title="Post a Challenge" sub="Pose a question to the whole network." onClose={onClose} labelId="post-chal-title"
+      foot={<>
+        <button className="btn stone" onClick={onClose}>Cancel</button>
+        <button className="btn" onClick={submit}><Icon.Lightning style={{ width: 16, height: 16 }} /> Post Challenge</button>
+      </>}>
+
+      <div className="locked-field" style={{ marginBottom: 18 }}>
+        <Icon.Lock />
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <Avatar oid={user.oid} name={user.name} cls="mini-avatar" />
+          Posting as <strong style={{ color: "var(--ink)" }}>{user.name}</strong>
+        </span>
+        <span className="lf-label">From session</span>
+      </div>
+
+      <div className="field">
+        <label htmlFor="pc-title">Challenge Title <span className="req" aria-hidden="true">*</span>
+          <span className="hint">{title.length}/80</span></label>
+        <input id="pc-title" className="input" maxLength={80} value={title}
+          onChange={(e) => setTitle(e.target.value)} placeholder="A short, memorable title..." />
+        {errors.title && <div className="field-error" role="alert">{errors.title}</div>}
+      </div>
+
+      <div className="field">
+        <label htmlFor="pc-question">The challenge question <span className="req" aria-hidden="true">*</span>
+          <span className="hint">{question.length}/500</span></label>
+        <textarea id="pc-question" className="textarea" maxLength={500} value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="How might we...? What would happen if...? What's the best way to...?" />
+        {errors.question && <div className="field-error" role="alert">{errors.question}</div>}
+      </div>
     </Modal>
   );
 }
@@ -201,7 +392,6 @@ function EditMemberCard({ member, onClose, onSave }) {
         <button className="btn" onClick={save}><Icon.Check style={{ width: 16, height: 16 }} /> Save Card</button>
       </>}>
 
-      {/* basic details */}
       <div className="field">
         <label htmlFor="me-role">Role / Team<span className="hint">{(form.role_team || "").length}/80</span></label>
         <input id="me-role" className="input" maxLength={80} value={form.role_team || ""}
@@ -209,7 +399,6 @@ function EditMemberCard({ member, onClose, onSave }) {
           placeholder="e.g. Senior Analyst, Digital Transformation" />
       </div>
 
-      {/* skill matrix */}
       <div className="detail-section-label" style={{ marginTop: 8 }}>Skills &amp; Tools</div>
       <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 16px", lineHeight: 1.5 }}>
         Mark each tool: <span style={{ color: "var(--trump-s-hi)", fontFamily: "var(--font-pixel)", fontSize: 11 }}>S</span> strength &nbsp;
@@ -247,7 +436,6 @@ function EditMemberCard({ member, onClose, onSave }) {
         </div>
       ))}
 
-      {/* working with me */}
       <div className="detail-section-label" style={{ marginTop: 24 }}>Working With Me</div>
       {[
         ["what_to_know",    "What I'd like you to know about me", 300],
@@ -259,11 +447,10 @@ function EditMemberCard({ member, onClose, onSave }) {
           <textarea id={"me-" + key} className="textarea" style={{ minHeight: 72 }} maxLength={max}
             value={form[key] || ""}
             onChange={(e) => set(key, e.target.value)}
-            placeholder="Optional…" />
+            placeholder="Optional..." />
         </div>
       ))}
 
-      {/* contact */}
       <div className="detail-section-label">Contact &amp; Availability</div>
       <div className="field">
         <label htmlFor="me-contact">Preferred contact</label>
@@ -275,10 +462,10 @@ function EditMemberCard({ member, onClose, onSave }) {
         <label htmlFor="me-avail">Best times / availability</label>
         <input id="me-avail" className="input" maxLength={120} value={form.availability || ""}
           onChange={(e) => set("availability", e.target.value)}
-          placeholder="e.g. Mon–Thu, mornings preferred" />
+          placeholder="e.g. Mon-Thu, mornings preferred" />
       </div>
     </Modal>
   );
 }
 
-Object.assign(window, { SignIn, SchemaField, PostQuest, EditMemberCard });
+Object.assign(window, { SignIn, PostExperiment, PostSession, PostChallenge, EditMemberCard });
