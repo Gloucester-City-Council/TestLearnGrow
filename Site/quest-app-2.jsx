@@ -132,6 +132,10 @@ function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, o
 function MembersSection({ allMembers, board, config, user, onEdit }) {
   const [search, setSearch] = uS("");
   const [skillFilter, setSkillFilter] = uS("any"); // any | strength | mentor | stretch
+  const [showSuggestions, setShowSuggestions] = uS(false);
+  const [activeIdx, setActiveIdx] = uS(-1);
+  const inputRef = uR(null);
+  const listRef = uR(null);
 
   const SKILL_FILTERS = [
     { key: "any",      label: "All Members" },
@@ -139,6 +143,56 @@ function MembersSection({ allMembers, board, config, user, onEdit }) {
     { key: "mentor",   label: "Can Mentor" },
     { key: "stretch",  label: "Stretch Goals" },
   ];
+
+  /* build suggestion list from member names, roles, and skill tool names */
+  const suggestions = uM(() => {
+    const q = search.trim().toLowerCase();
+    if (!q || q.length < 2) return [];
+    const seen = new Set();
+    const results = [];
+    const push = (text, kind) => {
+      const key = text.toLowerCase();
+      if (!seen.has(key) && key.includes(q)) { seen.add(key); results.push({ text, kind }); }
+    };
+    allMembers.forEach((m) => {
+      push(m.name, "member");
+      if (m.role_team) push(m.role_team, "role");
+    });
+    /* skill tools from the global SKILLS matrix */
+    (SKILLS || []).forEach((cat) => cat.tools.forEach((tool) => push(tool, "skill")));
+    return results.slice(0, 8);
+  }, [allMembers, search]);
+
+  const KIND_LABEL = { member: "Member", role: "Role", skill: "Skill" };
+  const KIND_CLASS = { member: "sugg-kind--member", role: "sugg-kind--role", skill: "sugg-kind--skill" };
+
+  const pick = (text) => {
+    setSearch(text);
+    setShowSuggestions(false);
+    setActiveIdx(-1);
+    inputRef.current && inputRef.current.focus();
+  };
+
+  const onKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); setActiveIdx((i) => Math.min(i + 1, suggestions.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActiveIdx((i) => Math.max(i - 1, -1)); }
+    else if (e.key === "Enter" && activeIdx >= 0) { e.preventDefault(); pick(suggestions[activeIdx].text); }
+    else if (e.key === "Escape") { setShowSuggestions(false); setActiveIdx(-1); }
+  };
+
+  /* close dropdown on outside click */
+  uE(() => {
+    const handler = (e) => {
+      if (listRef.current && !listRef.current.contains(e.target) &&
+          inputRef.current && !inputRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+        setActiveIdx(-1);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const filtered = uM(() => {
     const q = search.trim().toLowerCase();
@@ -150,8 +204,7 @@ function MembersSection({ allMembers, board, config, user, onEdit }) {
         if (!inName && !inRole && !inSkills) return false;
       }
       if (skillFilter !== "any") {
-        const typeMap = { strength: "strength", mentor: "mentor", stretch: "stretch" };
-        const wanted = typeMap[skillFilter];
+        const wanted = skillFilter;
         const hasType = Object.values(m.skills || {}).some((v) => v === wanted);
         if (!hasType) return false;
       }
@@ -159,23 +212,56 @@ function MembersSection({ allMembers, board, config, user, onEdit }) {
     });
   }, [allMembers, search, skillFilter]);
 
+  /* highlight matching part of suggestion text */
+  const highlight = (text) => {
+    const q = search.trim();
+    if (!q) return text;
+    const idx = text.toLowerCase().indexOf(q.toLowerCase());
+    if (idx < 0) return text;
+    return (
+      <>
+        {text.slice(0, idx)}
+        <mark className="sugg-mark">{text.slice(idx, idx + q.length)}</mark>
+        {text.slice(idx + q.length)}
+      </>
+    );
+  };
+
   return (
     <>
       <p className="flavour">The Adventurers of the South West</p>
       <div className="divider"><span className="rule" /><Icon.Shield /><span className="rule r" /></div>
 
       <div className="member-controls">
-        <div className="member-search-wrap">
+        <div className="member-search-wrap" style={{ position: "relative" }}>
           <Icon.Search className="member-search-icon" />
           <input
+            ref={inputRef}
             className="input member-search"
             placeholder="Search by name, role or skill…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true); setActiveIdx(-1); }}
+            onFocus={() => search.trim().length >= 2 && setShowSuggestions(true)}
+            onKeyDown={onKeyDown}
             aria-label="Search members"
+            aria-autocomplete="list"
+            aria-expanded={showSuggestions && suggestions.length > 0}
+            autoComplete="off"
           />
           {search && (
-            <button className="member-search-clear linklike" onClick={() => setSearch("")} aria-label="Clear search">✕</button>
+            <button className="member-search-clear linklike" onClick={() => { setSearch(""); setShowSuggestions(false); }} aria-label="Clear search">✕</button>
+          )}
+          {showSuggestions && suggestions.length > 0 && (
+            <ul className="sugg-list" ref={listRef} role="listbox" aria-label="Suggestions">
+              {suggestions.map((s, i) => (
+                <li key={s.text} role="option" aria-selected={i === activeIdx}
+                  className={"sugg-item" + (i === activeIdx ? " sugg-item--active" : "")}
+                  onMouseDown={(e) => { e.preventDefault(); pick(s.text); }}>
+                  <span className="sugg-text">{highlight(s.text)}</span>
+                  <span className={"sugg-kind " + KIND_CLASS[s.kind]}>{KIND_LABEL[s.kind]}</span>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
         <div className="tabs member-skill-tabs" role="tablist" aria-label="Filter by skill type">
