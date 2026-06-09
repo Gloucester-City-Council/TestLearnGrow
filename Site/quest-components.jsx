@@ -398,7 +398,13 @@ function MemberCard({ member, xp, ranks, isMe, onEdit }) {
       {/* ---- contact footer ---- */}
       {(member.preferred_contact || member.availability) && (
         <div className="trump-footer">
-          {member.preferred_contact && <span>{member.preferred_contact}</span>}
+          {member.preferred_contact && (
+            <span>
+              {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.preferred_contact.trim())
+                ? <a href={"mailto:" + member.preferred_contact.trim()} className="trump-contact-link">{member.preferred_contact}</a>
+                : member.preferred_contact}
+            </span>
+          )}
           {member.availability && <span>{member.availability}</span>}
         </div>
       )}

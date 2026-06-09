@@ -1532,3 +1532,11 @@ input, textarea, select { font-family: var(--font-body); }
 .sugg-kind--member { color: var(--amber);        border-color: var(--gold);        background: rgba(200,146,42,.1); }
 .sugg-kind--role   { color: var(--parch-dim);    border-color: var(--border-lt);   background: rgba(255,255,255,.04); }
 .sugg-kind--skill  { color: var(--trump-m-hi);   border-color: var(--trump-m-hi);  background: rgba(74,176,232,.08); }
+
+/* clickable email on trump cards */
+.trump-contact-link {
+  color: var(--trump-m-hi);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.trump-contact-link:hover { color: var(--amber); }
