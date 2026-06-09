@@ -1075,7 +1075,7 @@ input, textarea, select { font-family: var(--font-body); }
   .modal { max-width: none; height: 100dvh; border: 0; background: var(--card); display: flex; flex-direction: column; }
   .modal .corner { display: none; }
   .modal-head { flex-shrink: 0; }
-  .modal-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+  .modal-body { flex: 1; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
   .modal-foot { flex-shrink: 0; position: static; background: var(--card); border-top: 1px solid var(--border); }
 
   /* (bottom-nav styling lives in the <=979px block above) */
