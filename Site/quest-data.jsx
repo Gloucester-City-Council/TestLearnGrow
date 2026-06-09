@@ -95,7 +95,43 @@ const blobStorage = (() => {
     try { localStorage.setItem("sw::leaderboard", JSON.stringify(lb)); } catch (e) {}
   }
 
-  return { loadQuests, saveQuest, loadLeaderboard, saveLeaderboard };
+  async function loadMembers() {
+    const b = base();
+    if (b) {
+      try {
+        const res = await fetch(b + "/members", { cache: "no-store" });
+        if (res.ok) return await res.json();
+      } catch (e) { /* fall through */ }
+    }
+    try {
+      const raw = localStorage.getItem("sw::members");
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return [];
+  }
+
+  async function saveMember(member) {
+    const b = base();
+    if (b) {
+      try {
+        const res = await fetch(`${b}/members/${member.oid}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(member),
+        });
+        if (res.ok) return;
+      } catch (e) { /* fall through */ }
+    }
+    try {
+      const raw = localStorage.getItem("sw::members");
+      const arr = raw ? JSON.parse(raw) : [];
+      const idx = arr.findIndex((m) => m.oid === member.oid);
+      if (idx >= 0) arr[idx] = member; else arr.push(member);
+      localStorage.setItem("sw::members", JSON.stringify(arr));
+    } catch (e) {}
+  }
+
+  return { loadQuests, saveQuest, loadLeaderboard, saveLeaderboard, loadMembers, saveMember };
 })();
 
 /* ---------- Store: session + convenience wrappers used by the App ----------
@@ -108,8 +144,10 @@ const Store = {
     ]);
     return { quests, leaderboard };
   },
-  saveQuest:       (quest) => blobStorage.saveQuest(quest),
-  saveLeaderboard: (lb)    => blobStorage.saveLeaderboard(lb),
+  saveQuest:       (quest)  => blobStorage.saveQuest(quest),
+  saveLeaderboard: (lb)     => blobStorage.saveLeaderboard(lb),
+  loadMembers:     ()       => blobStorage.loadMembers(),
+  saveMember:      (member) => blobStorage.saveMember(member),
   async get(key) {
     if (key === "sw-session") {
       try { const raw = localStorage.getItem("sw::sw-session"); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
@@ -162,6 +200,56 @@ const DEFAULT_CONFIG = {
   ],
   features: { leaderboard: true, quest_updates: true, xp_on_update: false, claimable: true },
 };
+
+/* ---------- skills & tools matrix ---------- */
+const SKILLS = [
+  { category: "Strategy & Direction", tools: [
+    "Vision, storytelling, narrative, case for change",
+    "Design principles",
+    "Blueprints, target operating models, future state mapping",
+  ]},
+  { category: "Insight & Diagnosis", tools: [
+    "Root cause analysis",
+    "Fishbone / cause and effect analysis",
+    "5 whys",
+    "Process mapping",
+    "Journey mapping",
+    "Demand reduction",
+    "Value mapping",
+    "Data & analysis",
+    "Dashboards",
+    "KPIs & measures",
+    "Integration",
+  ]},
+  { category: "Design & Innovation", tools: [
+    "User stories",
+    "Architecture (service, data, technology)",
+    "Pilots",
+    "Prototypes",
+    "Hackathons",
+    "AI",
+    "Power Apps",
+    "Digital development",
+  ]},
+  { category: "Delivery & Execution", tools: [
+    "Cadence",
+    "Kanban",
+    "Scrums",
+    "Sprints",
+    "Stand ups",
+    "Reviews",
+    "Retros",
+    "Project, programme and change management",
+    "Risk identification, analysis and management",
+    "Benefits realisation",
+  ]},
+  { category: "People & Culture", tools: [
+    "Peer challenge",
+    "Coaching and mentoring",
+    "Behavioural frameworks",
+    "Psychological safety practices",
+  ]},
+];
 
 /* ---------- avatar portraits (pixel-art guild crests) ----------
    Keyed by oid so quest owners / leaderboard / chip all resolve the
@@ -325,6 +413,22 @@ function seedLeaderboard(quests) {
   return lb;
 }
 
+/* ---------- seed member cards (blank records for all mock accounts) ---------- */
+function seedMembers() {
+  return MOCK_ACCOUNTS.map((a) => ({
+    oid: a.oid,
+    name: a.name,
+    role_team: "",
+    skills: {},
+    what_to_know: "",
+    how_i_work_best: "",
+    how_to_get_best: "",
+    preferred_contact: a.username,
+    availability: "",
+    updated_at: null,
+  }));
+}
+
 /* ---------- relative time ---------- */
 function timeAgo(iso) {
   const then = new Date(iso).getTime();
@@ -341,6 +445,6 @@ function fullDate(iso) {
 }
 
 Object.assign(window, {
-  nano, blobStorage, Store, DEFAULT_QUEST_SCHEMA, DEFAULT_CONFIG, MOCK_ACCOUNTS, AVATARS, avatarFor,
-  rankFor, nextRank, seedQuests, seedLeaderboard, timeAgo, fullDate,
+  nano, blobStorage, Store, SKILLS, DEFAULT_QUEST_SCHEMA, DEFAULT_CONFIG, MOCK_ACCOUNTS, AVATARS, avatarFor,
+  rankFor, nextRank, seedQuests, seedLeaderboard, seedMembers, timeAgo, fullDate,
 });

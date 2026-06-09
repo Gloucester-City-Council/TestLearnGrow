@@ -84,6 +84,18 @@ const Icon = {
       <path d="M9 3l3 6 3-6" />
     </svg>
   ),
+  Shield: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...p}>
+      <path d="M12 3l8 3v5c0 5.5-3.5 10-8 12C7.5 21 4 16.5 4 11V6l8-3z"/>
+      <path d="M9 12l2 2 4-4" opacity=".7"/>
+    </svg>
+  ),
+  Edit: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...p}>
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+  ),
 };
 
 /* ---------- initials avatar ---------- */
@@ -280,6 +292,114 @@ function Toast({ msg }) {
   return <div className="toast" role="status"><Icon.Check style={{ width: 16, height: 16 }} /> {msg}</div>;
 }
 
+/* ---------- member / top trumps card ---------- */
+function MemberCard({ member, xp, ranks, isMe, onEdit }) {
+  const skills = member.skills || {};
+  const strengths = Object.keys(skills).filter((k) => skills[k] === "strength");
+  const mentors   = Object.keys(skills).filter((k) => skills[k] === "mentor");
+  const stretches = Object.keys(skills).filter((k) => skills[k] === "stretch");
+  const hasSkills = strengths.length || mentors.length || stretches.length;
+  const hasAbout  = member.what_to_know || member.how_i_work_best || member.how_to_get_best;
+  const empty     = !hasSkills && !hasAbout && !member.role_team;
+
+  return (
+    <div className={"trump-card parchment" + (empty ? " trump-card--empty" : "")}>
+      <span className="corner tl" /><span className="corner tr" /><span className="corner bl" /><span className="corner br" />
+
+      {/* ---- header ---- */}
+      <div className="trump-header">
+        <Avatar oid={member.oid} name={member.name} cls="trump-avatar" />
+        <div className="trump-header-text">
+          <div className="trump-name">{member.name}</div>
+          {member.role_team && <div className="trump-role">{member.role_team}</div>}
+          <div className="trump-rank-row">
+            <span className="trump-rank-label">{rankFor(xp || 0, ranks)}</span>
+            <span className="trump-xp">{(xp || 0).toLocaleString()} XP</span>
+          </div>
+        </div>
+        {isMe && (
+          <button className="trump-edit-btn" onClick={onEdit} aria-label="Edit your guild card">
+            <Icon.Edit style={{ width: 13, height: 13 }} /> Edit
+          </button>
+        )}
+      </div>
+
+      {/* ---- skill bands ---- */}
+      {strengths.length > 0 && (
+        <div className="trump-band trump-band--strength">
+          <div className="trump-band-label"><span className="trump-band-pip" />Core Strengths</div>
+          <div className="trump-tags">
+            {strengths.map((s) => <span key={s} className="trump-tag trump-tag--strength">{s}</span>)}
+          </div>
+        </div>
+      )}
+      {mentors.length > 0 && (
+        <div className="trump-band trump-band--mentor">
+          <div className="trump-band-label"><span className="trump-band-pip" />Happy to Mentor</div>
+          <div className="trump-tags">
+            {mentors.map((s) => <span key={s} className="trump-tag trump-tag--mentor">{s}</span>)}
+          </div>
+        </div>
+      )}
+      {stretches.length > 0 && (
+        <div className="trump-band trump-band--stretch">
+          <div className="trump-band-label"><span className="trump-band-pip" />Stretch Goals</div>
+          <div className="trump-tags">
+            {stretches.map((s) => <span key={s} className="trump-tag trump-tag--stretch">{s}</span>)}
+          </div>
+        </div>
+      )}
+
+      {/* ---- working with me ---- */}
+      {hasAbout && (
+        <div className="trump-band trump-band--about">
+          <div className="trump-band-label"><span className="trump-band-pip" />Working With Me</div>
+          {member.what_to_know && (
+            <div className="trump-about-row">
+              <span className="trump-about-key">What to know</span>
+              <span className="trump-about-val">{member.what_to_know}</span>
+            </div>
+          )}
+          {member.how_i_work_best && (
+            <div className="trump-about-row">
+              <span className="trump-about-key">How I work best</span>
+              <span className="trump-about-val">{member.how_i_work_best}</span>
+            </div>
+          )}
+          {member.how_to_get_best && (
+            <div className="trump-about-row">
+              <span className="trump-about-key">To get the best from me</span>
+              <span className="trump-about-val">{member.how_to_get_best}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ---- empty prompt ---- */}
+      {empty && (
+        <div className="trump-empty">
+          {isMe ? (
+            <>
+              <p>Your guild card is blank. Tell the guild what you know, what you can teach, and how to work with you.</p>
+              <button className="btn sm" onClick={onEdit}><Icon.Edit style={{ width: 14, height: 14 }} /> Complete My Card</button>
+            </>
+          ) : (
+            <p>This adventurer has not yet filled in their guild card.</p>
+          )}
+        </div>
+      )}
+
+      {/* ---- contact footer ---- */}
+      {(member.preferred_contact || member.availability) && (
+        <div className="trump-footer">
+          {member.preferred_contact && <span>{member.preferred_contact}</span>}
+          {member.availability && <span>{member.availability}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 Object.assign(window, {
-  Icon, initials, Avatar, XpBadge, StatusBadge, QuestCard, Modal, Leaderboard, QuestComplete, Toast, questState,
+  Icon, initials, Avatar, XpBadge, StatusBadge, QuestCard, Modal, Leaderboard, QuestComplete, Toast, questState, MemberCard,
 });

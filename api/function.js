@@ -133,3 +133,46 @@ app.http('leaderboardSave', {
     }
   },
 });
+
+/* GET /api/members — list all member blobs in parallel, return array */
+app.http('membersList', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'members',
+  handler: async (request, context) => {
+    const guard = guardStorage();
+    if (guard) return guard;
+    try {
+      const names = [];
+      for await (const blob of containerClient().listBlobsFlat({ prefix: 'members/' })) {
+        names.push(blob.name);
+      }
+      const members = await Promise.all(names.map(n => readBlob(n)));
+      return ok(members.filter(Boolean));
+    } catch (e) {
+      context.error('membersList failed:', e.message);
+      return err(500, e.message);
+    }
+  },
+});
+
+/* POST /api/members/{oid} — create or update a member blob */
+app.http('memberSave', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'members/{oid}',
+  handler: async (request, context) => {
+    const guard = guardStorage();
+    if (guard) return guard;
+    try {
+      const { oid } = request.params;
+      const member = await request.json();
+      if (!member || member.oid !== oid) return err(400, 'oid mismatch');
+      await writeBlob(`members/${oid}.json`, member);
+      return ok({ ok: true });
+    } catch (e) {
+      context.error('memberSave failed:', e.message);
+      return err(500, e.message);
+    }
+  },
+});
