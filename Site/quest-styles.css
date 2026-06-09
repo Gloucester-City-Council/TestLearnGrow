@@ -9,6 +9,7 @@
   --bg-2:      #121029;
   --card:      #18162e;
   --card-2:    #201d3c;
+  --callout:   #171530;
   --border:    #2c2850;
   --border-lt: #46407a;
   --gold:      #d89e34;   /* AA: ~5.6:1 on dark; decorative + labels */
@@ -64,7 +65,6 @@ html, body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  image-rendering: pixelated;
 }
 
 /* Arcane glow up top + cool vignette at the corners */
@@ -207,14 +207,13 @@ input, textarea, select { font-family: var(--font-body); }
   overflow: hidden;
 }
 /* portrait avatars — the pixel-art frame is part of the art */
-.avatar.has-img, .mini-avatar.has-img, .lb-avatar.has-img {
+.avatar.has-img, .mini-avatar.has-img, .lb-avatar.has-img, .trump-avatar.has-img {
   background: none; padding: 0; border: 2px solid #000;
 }
-.avatar img, .mini-avatar img, .lb-avatar img {
+.avatar img, .mini-avatar img, .lb-avatar img, .trump-avatar img {
   width: 100%; height: 100%;
   object-fit: cover;
   display: block;
-  image-rendering: pixelated;
 }
 /* leaderboard portrait column */
 .lb-avatar {
@@ -1110,3 +1109,492 @@ input, textarea, select { font-family: var(--font-body); }
 .side-panel .lb-row { padding: 10px 12px; }
 .side-panel .lb-name { font-size: 15px; }
 @media (max-width: 979px) { .side-panel { display: none; } }
+
+/* =========================================================
+   PHASE 4 — GUILD MEMBERS / TOP TRUMPS CARDS
+   ========================================================= */
+
+/* ---- CSS variables ---- */
+:root {
+  --trump-s:    #1a4a1a;   /* strength bg  */
+  --trump-s-hi: #5ccd5c;   /* strength fg / pip */
+  --trump-m:    #0f2e4a;   /* mentor bg */
+  --trump-m-hi: #4ab0e8;   /* mentor fg / pip */
+  --trump-x:    #4a2e00;   /* stretch bg */
+  --trump-x-hi: #e8a830;   /* stretch fg / pip */
+}
+
+/* ---- Section nav (board / guild members toggle in banner) ---- */
+.section-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0,0,0,.3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+}
+.sn-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--parch-dim);
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  display: flex; align-items: center; gap: 6px;
+  transition: color .15s, background .15s;
+}
+.sn-btn svg { width: 16px; height: 16px; }
+.sn-btn:hover { color: var(--parch); }
+.sn-btn.active {
+  background: var(--gold);
+  border-color: var(--amber);
+  color: #0a0a1a;
+}
+
+/* ---- Trump grid ---- */
+.trump-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  padding: 24px 0;
+}
+
+/* ---- Trump card shell ---- */
+.trump-card {
+  position: relative;
+  background: linear-gradient(160deg, #2a2145 0%, #1c1940 60%, #110f26 100%);
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,210,80,.15);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  font-size: 14px;
+}
+.trump-card .corner { z-index: 2; }
+
+/* empty card (no data yet) */
+.trump-card--empty {
+  opacity: .65;
+  border-style: dashed;
+}
+
+/* ---- Card header ---- */
+.trump-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px 12px;
+  background: linear-gradient(135deg, rgba(200,146,42,.18) 0%, transparent 70%);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.trump-avatar {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  flex-shrink: 0;
+  font-size: 18px !important;
+  display: flex; align-items: center; justify-content: center;
+}
+.trump-header-text {
+  flex: 1; min-width: 0;
+}
+.trump-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--amber-hi, var(--amber));
+  letter-spacing: .04em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.trump-role {
+  font-size: 12px;
+  color: var(--parch-dim);
+  margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.trump-rank-row {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 4px;
+}
+.trump-rank-label {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--gold);
+  letter-spacing: .05em;
+}
+.trump-xp {
+  font-family: var(--font-num);
+  font-size: 16px;
+  color: var(--xp-hi, var(--xp));
+  line-height: 1;
+}
+.trump-edit-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--parch-dim);
+  padding: 5px;
+  display: flex; align-items: center; justify-content: center;
+  transition: color .15s, border-color .15s;
+  flex-shrink: 0;
+}
+.trump-edit-btn:hover {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+.trump-edit-btn svg { width: 14px; height: 14px; }
+
+/* ---- Coloured band sections ---- */
+.trump-band {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.trump-band--strength { background: rgba(26,74,26,.5); }
+.trump-band--mentor   { background: rgba(15,46,74,.5); }
+.trump-band--stretch  { background: rgba(74,46,0,.5); }
+.trump-band--about    { background: rgba(255,255,255,.03); }
+
+.trump-band-label {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.trump-band--strength .trump-band-label { color: var(--trump-s-hi); }
+.trump-band--mentor   .trump-band-label { color: var(--trump-m-hi); }
+.trump-band--stretch  .trump-band-label { color: var(--trump-x-hi); }
+.trump-band--about    .trump-band-label { color: var(--parch-dim); }
+
+.trump-band-pip {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.trump-band--strength .trump-band-pip { background: var(--trump-s-hi); }
+.trump-band--mentor   .trump-band-pip { background: var(--trump-m-hi); }
+.trump-band--stretch  .trump-band-pip { background: var(--trump-x-hi); }
+
+/* ---- Skill tags ---- */
+.trump-tags {
+  display: flex; flex-wrap: wrap; gap: 4px;
+}
+.trump-tag {
+  font-size: 11px;
+  border-radius: 4px;
+  padding: 2px 7px;
+  border: 1px solid;
+  line-height: 1.5;
+}
+.trump-tag--strength {
+  background: rgba(92,205,92,.12);
+  border-color: var(--trump-s-hi);
+  color: var(--trump-s-hi);
+}
+.trump-tag--mentor {
+  background: rgba(74,176,232,.12);
+  border-color: var(--trump-m-hi);
+  color: var(--trump-m-hi);
+}
+.trump-tag--stretch {
+  background: rgba(232,168,48,.12);
+  border-color: var(--trump-x-hi);
+  color: var(--trump-x-hi);
+}
+
+/* ---- About rows ---- */
+.trump-about-row {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.trump-about-key {
+  color: var(--parch-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  padding-top: 1px;
+}
+.trump-about-val {
+  color: var(--parch);
+}
+
+/* ---- Empty card prompt ---- */
+.trump-empty {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: var(--parch-dim);
+  font-size: 13px;
+  text-align: center;
+}
+.trump-empty svg { width: 28px; height: 28px; opacity: .4; }
+
+/* ---- Card footer ---- */
+.trump-footer {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--parch-dim);
+  display: flex; flex-wrap: wrap; gap: 6px 16px;
+}
+.trump-footer span { display: flex; align-items: center; gap: 4px; }
+.trump-footer svg  { width: 12px; height: 12px; }
+
+/* =========================================================
+   SKILL PICKER (inside EditMemberCard modal)
+   ========================================================= */
+.skill-cat { margin-bottom: 16px; }
+.skill-cat-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--gold);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-lt);
+  margin-bottom: 6px;
+}
+.skill-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  gap: 8px;
+}
+.skill-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--parch-dim);
+  line-height: 1.3;
+}
+.skill-toggles {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.skill-tog {
+  width: 28px; height: 28px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.04);
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+  display: flex; align-items: center; justify-content: center;
+}
+/* default muted colours */
+.skill-tog--s { color: rgba(92,205,92,.4); }
+.skill-tog--m { color: rgba(74,176,232,.4); }
+.skill-tog--x { color: rgba(232,168,48,.4); }
+/* active states */
+.skill-tog--s.on {
+  background: rgba(26,74,26,.6);
+  border-color: var(--trump-s-hi);
+  color: var(--trump-s-hi);
+  box-shadow: 0 0 6px rgba(92,205,92,.4);
+}
+.skill-tog--m.on {
+  background: rgba(15,46,74,.6);
+  border-color: var(--trump-m-hi);
+  color: var(--trump-m-hi);
+  box-shadow: 0 0 6px rgba(74,176,232,.4);
+}
+.skill-tog--x.on {
+  background: rgba(74,46,0,.6);
+  border-color: var(--trump-x-hi);
+  color: var(--trump-x-hi);
+  box-shadow: 0 0 6px rgba(232,168,48,.4);
+}
+
+/* ---- Responsive: single column on small screens ---- */
+@media (max-width: 600px) {
+  .trump-grid { grid-template-columns: 1fr; gap: 16px; }
+  .trump-card { font-size: 13px; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .trump-card { transition: none; }
+}
+
+/* =========================================================
+   GUILD MEMBER FILTER CONTROLS
+   ========================================================= */
+.member-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.member-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+.member-search-icon {
+  position: absolute;
+  left: 10px; top: 50%;
+  transform: translateY(-50%);
+  width: 16px; height: 16px;
+  color: var(--parch-dim);
+  pointer-events: none;
+}
+.member-search {
+  padding-left: 34px !important;
+  padding-right: 32px !important;
+}
+.member-search-clear {
+  position: absolute;
+  right: 10px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--parch-dim);
+  line-height: 1;
+}
+.member-search-clear:hover { color: var(--amber); }
+
+.member-skill-tabs { flex-shrink: 0; }
+
+/* active state tints for skill filter tabs */
+.skill-tab--strength { color: var(--trump-s-hi) !important; border-color: var(--trump-s-hi) !important; background: rgba(26,74,26,.35) !important; }
+.skill-tab--mentor   { color: var(--trump-m-hi) !important; border-color: var(--trump-m-hi) !important; background: rgba(15,46,74,.35) !important; }
+.skill-tab--stretch  { color: var(--trump-x-hi) !important; border-color: var(--trump-x-hi) !important; background: rgba(74,46,0,.35) !important; }
+
+@media (max-width: 768px) {
+  .member-controls { flex-direction: column; align-items: stretch; }
+  .member-search-wrap { min-width: 0; }
+  .member-skill-tabs { width: 100%; }
+  .member-skill-tabs .tab { flex: 1; text-align: center; font-size: 11px; padding: 10px 4px; }
+}
+
+/* =========================================================
+   SEARCH SUGGESTION DROPDOWN
+   ========================================================= */
+.sugg-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  z-index: 200;
+  margin: 0; padding: 4px 0;
+  list-style: none;
+  background: #1e1b3a;
+  border: 1px solid var(--border-lt);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.7);
+  max-height: 320px;
+  overflow-y: auto;
+}
+.sugg-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--parch-dim);
+  transition: background .1s, color .1s;
+}
+.sugg-item:hover,
+.sugg-item--active {
+  background: rgba(200,146,42,.15);
+  color: var(--parch);
+}
+.sugg-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sugg-mark {
+  background: none;
+  color: var(--amber);
+  font-style: normal;
+  font-weight: 600;
+}
+.sugg-kind {
+  flex-shrink: 0;
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  letter-spacing: .06em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid;
+  text-transform: uppercase;
+}
+.sugg-kind--member { color: var(--amber);        border-color: var(--gold);        background: rgba(200,146,42,.1); }
+.sugg-kind--role   { color: var(--parch-dim);    border-color: var(--border-lt);   background: rgba(255,255,255,.04); }
+.sugg-kind--skill  { color: var(--trump-m-hi);   border-color: var(--trump-m-hi);  background: rgba(74,176,232,.08); }
+
+/* clickable email on trump cards */
+.trump-contact-link {
+  color: var(--trump-m-hi);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.trump-contact-link:hover { color: var(--amber); }
+
+/* =========================================================
+   CLICKABLE NAMES / PORTRAITS — view guild card from anywhere
+   ========================================================= */
+.name-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: transparent;
+  transition: color .12s, text-decoration-color .12s;
+  display: inline;
+}
+.name-link:hover, .name-link:focus-visible {
+  color: var(--amber);
+  text-decoration-color: var(--amber);
+  outline: none;
+}
+/* owner-link wraps avatar + name inline */
+.owner-link {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 7px;
+}
+/* leaderboard avatar click target */
+.lb-member-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  transition: opacity .12s, box-shadow .12s;
+}
+.lb-member-btn:hover { opacity: .85; box-shadow: 0 0 0 2px var(--amber); border-radius: 50%; }
+.lb-member-btn:disabled { cursor: default; }
+/* banner avatar click */
+.user-avatar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 2px;
+  display: flex;
+  transition: opacity .12s;
+}
+.user-avatar-btn:hover { opacity: .85; }
+/* name-link as .user-name keeps the existing style */
+button.user-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--parch);
+}

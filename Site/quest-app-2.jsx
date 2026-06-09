@@ -1,10 +1,10 @@
 /* =========================================================
    APP part 2 — quest detail, main App, mount
    ========================================================= */
-const { useState: uS, useEffect: uE, useRef: uR } = React;
+const { useState: uS, useEffect: uE, useRef: uR, useMemo: uM } = React;
 
 /* ============ QUEST DETAIL (modal) ============ */
-function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, onClaim, onRelease, onClose }) {
+function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, onClaim, onRelease, onClose, onMemberClick }) {
   const state = questState(quest);
   const done = state === "completed";
   const available = state === "available";
@@ -61,9 +61,21 @@ function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, o
 
       <div className="card-meta" style={{ marginBottom: 16, paddingTop: 0 }}>
         {available ? (
-          <span className="poster" style={{ fontSize: 14 }}>Posted by {quest.posted_by_name} · {timeAgo(quest.created_at)}</span>
+          <span className="poster" style={{ fontSize: 14 }}>Posted by{" "}
+            <button className="name-link" onClick={() => onMemberClick && onMemberClick(quest.posted_by_oid)}>{quest.posted_by_name}</button>
+            {" "}· {timeAgo(quest.created_at)}
+          </span>
         ) : (
-          <span className="owner"><Avatar oid={quest.owner_oid} name={quest.owner_name} cls="mini-avatar" />{quest.owner_name}{quest.posted_by_oid && quest.posted_by_oid !== quest.owner_oid && <span style={{ color: "var(--ink-faint)", fontSize: 13 }}>&nbsp;· posted by {quest.posted_by_name}</span>}</span>
+          <span className="owner">
+            <button className="name-link owner-link" onClick={() => onMemberClick && onMemberClick(quest.owner_oid)}>
+              <Avatar oid={quest.owner_oid} name={quest.owner_name} cls="mini-avatar" />{quest.owner_name}
+            </button>
+            {quest.posted_by_oid && quest.posted_by_oid !== quest.owner_oid && (
+              <span style={{ color: "var(--ink-faint)", fontSize: 13 }}>&nbsp;· posted by{" "}
+                <button className="name-link" onClick={() => onMemberClick && onMemberClick(quest.posted_by_oid)}>{quest.posted_by_name}</button>
+              </span>
+            )}
+          </span>
         )}
         <span style={{ color: "var(--muted)", fontSize: 14 }}>
           {done ? `Completed ${fullDate(quest.closed_at)}` : available ? "Awaiting a hero" : `Claimed ${timeAgo(quest.claimed_at || quest.created_at)}`}
@@ -73,14 +85,14 @@ function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, o
       <p className="detail-desc">{quest.description}</p>
 
       {available && claimable && (
-        <div className="locked-field" style={{ marginTop: 16, borderColor: "var(--gold)", borderStyle: "solid", background: "#171530" }}>
+        <div className="locked-field" style={{ marginTop: 16, borderColor: "var(--gold)", borderStyle: "solid", background: "var(--callout)" }}>
           <Icon.Flag style={{ color: "var(--amber)" }} />
           <span>This bounty is <strong style={{ color: "var(--amber)" }}>unclaimed</strong>. Claim it to take ownership — only the claimant can complete it and earn the <strong style={{ color: "var(--xp-hi)" }}>{quest.xp_reward} XP</strong>.</span>
         </div>
       )}
 
       {confirming && !done && (
-        <div className="locked-field" style={{ marginTop: 16, borderColor: "var(--gold)", borderStyle: "solid", background: "#171530" }}>
+        <div className="locked-field" style={{ marginTop: 16, borderColor: "var(--gold)", borderStyle: "solid", background: "var(--callout)" }}>
           <Icon.Trophy style={{ color: "var(--amber)" }} />
           <span>Sealing this quest awards <strong style={{ color: "var(--xp-hi)" }}>{quest.xp_reward} XP</strong> to your name on the leaderboard. This cannot be undone.</span>
         </div>
@@ -96,7 +108,7 @@ function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, o
               {quest.updates.map((u) => (
                 <li className="log-item" key={u.id}>
                   <div className="log-meta">
-                    <span className="log-author">{u.author_name}</span>
+                    <button className="name-link log-author" onClick={() => onMemberClick && onMemberClick(u.author_oid)}>{u.author_name}</button>
                     <span className="log-time">{timeAgo(u.timestamp)}</span>
                   </div>
                   <p className="log-text">{u.text}</p>
@@ -128,6 +140,178 @@ function QuestDetail({ quest, user, schema, config, onAddUpdate, onCloseQuest, o
   );
 }
 
+/* ============ GUILD MEMBERS SECTION ============ */
+function MembersSection({ allMembers, board, config, user, onEdit }) {
+  const [search, setSearch] = uS("");
+  const [skillFilter, setSkillFilter] = uS("any"); // any | strength | mentor | stretch
+  const [showSuggestions, setShowSuggestions] = uS(false);
+  const [activeIdx, setActiveIdx] = uS(-1);
+  const inputRef = uR(null);
+  const listRef = uR(null);
+
+  const SKILL_FILTERS = [
+    { key: "any",      label: "All Members" },
+    { key: "strength", label: "Strengths" },
+    { key: "mentor",   label: "Can Mentor" },
+    { key: "stretch",  label: "Stretch Goals" },
+  ];
+
+  /* build suggestion list from member names, roles, and skill tool names */
+  const suggestions = uM(() => {
+    const q = search.trim().toLowerCase();
+    if (!q || q.length < 2) return [];
+    const seen = new Set();
+    const results = [];
+    const push = (text, kind) => {
+      const key = text.toLowerCase();
+      if (!seen.has(key) && key.includes(q)) { seen.add(key); results.push({ text, kind }); }
+    };
+    allMembers.forEach((m) => {
+      push(m.name, "member");
+      if (m.role_team) push(m.role_team, "role");
+    });
+    /* skill tools from the global SKILLS matrix */
+    (SKILLS || []).forEach((cat) => cat.tools.forEach((tool) => push(tool, "skill")));
+    return results.slice(0, 8);
+  }, [allMembers, search]);
+
+  const KIND_LABEL = { member: "Member", role: "Role", skill: "Skill" };
+  const KIND_CLASS = { member: "sugg-kind--member", role: "sugg-kind--role", skill: "sugg-kind--skill" };
+
+  const pick = (text) => {
+    setSearch(text);
+    setShowSuggestions(false);
+    setActiveIdx(-1);
+    inputRef.current && inputRef.current.focus();
+  };
+
+  const onKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); setActiveIdx((i) => Math.min(i + 1, suggestions.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActiveIdx((i) => Math.max(i - 1, -1)); }
+    else if (e.key === "Enter" && activeIdx >= 0) { e.preventDefault(); pick(suggestions[activeIdx].text); }
+    else if (e.key === "Escape") { setShowSuggestions(false); setActiveIdx(-1); }
+  };
+
+  /* close dropdown on outside click */
+  uE(() => {
+    const handler = (e) => {
+      if (listRef.current && !listRef.current.contains(e.target) &&
+          inputRef.current && !inputRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+        setActiveIdx(-1);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = uM(() => {
+    const q = search.trim().toLowerCase();
+    return allMembers.filter((m) => {
+      if (q) {
+        const inName = m.name.toLowerCase().includes(q);
+        const inRole = (m.role_team || "").toLowerCase().includes(q);
+        const inSkills = Object.keys(m.skills || {}).some((tool) => tool.toLowerCase().includes(q));
+        if (!inName && !inRole && !inSkills) return false;
+      }
+      if (skillFilter !== "any") {
+        const wanted = skillFilter;
+        const hasType = Object.values(m.skills || {}).some((v) => v === wanted);
+        if (!hasType) return false;
+      }
+      return true;
+    });
+  }, [allMembers, search, skillFilter]);
+
+  /* highlight matching part of suggestion text */
+  const highlight = (text) => {
+    const q = search.trim();
+    if (!q) return text;
+    const idx = text.toLowerCase().indexOf(q.toLowerCase());
+    if (idx < 0) return text;
+    return (
+      <>
+        {text.slice(0, idx)}
+        <mark className="sugg-mark">{text.slice(idx, idx + q.length)}</mark>
+        {text.slice(idx + q.length)}
+      </>
+    );
+  };
+
+  return (
+    <>
+      <p className="flavour">The Adventurers of the South West</p>
+      <div className="divider"><span className="rule" /><Icon.Shield /><span className="rule r" /></div>
+
+      <div className="member-controls">
+        <div className="member-search-wrap" style={{ position: "relative" }}>
+          <Icon.Search className="member-search-icon" />
+          <input
+            ref={inputRef}
+            className="input member-search"
+            placeholder="Search by name, role or skill…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true); setActiveIdx(-1); }}
+            onFocus={() => search.trim().length >= 2 && setShowSuggestions(true)}
+            onKeyDown={onKeyDown}
+            aria-label="Search members"
+            aria-autocomplete="list"
+            aria-expanded={showSuggestions && suggestions.length > 0}
+            autoComplete="off"
+          />
+          {search && (
+            <button className="member-search-clear linklike" onClick={() => { setSearch(""); setShowSuggestions(false); }} aria-label="Clear search">✕</button>
+          )}
+          {showSuggestions && suggestions.length > 0 && (
+            <ul className="sugg-list" ref={listRef} role="listbox" aria-label="Suggestions">
+              {suggestions.map((s, i) => (
+                <li key={s.text} role="option" aria-selected={i === activeIdx}
+                  className={"sugg-item" + (i === activeIdx ? " sugg-item--active" : "")}
+                  onMouseDown={(e) => { e.preventDefault(); pick(s.text); }}>
+                  <span className="sugg-text">{highlight(s.text)}</span>
+                  <span className={"sugg-kind " + KIND_CLASS[s.kind]}>{KIND_LABEL[s.kind]}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="tabs member-skill-tabs" role="tablist" aria-label="Filter by skill type">
+          {SKILL_FILTERS.map(({ key, label }) => (
+            <button key={key} role="tab" aria-selected={skillFilter === key}
+              className={"tab member-skill-tab" + (skillFilter === key ? " skill-tab--" + key : "")}
+              onClick={() => setSkillFilter(key)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="empty">
+          <Icon.Shield />
+          <h3>No members found</h3>
+          <p>Try adjusting your search or filter.</p>
+        </div>
+      ) : (
+        <div className="trump-grid">
+          {filtered.map((m) => (
+            <MemberCard
+              key={m.oid}
+              member={m}
+              xp={(board[m.oid] || {}).xp || 0}
+              ranks={config.xp_ranks}
+              isMe={m.oid === user.oid}
+              onEdit={onEdit}
+            />
+          ))}
+        </div>
+      )}
+      <div style={{ height: 40 }} />
+    </>
+  );
+}
+
 /* ============ MAIN APP ============ */
 function App() {
   const [loading, setLoading] = uS(true);
@@ -142,24 +326,43 @@ function App() {
   const [mobileView, setMobileView] = uS("board"); // board | leaderboard
   const [celebrate, setCelebrate] = uS(null);
   const [toast, setToast] = uS(null);
+  const [activeSection, setActiveSection] = uS("board");
+  const [members, setMembers] = uS([]);
+  const [editingMember, setEditingMember] = uS(false);
+  const [viewingMember, setViewingMember] = uS(null); // oid | null
 
-  /* ---- mount: load schemas + data, write defaults if missing ---- */
+  /* ---- mount: load all data; seed once if blob/localStorage is empty ---- */
   uE(() => {
     (async () => {
-      let cfg = await Store.get("sw-schema-config");
-      if (!cfg) { cfg = DEFAULT_CONFIG; await Store.set("sw-schema-config", cfg); }
-      let sch = await Store.get("sw-schema-quest");
-      if (!sch) { sch = DEFAULT_QUEST_SCHEMA; await Store.set("sw-schema-quest", sch); }
-      let qs = await Store.get("sw-quests");
-      let lb = await Store.get("sw-leaderboard");
-      if (!qs) { qs = seedQuests(); await Store.set("sw-quests", qs); }
-      if (!lb) { lb = seedLeaderboard(qs); await Store.set("sw-leaderboard", lb); }
-
-      const sess = await Store.get("sw-session");
-      setConfig(cfg); setSchema(sch); setQuests(qs); setBoard(lb);
+      let { quests: qs, leaderboard: lb } = await Store.loadAll();
+      if (!qs || qs.length === 0) {
+        qs = seedQuests();
+        await Promise.all(qs.map((q) => Store.saveQuest(q)));
+      }
+      if (!lb || Object.keys(lb).length === 0) {
+        lb = seedLeaderboard(qs);
+        await Store.saveLeaderboard(lb);
+      }
+      const [mbrs, sess] = await Promise.all([Store.loadMembers(), Store.get("sw-session")]);
+      setConfig(DEFAULT_CONFIG); setSchema(DEFAULT_QUEST_SCHEMA); setQuests(qs); setBoard(lb);
+      setMembers(mbrs || []);
       if (sess) setUser(sess);
       setLoading(false);
     })();
+  }, []);
+
+  /* ---- poll every 30 s for updates from other users ---- */
+  uE(() => {
+    const id = setInterval(async () => {
+      const [{ quests: qs, leaderboard: lb }, mbrs] = await Promise.all([
+        Store.loadAll(),
+        Store.loadMembers(),
+      ]);
+      if (qs) setQuests(qs);
+      if (lb) setBoard(lb);
+      if (mbrs) setMembers(mbrs);
+    }, 30000);
+    return () => clearInterval(id);
   }, []);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
@@ -171,25 +374,25 @@ function App() {
     setBoard((b) => {
       if (b[acct.oid]) return b;
       const nb = { ...b, [acct.oid]: { oid: acct.oid, name: acct.name, xp: 0 } };
-      Store.set("sw-leaderboard", nb);
+      Store.saveLeaderboard(nb);
       return nb;
     });
   };
   const signOut = async () => { await Store.set("sw-session", null); setUser(null); setOpenQuestId(null); setPosting(false); };
 
-  const persistQuests = (next) => { setQuests(next); Store.set("sw-quests", next); };
-  const persistBoard = (next) => { setBoard(next); Store.set("sw-leaderboard", next); };
-
   const createQuest = (q) => {
-    persistQuests([q, ...quests]);
+    setQuests([q, ...quests]);
+    Store.saveQuest(q);
     setPosting(false);
     showToast("Quest posted to the board!");
   };
 
   const addUpdate = (qid, text) => {
+    const orig = quests.find((q) => q.quest_id === qid);
     const upd = { id: nano(), author_name: user.name, author_oid: user.oid, text, timestamp: new Date().toISOString() };
-    const next = quests.map((q) => q.quest_id === qid ? { ...q, updates: [...q.updates, upd] } : q);
-    persistQuests(next);
+    const updated = { ...orig, updates: [...orig.updates, upd] };
+    setQuests(quests.map((q) => q.quest_id === qid ? updated : q));
+    Store.saveQuest(updated);
     if (config.features.xp_on_update) {
       // optional flag — off by default per config
     }
@@ -197,40 +400,66 @@ function App() {
 
   const claimQuest = (quest) => {
     if (!user) return;
-    const next = quests.map((q) => q.quest_id === quest.quest_id
-      ? { ...q, owner_name: user.name, owner_oid: user.oid, owner_email: user.username, claimed_at: new Date().toISOString() }
-      : q);
-    persistQuests(next);
+    const claimed = { ...quest, owner_name: user.name, owner_oid: user.oid, owner_email: user.username, claimed_at: new Date().toISOString() };
+    setQuests(quests.map((q) => q.quest_id === quest.quest_id ? claimed : q));
+    Store.saveQuest(claimed);
     setBoard((b) => {
       if (b[user.oid]) return b;
       const nb = { ...b, [user.oid]: { oid: user.oid, name: user.name, xp: 0 } };
-      Store.set("sw-leaderboard", nb);
+      Store.saveLeaderboard(nb);
       return nb;
     });
-    showToast(`Quest claimed — “${quest.title}” is yours!`);
+    showToast(`Quest claimed — "${quest.title}" is yours!`);
   };
 
   const releaseQuest = (quest) => {
-    if (!user || quest.owner_oid !== user.oid) return; // only the owner may release
-    const next = quests.map((q) => q.quest_id === quest.quest_id
-      ? { ...q, owner_name: "", owner_oid: null, owner_email: "", claimed_at: null }
-      : q);
-    persistQuests(next);
+    if (!user || quest.owner_oid !== user.oid) return;
+    const released = { ...quest, owner_name: "", owner_oid: null, owner_email: "", claimed_at: null };
+    setQuests(quests.map((q) => q.quest_id === quest.quest_id ? released : q));
+    Store.saveQuest(released);
     showToast("Quest released back to the open pool.");
   };
 
   const closeQuest = (quest) => {
-    if (!user || quest.owner_oid !== user.oid) return; // ownership guard
-    const next = quests.map((q) => q.quest_id === quest.quest_id
-      ? { ...q, status: "completed", closed_at: new Date().toISOString() } : q);
-    persistQuests(next);
+    if (!user || quest.owner_oid !== user.oid) return;
+    const closed = { ...quest, status: "completed", closed_at: new Date().toISOString() };
+    setQuests(quests.map((q) => q.quest_id === quest.quest_id ? closed : q));
+    Store.saveQuest(closed);
     const nb = { ...board };
     if (!nb[quest.owner_oid]) nb[quest.owner_oid] = { oid: quest.owner_oid, name: quest.owner_name, xp: 0 };
     nb[quest.owner_oid] = { ...nb[quest.owner_oid], xp: nb[quest.owner_oid].xp + quest.xp_reward };
-    persistBoard(nb);
+    setBoard(nb);
+    Store.saveLeaderboard(nb);
     setOpenQuestId(null);
     setCelebrate({ xp: quest.xp_reward, title: quest.title });
   };
+
+  const saveMember = (updated) => {
+    setMembers((ms) => {
+      const idx = ms.findIndex((m) => m.oid === updated.oid);
+      return idx >= 0 ? ms.map((m) => m.oid === updated.oid ? updated : m) : [...ms, updated];
+    });
+    Store.saveMember(updated);
+    setEditingMember(false);
+    showToast("Guild card updated!");
+  };
+
+  /* ---- computed members list — synthesises blank cards for anyone not yet saved ---- */
+  const allMembers = uM(() => {
+    const byOid = {};
+    (members || []).forEach((m) => { byOid[m.oid] = m; });
+    const oids = new Set([
+      ...MOCK_ACCOUNTS.map((a) => a.oid),
+      ...Object.keys(board),
+    ]);
+    return Array.from(oids).map((oid) => byOid[oid] || {
+      oid,
+      name: MOCK_ACCOUNTS.find((a) => a.oid === oid)?.name || board[oid]?.name || "Adventurer",
+      role_team: "", skills: {}, what_to_know: "", how_i_work_best: "", how_to_get_best: "",
+      preferred_contact: MOCK_ACCOUNTS.find((a) => a.oid === oid)?.username || "",
+      availability: "", updated_at: null,
+    });
+  }, [members, board]);
 
   if (loading) {
     return <div className="signin-stage"><div style={{ textAlign: "center", color: "var(--gold)", fontFamily: "var(--font-display)" }}>
@@ -255,7 +484,8 @@ function App() {
   const myXp = board[user.oid] ? board[user.oid].xp : 0;
   const maxXp = Math.max(1, ...Object.values(board).map((r) => r.xp));
 
-  const showLeaderboardMobile = config.features.leaderboard && mobileView === "leaderboard";
+  const showLeaderboardMobile = config.features.leaderboard && mobileView === "leaderboard" && activeSection === "board";
+  const myMember = allMembers.find((m) => m.oid === user.oid) || null;
 
   return (
     <div className="app-shell">
@@ -268,71 +498,99 @@ function App() {
             <p className="season-label">{config.season_label}</p>
           </div>
           <div className="user-chip">
-            <Avatar oid={user.oid} name={user.name} cls="avatar" />
+            <button className="user-avatar-btn" onClick={() => setViewingMember(user.oid)} title="View my guild card">
+              <Avatar oid={user.oid} name={user.name} cls="avatar" />
+            </button>
             <span className="user-meta">
-              <span className="user-name">{user.name}</span>
+              <button className="name-link user-name" onClick={() => setViewingMember(user.oid)}>{user.name}</button>
               <span className="user-rank">{rankFor(myXp, config.xp_ranks)} · {myXp.toLocaleString()} XP</span>
             </span>
             <button className="linklike" onClick={signOut}>Sign out</button>
           </div>
         </div>
+        {/* ---- section nav ---- */}
+        <nav className="section-nav" aria-label="Main sections">
+          <button className={"sn-btn" + (activeSection === "board" ? " active" : "")}
+            onClick={() => setActiveSection("board")}>
+            <Icon.Board style={{ width: 16, height: 16 }} /> Quest Board
+          </button>
+          <button className={"sn-btn" + (activeSection === "members" ? " active" : "")}
+            onClick={() => setActiveSection("members")}>
+            <Icon.Shield style={{ width: 16, height: 16 }} /> Guild Members
+          </button>
+        </nav>
       </header>
 
       <main className="wrap" style={{ flex: 1 }}>
-        {/* mobile leaderboard view */}
-        {showLeaderboardMobile ? (
-          <section aria-label="Leaderboard">
-            <p className="flavour">Hall of Adventurers</p>
-            <div className="divider"><span className="rule" /><Icon.Trophy /><span className="rule r" /></div>
-            <Leaderboard board={board} ranks={config.xp_ranks} meOid={user.oid} maxXp={maxXp} />
-            <div style={{ height: 24 }} />
-          </section>
-        ) : (
-          <>
-            <p className="flavour">{config.flavour_text}</p>
-            <div className="divider"><span className="rule" /><Icon.Gem /><span className="rule r" /></div>
 
-            <div className="controls">
-              <div className="tabs" role="tablist" aria-label="Filter quests">
-                {FILTERS.map((f) => (
-                  <button key={f} role="tab" aria-selected={filter === f} className="tab"
-                    onClick={() => setFilter(f)}>
-                    {f}<span className="count">{counts[f]}</span>
-                  </button>
-                ))}
-              </div>
-              <span className="spacer" />
-              <button className="btn post-btn" onClick={() => setPosting(true)}>
-                <Icon.Plus style={{ width: 16, height: 16 }} /> Post New Quest
-              </button>
-            </div>
+        {/* ======== QUEST BOARD SECTION ======== */}
+        {activeSection === "board" && (
+          showLeaderboardMobile ? (
+            <section aria-label="Leaderboard">
+              <p className="flavour">Hall of Adventurers</p>
+              <div className="divider"><span className="rule" /><Icon.Trophy /><span className="rule r" /></div>
+              <Leaderboard board={board} ranks={config.xp_ranks} meOid={user.oid} maxXp={maxXp} onMemberClick={setViewingMember} />
+              <div style={{ height: 24 }} />
+            </section>
+          ) : (
+            <>
+              <p className="flavour">{config.flavour_text}</p>
+              <div className="divider"><span className="rule" /><Icon.Gem /><span className="rule r" /></div>
 
-            <div className={"board-layout" + (config.features.leaderboard ? " with-side" : "")}>
-              <div className="quest-grid">
-                {shown.length === 0 ? (
-                  <div className="empty">
-                    <Icon.Scroll />
-                    <h3>No quests here yet</h3>
-                    <p>{filter === "COMPLETED" ? "No quests have been sealed. The glory awaits."
-                      : filter === "AVAILABLE" ? "No unclaimed bounties right now. Post one for the guild."
-                      : filter === "CLAIMED" ? "Nothing is in progress. Claim a bounty to begin."
-                      : "The board is quiet. Be the one to post the first quest."}</p>
-                  </div>
-                ) : shown.map((q) => (
-                  <QuestCard key={q.quest_id} quest={q} onOpen={(qq) => setOpenQuestId(qq.quest_id)} />
-                ))}
+              <div className="controls">
+                <div className="tabs" role="tablist" aria-label="Filter quests">
+                  {FILTERS.map((f) => (
+                    <button key={f} role="tab" aria-selected={filter === f} className="tab"
+                      onClick={() => setFilter(f)}>
+                      {f}<span className="count">{counts[f]}</span>
+                    </button>
+                  ))}
+                </div>
+                <span className="spacer" />
+                <button className="btn post-btn" onClick={() => setPosting(true)}>
+                  <Icon.Plus style={{ width: 16, height: 16 }} /> Post New Quest
+                </button>
               </div>
 
-              {config.features.leaderboard && (
-                <aside className="side-panel" aria-label="Leaderboard">
-                  <h2><Icon.Trophy /> Leaderboard</h2>
-                  <p className="sp-sub">Ranked by total XP earned</p>
-                  <Leaderboard board={board} ranks={config.xp_ranks} meOid={user.oid} maxXp={maxXp} compact />
-                </aside>
-              )}
-            </div>
-          </>
+              <div className={"board-layout" + (config.features.leaderboard ? " with-side" : "")}>
+                <div className="quest-grid">
+                  {shown.length === 0 ? (
+                    <div className="empty">
+                      <Icon.Scroll />
+                      <h3>No quests here yet</h3>
+                      <p>{filter === "COMPLETED" ? "No quests have been sealed. The glory awaits."
+                        : filter === "AVAILABLE" ? "No unclaimed bounties right now. Post one for the guild."
+                        : filter === "CLAIMED" ? "Nothing is in progress. Claim a bounty to begin."
+                        : "The board is quiet. Be the one to post the first quest."}</p>
+                    </div>
+                  ) : shown.map((q) => (
+                    <QuestCard key={q.quest_id} quest={q} onOpen={(qq) => setOpenQuestId(qq.quest_id)} onMemberClick={setViewingMember} />
+                  ))}
+                </div>
+
+                {config.features.leaderboard && (
+                  <aside className="side-panel" aria-label="Leaderboard">
+                    <h2><Icon.Trophy /> Leaderboard</h2>
+                    <p className="sp-sub">Ranked by total XP earned</p>
+                    <Leaderboard board={board} ranks={config.xp_ranks} meOid={user.oid} maxXp={maxXp} compact onMemberClick={setViewingMember} />
+                  </aside>
+                )}
+              </div>
+            </>
+          )
         )}
+
+        {/* ======== GUILD MEMBERS SECTION ======== */}
+        {activeSection === "members" && (
+          <MembersSection
+            allMembers={allMembers}
+            board={board}
+            config={config}
+            user={user}
+            onEdit={() => setEditingMember(true)}
+          />
+        )}
+
       </main>
 
       {/* ---- footer ---- */}
@@ -344,28 +602,51 @@ function App() {
         <span>Quest Board</span>
       </footer>
 
-      {/* ---- mobile bottom nav (leaderboard as tab) ---- */}
-      {config.features.leaderboard && (
-        <nav className="bottom-nav" aria-label="Sections">
-          <button className="bn-btn" aria-current={mobileView === "board"} onClick={() => setMobileView("board")}>
-            <Icon.Board /> Board
+      {/* ---- mobile bottom nav ---- */}
+      <nav className="bottom-nav" aria-label="Sections">
+        <button className="bn-btn" aria-current={activeSection === "board" && mobileView === "board"}
+          onClick={() => { setActiveSection("board"); setMobileView("board"); }}>
+          <Icon.Board /> Board
+        </button>
+        {config.features.leaderboard && (
+          <button className="bn-btn" aria-current={activeSection === "board" && mobileView === "leaderboard"}
+            onClick={() => { setActiveSection("board"); setMobileView("leaderboard"); }}>
+            <Icon.Trophy /> Ranks
           </button>
-          <button className="bn-btn" aria-current={mobileView === "leaderboard"} onClick={() => setMobileView("leaderboard")}>
-            <Icon.Trophy /> Leaderboard
-          </button>
-        </nav>
-      )}
+        )}
+        <button className="bn-btn" aria-current={activeSection === "members"}
+          onClick={() => setActiveSection("members")}>
+          <Icon.Shield /> Guild
+        </button>
+      </nav>
 
       {/* ---- modals + overlays ---- */}
       {openQuest && (
         <QuestDetail quest={openQuest} user={user} schema={schema} config={config}
           onAddUpdate={addUpdate} onCloseQuest={closeQuest} onClaim={claimQuest} onRelease={releaseQuest}
-          onClose={() => setOpenQuestId(null)} />
+          onClose={() => setOpenQuestId(null)} onMemberClick={setViewingMember} />
       )}
       {posting && (
         <PostQuest schema={schema} user={user} claimable={config.features.claimable}
           onClose={() => setPosting(false)} onCreate={createQuest} />
       )}
+      {editingMember && myMember && (
+        <EditMemberCard member={myMember} onClose={() => setEditingMember(false)} onSave={saveMember} />
+      )}
+      {viewingMember && (() => {
+        const vm = allMembers.find((m) => m.oid === viewingMember);
+        if (!vm) return null;
+        return (
+          <MemberCardModal
+            member={vm}
+            xp={(board[vm.oid] || {}).xp || 0}
+            ranks={config.xp_ranks}
+            isMe={vm.oid === user.oid}
+            onEdit={() => { setViewingMember(null); setEditingMember(true); }}
+            onClose={() => setViewingMember(null)}
+          />
+        );
+      })()}
       {celebrate && (
         <QuestComplete xp={celebrate.xp} title={celebrate.title} onDone={() => setCelebrate(null)} />
       )}

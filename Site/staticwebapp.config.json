@@ -1,0 +1,10 @@
+{
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/index.html"
+    }
+  },
+  "mimeTypes": {
+    ".jsx": "text/babel"
+  }
+}

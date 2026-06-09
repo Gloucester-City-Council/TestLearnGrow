@@ -84,6 +84,24 @@ const Icon = {
       <path d="M9 3l3 6 3-6" />
     </svg>
   ),
+  Shield: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...p}>
+      <path d="M12 3l8 3v5c0 5.5-3.5 10-8 12C7.5 21 4 16.5 4 11V6l8-3z"/>
+      <path d="M9 12l2 2 4-4" opacity=".7"/>
+    </svg>
+  ),
+  Edit: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...p}>
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+  ),
+  Search: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...p}>
+      <circle cx="11" cy="11" r="7"/>
+      <line x1="16.5" y1="16.5" x2="22" y2="22"/>
+    </svg>
+  ),
 };
 
 /* ---------- initials avatar ---------- */
@@ -134,11 +152,12 @@ function StatusBadge({ quest }) {
 }
 
 /* ---------- quest card ---------- */
-function QuestCard({ quest, onOpen }) {
+function QuestCard({ quest, onOpen, onMemberClick }) {
   const s = questState(quest);
   const done = s === "completed";
   const available = s === "available";
   const stateText = done ? "Completed" : available ? "Unclaimed — awaiting a hero" : "In progress";
+  const memberClick = (oid, e) => { if (onMemberClick && oid) { e.stopPropagation(); onMemberClick(oid); } };
   return (
     <button className={"quest-card parchment" + (done ? " completed" : "") + (available ? " available" : "")}
       onClick={() => onOpen(quest)}
@@ -153,10 +172,23 @@ function QuestCard({ quest, onOpen }) {
         {available ? (
           <>
             <span className="claim-cta"><Icon.Hand /> Claim this quest</span>
-            <span className="poster">Posted by {quest.posted_by_name}</span>
+            <span className="poster">Posted by
+              {" "}<span role="button" tabIndex="0" className="name-link"
+                onClick={(e) => memberClick(quest.posted_by_oid, e)}
+                onKeyDown={(e) => e.key === "Enter" && memberClick(quest.posted_by_oid, e)}>
+                {quest.posted_by_name}
+              </span>
+            </span>
           </>
         ) : (
-          <span className="owner"><Avatar oid={quest.owner_oid} name={quest.owner_name} cls="mini-avatar" />{quest.owner_name}</span>
+          <span className="owner">
+            <span role="button" tabIndex="0" className="name-link owner-link"
+              onClick={(e) => memberClick(quest.owner_oid, e)}
+              onKeyDown={(e) => e.key === "Enter" && memberClick(quest.owner_oid, e)}
+              title={"View " + quest.owner_name + "'s guild card"}>
+              <Avatar oid={quest.owner_oid} name={quest.owner_name} cls="mini-avatar" />{quest.owner_name}
+            </span>
+          </span>
         )}
         <XpBadge amount={quest.xp_reward} />
         {quest.updates && quest.updates.length > 0 && (
@@ -218,7 +250,7 @@ function Modal({ title, sub, onClose, children, foot, labelId = "modal-title" })
 }
 
 /* ---------- leaderboard rows ---------- */
-function Leaderboard({ board, ranks, meOid, maxXp, compact }) {
+function Leaderboard({ board, ranks, meOid, maxXp, compact, onMemberClick }) {
   const rows = Object.values(board).sort((a, b) => b.xp - a.xp);
   const top = maxXp || (rows[0] ? rows[0].xp : 1);
   const [animate, setAnimate] = useState(false);
@@ -229,10 +261,15 @@ function Leaderboard({ board, ranks, meOid, maxXp, compact }) {
       {rows.map((r, i) => (
         <li key={r.oid} className={"lb-row" + (r.oid === meOid ? " me" : "")}>
           <div className="lb-rank">{i + 1}</div>
-          <Avatar oid={r.oid} name={r.name} cls="lb-avatar" />
+          <button className="lb-member-btn" onClick={() => onMemberClick && onMemberClick(r.oid)}
+            title={"View " + r.name + "'s guild card"} disabled={!onMemberClick}>
+            <Avatar oid={r.oid} name={r.name} cls="lb-avatar" />
+          </button>
           <div className="lb-main">
             <div className="lb-name">
-              {r.name}
+              <button className="name-link" onClick={() => onMemberClick && onMemberClick(r.oid)} disabled={!onMemberClick}>
+                {r.name}
+              </button>
               {r.oid === meOid && <span className="you-tag">YOU</span>}
             </div>
             <div className="lb-title">{rankFor(r.xp, ranks)}</div>
@@ -280,6 +317,146 @@ function Toast({ msg }) {
   return <div className="toast" role="status"><Icon.Check style={{ width: 16, height: 16 }} /> {msg}</div>;
 }
 
+/* ---------- member / top trumps card ---------- */
+function MemberCard({ member, xp, ranks, isMe, onEdit, inModal }) {
+  const skills = member.skills || {};
+  const strengths = Object.keys(skills).filter((k) => skills[k] === "strength");
+  const mentors   = Object.keys(skills).filter((k) => skills[k] === "mentor");
+  const stretches = Object.keys(skills).filter((k) => skills[k] === "stretch");
+  const hasSkills = strengths.length || mentors.length || stretches.length;
+  const hasAbout  = member.what_to_know || member.how_i_work_best || member.how_to_get_best;
+  const empty     = !hasSkills && !hasAbout && !member.role_team;
+
+  const inner = (
+    <>
+      {/* ---- header ---- */}
+      <div className="trump-header">
+        <Avatar oid={member.oid} name={member.name} cls="trump-avatar" />
+        <div className="trump-header-text">
+          <div className="trump-name">{member.name}</div>
+          {member.role_team && <div className="trump-role">{member.role_team}</div>}
+          <div className="trump-rank-row">
+            <span className="trump-rank-label">{rankFor(xp || 0, ranks)}</span>
+            <span className="trump-xp">{(xp || 0).toLocaleString()} XP</span>
+          </div>
+        </div>
+        {isMe && (
+          <button className="trump-edit-btn" onClick={onEdit} aria-label="Edit your guild card">
+            <Icon.Edit style={{ width: 13, height: 13 }} /> Edit
+          </button>
+        )}
+      </div>
+
+      {/* ---- skill bands ---- */}
+      {strengths.length > 0 && (
+        <div className="trump-band trump-band--strength">
+          <div className="trump-band-label"><span className="trump-band-pip" />Core Strengths</div>
+          <div className="trump-tags">
+            {strengths.map((s) => <span key={s} className="trump-tag trump-tag--strength">{s}</span>)}
+          </div>
+        </div>
+      )}
+      {mentors.length > 0 && (
+        <div className="trump-band trump-band--mentor">
+          <div className="trump-band-label"><span className="trump-band-pip" />Happy to Mentor</div>
+          <div className="trump-tags">
+            {mentors.map((s) => <span key={s} className="trump-tag trump-tag--mentor">{s}</span>)}
+          </div>
+        </div>
+      )}
+      {stretches.length > 0 && (
+        <div className="trump-band trump-band--stretch">
+          <div className="trump-band-label"><span className="trump-band-pip" />Stretch Goals</div>
+          <div className="trump-tags">
+            {stretches.map((s) => <span key={s} className="trump-tag trump-tag--stretch">{s}</span>)}
+          </div>
+        </div>
+      )}
+
+      {/* ---- working with me ---- */}
+      {hasAbout && (
+        <div className="trump-band trump-band--about">
+          <div className="trump-band-label"><span className="trump-band-pip" />Working With Me</div>
+          {member.what_to_know && (
+            <div className="trump-about-row">
+              <span className="trump-about-key">What to know</span>
+              <span className="trump-about-val">{member.what_to_know}</span>
+            </div>
+          )}
+          {member.how_i_work_best && (
+            <div className="trump-about-row">
+              <span className="trump-about-key">How I work best</span>
+              <span className="trump-about-val">{member.how_i_work_best}</span>
+            </div>
+          )}
+          {member.how_to_get_best && (
+            <div className="trump-about-row">
+              <span className="trump-about-key">To get the best from me</span>
+              <span className="trump-about-val">{member.how_to_get_best}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ---- empty prompt ---- */}
+      {empty && (
+        <div className="trump-empty">
+          {isMe ? (
+            <>
+              <p>Your guild card is blank. Tell the guild what you know, what you can teach, and how to work with you.</p>
+              <button className="btn sm" onClick={onEdit}><Icon.Edit style={{ width: 14, height: 14 }} /> Complete My Card</button>
+            </>
+          ) : (
+            <p>This adventurer has not yet filled in their guild card.</p>
+          )}
+        </div>
+      )}
+
+      {/* ---- contact footer ---- */}
+      {(member.preferred_contact || member.availability) && (
+        <div className="trump-footer">
+          {member.preferred_contact && (
+            <span>
+              {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.preferred_contact.trim())
+                ? <a href={"mailto:" + member.preferred_contact.trim()} className="trump-contact-link">{member.preferred_contact}</a>
+                : member.preferred_contact}
+            </span>
+          )}
+          {member.availability && <span>{member.availability}</span>}
+        </div>
+      )}
+    </>
+  );
+
+  if (inModal) return inner;
+  return (
+    <div className={"trump-card parchment" + (empty ? " trump-card--empty" : "")}>
+      <span className="corner tl" /><span className="corner tr" /><span className="corner bl" /><span className="corner br" />
+      {inner}
+    </div>
+  );
+}
+
+/* ---------- member card modal (click portrait / name anywhere) ---------- */
+function MemberCardModal({ member, xp, ranks, isMe, onEdit, onClose }) {
+  return (
+    <Modal title={member.name} labelId="member-view-title"
+      sub={member.role_team && <span style={{ color: "var(--muted)", fontSize: 15 }}>{member.role_team}</span>}
+      onClose={onClose}
+      foot={
+        isMe
+          ? <><button className="btn stone" onClick={onClose}>Close</button>
+              <button className="btn" onClick={() => { onClose(); onEdit(); }}>
+                <Icon.Edit style={{ width: 15, height: 15 }} /> Edit My Card
+              </button></>
+          : <button className="btn stone block" onClick={onClose}>Close</button>
+      }>
+      {/* render card content without its outer shell inside the modal */}
+      <MemberCard member={member} xp={xp} ranks={ranks} isMe={false} onEdit={onEdit} inModal />
+    </Modal>
+  );
+}
+
 Object.assign(window, {
-  Icon, initials, Avatar, XpBadge, StatusBadge, QuestCard, Modal, Leaderboard, QuestComplete, Toast, questState,
+  Icon, initials, Avatar, XpBadge, StatusBadge, QuestCard, Modal, Leaderboard, QuestComplete, Toast, questState, MemberCard, MemberCardModal,
 });
