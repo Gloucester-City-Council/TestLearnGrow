@@ -1563,8 +1563,9 @@ input, textarea, select { font-family: var(--font-body); }
   text-decoration-color: var(--amber);
   outline: none;
 }
-/* on parchment (leaderboard rows) — dark ink hover so it stays readable */
-.lb-row .name-link:hover, .lb-row .name-link:focus-visible {
+/* on parchment backgrounds (leaderboard rows, quest cards) — dark ink hover */
+.lb-row .name-link:hover, .lb-row .name-link:focus-visible,
+.quest-card .name-link:hover, .quest-card .name-link:focus-visible {
   color: var(--ink);
   text-decoration-color: var(--ink);
 }
@@ -1575,6 +1576,7 @@ input, textarea, select { font-family: var(--font-body); }
   font-size: inherit;
   color: var(--ink);
   line-height: inherit;
+  text-align: left;
 }
 /* owner-link wraps avatar + name inline */
 .owner-link {
