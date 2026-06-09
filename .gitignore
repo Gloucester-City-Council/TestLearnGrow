@@ -144,5 +144,5 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
-# Site/config.js is committed with the default /api/data path for Azure Static Web Apps.
-# It contains no secrets. For local dev against a local Function, edit it directly.
+# Claude Code settings
+.claude/
