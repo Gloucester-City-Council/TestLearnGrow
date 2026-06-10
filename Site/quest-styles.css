@@ -2057,3 +2057,35 @@ button.user-name {
   border-color: var(--amber);
   color: var(--amber);
 }
+
+/* =========================================================
+   FUN FACTS BAND (member trump card)
+   ========================================================= */
+:root {
+  --trump-f:    #3c1a4a;   /* fun facts bg */
+  --trump-f-hi: #c97ae8;   /* fun facts fg / pip */
+}
+.trump-band--fun { background: rgba(60,26,74,.5); }
+.trump-band--fun .trump-band-label { color: var(--trump-f-hi); }
+.trump-band--fun .trump-band-pip   { background: var(--trump-f-hi); }
+
+.trump-fun-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.trump-fun-fact {
+  position: relative;
+  padding: 3px 0 3px 16px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--parch);
+}
+.trump-fun-fact::before {
+  content: "\2726"; /* four-pointed star */
+  position: absolute;
+  left: 0;
+  top: 3px;
+  font-size: 10px;
+  color: var(--trump-f-hi);
+}

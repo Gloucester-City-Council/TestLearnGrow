@@ -558,7 +558,7 @@ function seedLeaderboard(items) {
 function seedMembers() {
   return MOCK_ACCOUNTS.map((a) => ({
     oid: a.oid, name: a.name, role_team: "", skills: {},
-    what_to_know: "", how_i_work_best: "", how_to_get_best: "",
+    what_to_know: "", how_i_work_best: "", how_to_get_best: "", fun_facts: [],
     preferred_contact: a.username, availability: "", updated_at: null,
   }));
 }

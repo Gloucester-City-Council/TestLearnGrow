@@ -523,12 +523,14 @@ function Toast({ msg }) {
 /* ---------- member card ---------- */
 function MemberCard({ member, xp, ranks, isMe, onEdit, inModal }) {
   const skills = member.skills || {};
+  const txt = (v) => (typeof v === "string" ? v.trim() : "");
   const strengths = Object.keys(skills).filter((k) => skills[k] === "strength");
   const mentors   = Object.keys(skills).filter((k) => skills[k] === "mentor");
   const stretches = Object.keys(skills).filter((k) => skills[k] === "stretch");
+  const funFacts  = (Array.isArray(member.fun_facts) ? member.fun_facts : []).map(txt).filter(Boolean);
   const hasSkills = strengths.length || mentors.length || stretches.length;
-  const hasAbout  = member.what_to_know || member.how_i_work_best || member.how_to_get_best;
-  const empty     = !hasSkills && !hasAbout && !member.role_team;
+  const hasAbout  = txt(member.what_to_know) || txt(member.how_i_work_best) || txt(member.how_to_get_best);
+  const empty     = !hasSkills && !hasAbout && !funFacts.length && !member.role_team;
 
   const inner = (
     <>
@@ -577,24 +579,33 @@ function MemberCard({ member, xp, ranks, isMe, onEdit, inModal }) {
       {hasAbout && (
         <div className="trump-band trump-band--about">
           <div className="trump-band-label"><span className="trump-band-pip" />Working With Me</div>
-          {member.what_to_know && (
+          {txt(member.what_to_know) && (
             <div className="trump-about-row">
               <span className="trump-about-key">What to know</span>
-              <span className="trump-about-val">{member.what_to_know}</span>
+              <span className="trump-about-val">{txt(member.what_to_know)}</span>
             </div>
           )}
-          {member.how_i_work_best && (
+          {txt(member.how_i_work_best) && (
             <div className="trump-about-row">
               <span className="trump-about-key">How I work best</span>
-              <span className="trump-about-val">{member.how_i_work_best}</span>
+              <span className="trump-about-val">{txt(member.how_i_work_best)}</span>
             </div>
           )}
-          {member.how_to_get_best && (
+          {txt(member.how_to_get_best) && (
             <div className="trump-about-row">
               <span className="trump-about-key">To get the best from me</span>
-              <span className="trump-about-val">{member.how_to_get_best}</span>
+              <span className="trump-about-val">{txt(member.how_to_get_best)}</span>
             </div>
           )}
+        </div>
+      )}
+
+      {funFacts.length > 0 && (
+        <div className="trump-band trump-band--fun">
+          <div className="trump-band-label"><span className="trump-band-pip" />Fun Facts About Me</div>
+          <ul className="trump-fun-list">
+            {funFacts.map((f, i) => <li key={i} className="trump-fun-fact">{f}</li>)}
+          </ul>
         </div>
       )}
 

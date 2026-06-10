@@ -476,8 +476,20 @@ function PostChallenge({ user, onClose, onCreate }) {
 /* ============ EDIT MEMBER CARD ============ */
 function EditMemberCard({ member, onClose, onSave }) {
   const { useState: useS2 } = React;
-  const [form, setForm] = useS2({ ...member, skills: { ...(member.skills || {}) } });
+  const FUN_FACT_SLOTS = 3;
+  const existingFacts = Array.isArray(member.fun_facts) ? member.fun_facts : [];
+  const [form, setForm] = useS2({
+    ...member,
+    skills: { ...(member.skills || {}) },
+    fun_facts: Array.from({ length: FUN_FACT_SLOTS }, (_, i) => existingFacts[i] || ""),
+  });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const setFact = (i, v) => setForm((f) => {
+    const facts = [...f.fun_facts];
+    facts[i] = v;
+    return { ...f, fun_facts: facts };
+  });
 
   const toggleSkill = (tool, type) => {
     setForm((f) => {
@@ -486,7 +498,14 @@ function EditMemberCard({ member, onClose, onSave }) {
     });
   };
 
-  const save = () => onSave({ ...form, updated_at: new Date().toISOString() });
+  const save = () => onSave({
+    ...form,
+    what_to_know:    (form.what_to_know    || "").trim(),
+    how_i_work_best: (form.how_i_work_best || "").trim(),
+    how_to_get_best: (form.how_to_get_best || "").trim(),
+    fun_facts: form.fun_facts.map((f) => (f || "").trim()).filter(Boolean),
+    updated_at: new Date().toISOString(),
+  });
 
   return (
     <Modal title="My Guild Card" sub="Tell the guild who you are and how to work with you."
@@ -541,6 +560,9 @@ function EditMemberCard({ member, onClose, onSave }) {
       ))}
 
       <div className="detail-section-label" style={{ marginTop: 24 }}>Working With Me</div>
+      <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 16px", lineHeight: 1.5 }}>
+        All optional — anything you leave blank simply won't appear on your card.
+      </p>
       {[
         ["what_to_know",    "What I'd like you to know about me", 300],
         ["how_i_work_best", "How I work best",                    300],
@@ -552,6 +574,19 @@ function EditMemberCard({ member, onClose, onSave }) {
             value={form[key] || ""}
             onChange={(e) => set(key, e.target.value)}
             placeholder="Optional..." />
+        </div>
+      ))}
+
+      <div className="detail-section-label">Fun Facts About Me</div>
+      <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 16px", lineHeight: 1.5 }}>
+        Up to three. Also optional — blank ones won't show.
+      </p>
+      {form.fun_facts.map((fact, i) => (
+        <div className="field" key={i}>
+          <label htmlFor={"me-fact-" + i}>Fun fact {i + 1}<span className="hint">{fact.length}/120</span></label>
+          <input id={"me-fact-" + i} className="input" maxLength={120} value={fact}
+            onChange={(e) => setFact(i, e.target.value)}
+            placeholder={["e.g. I once won a county bake-off...", "e.g. I can name every Gloucestershire parish...", "e.g. Weekend wild swimmer..."][i]} />
         </div>
       ))}
 
