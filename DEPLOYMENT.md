@@ -105,7 +105,7 @@ git push
 
 1. In the Azure portal, go to your Static Web Apps resource → **Overview** and copy the **Deployment token**.
 2. In your GitHub repository, go to **Settings → Secrets and variables → Actions** and add:
-   - Name: `AZURE_STATIC_WEB_APPS_API_TOKEN`
+   - Name: the secret name shown in your Azure-generated workflow file (e.g. `AZURE_STATIC_WEB_APPS_API_TOKEN_POLITE_MUD_0D9654803`)
    - Value: the deployment token
 
 ---
