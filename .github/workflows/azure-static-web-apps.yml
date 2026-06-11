@@ -1,0 +1,103 @@
+name: Azure Static Web Apps CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [main]
+
+jobs:
+  # ── Quality checks (run on every push/PR) ───────────────────────────────
+  test:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Tests and checks
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install API dependencies
+        run: npm ci
+        working-directory: api
+
+      - name: API unit tests
+        run: node --test tests/auth.test.js tests/points.test.js tests/config.test.js
+        working-directory: api
+
+      - name: Shell block sync check
+        run: |
+          # All pages that carry the shared nav shell must be byte-identical
+          # between <!-- shell:start --> and <!-- shell:end -->.
+          ref=""
+          fail=0
+          for f in Site/v2/*.html; do
+            block=$(awk '/shell:start/,/shell:end/' "$f")
+            [ -z "$block" ] && continue   # pages without shell (e.g. signin.html)
+            if [ -z "$ref" ]; then
+              ref="$block"
+              ref_file="$f"
+            elif [ "$block" != "$ref" ]; then
+              echo "ERROR: shell block in $f differs from $ref_file"
+              fail=1
+            fi
+          done
+          [ $fail -eq 0 ] && echo "Shell blocks are consistent across all pages."
+          exit $fail
+
+  # ── Deploy (push to main only) ───────────────────────────────────────────
+  build_and_deploy:
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    name: Build and deploy to Azure SWA
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: /Site
+          api_location: /api
+          output_location: ''
+          skip_app_build: true
+
+  # ── PR preview deploy ────────────────────────────────────────────────────
+  deploy_pr:
+    needs: test
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    name: Deploy PR preview
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy PR preview to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: /Site
+          api_location: /api
+          output_location: ''
+          skip_app_build: true
+
+  # ── Close PR environment ─────────────────────────────────────────────────
+  close_pull_request:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Close PR preview
+    steps:
+      - name: Close pull request
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close

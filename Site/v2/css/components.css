@@ -1,0 +1,512 @@
+/* =============================================================================
+   COMPONENTS — header, nav, breadcrumb, cards, chips, error summary, status.
+   ============================================================================= */
+
+/* ── Site layout ──────────────────────────────────────────────────────────── */
+
+.site-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Not sticky: header must not obscure focus — WCAG 2.4.12 */
+.site-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.site-name {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--color-text);
+  flex-shrink: 0;
+}
+
+.site-name:visited {
+  color: var(--color-text);
+}
+
+.site-name:hover {
+  text-decoration: underline;
+}
+
+/* ── Navigation ───────────────────────────────────────────────────────────── */
+
+.site-header nav {
+  flex: 1;
+}
+
+.site-header nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.site-header nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text);
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background-color var(--transition);
+}
+
+.site-header nav a:hover {
+  background: var(--color-bg);
+  text-decoration: underline;
+}
+
+.site-header nav a[aria-current="page"] {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 2px;
+}
+
+.shell-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Small buttons in the shell */
+.shell-actions button {
+  min-height: 44px;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+  background: var(--color-bg);
+  color: var(--color-link);
+  border-color: var(--color-link);
+}
+
+.shell-actions button:hover {
+  background: var(--color-surface);
+}
+
+/* ── Main content area ────────────────────────────────────────────────────── */
+
+.site-main {
+  flex: 1;
+  padding: var(--space-8) var(--space-6);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Breadcrumb (2.4.8) ──────────────────────────────────────────────────── */
+
+.breadcrumb {
+  margin-bottom: var(--space-6);
+}
+
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.breadcrumb li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+/* Separator via pseudo-element — not read by screen readers */
+.breadcrumb li + li::before {
+  content: "›";
+  color: var(--color-text-secondary);
+  aria-hidden: true;
+}
+
+.breadcrumb [aria-current="page"] {
+  color: var(--color-text-secondary);
+}
+
+/* ── Section toolbar ──────────────────────────────────────────────────────── */
+
+.section-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.section-toolbar h1,
+.section-toolbar h2 {
+  margin: 0;
+  flex: 1;
+}
+
+/* ── Status chips (1.4.1 — status word always present, colour is redundant) */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2em 0.65em;
+  border-radius: 1em;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.chip-neutral { background: var(--chip-neutral-bg); color: var(--chip-neutral-text); }
+.chip-blue    { background: var(--chip-blue-bg);    color: var(--chip-blue-text); }
+.chip-purple  { background: var(--chip-purple-bg);  color: var(--chip-purple-text); }
+.chip-amber   { background: var(--chip-amber-bg);   color: var(--chip-amber-text); }
+.chip-green   { background: var(--chip-green-bg);   color: var(--chip-green-text); }
+
+/* ── Cards ────────────────────────────────────────────────────────────────── */
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  gap: var(--space-4);
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-8);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.card-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  line-height: 1.3;
+}
+
+.card-title a {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.card-title a:hover {
+  color: var(--color-link);
+  text-decoration: underline;
+}
+
+.card-meta {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.card-body {
+  margin: 0;
+  color: var(--color-text);
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+
+.empty-state {
+  padding: var(--space-8) 0;
+  color: var(--color-text-secondary);
+}
+
+/* ── Error summary (GOV.UK pattern — 3.3.1/3.3.3) ───────────────────────── */
+
+.error-summary {
+  padding: var(--space-4) var(--space-5);
+  border: 3px solid #B10000;
+  border-radius: 4px;
+  margin-bottom: var(--space-6);
+  background: var(--color-bg);
+}
+
+.error-summary__title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: #B10000;
+  margin: 0 0 var(--space-3);
+}
+
+.error-summary__list {
+  margin: 0;
+  padding-left: var(--space-6);
+}
+
+.error-summary__list a {
+  color: #B10000;
+}
+
+/* ── Inline status message ───────────────────────────────────────────────── */
+
+.status-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: 4px;
+  margin-bottom: var(--space-4);
+}
+
+.status-message--success {
+  background: var(--chip-green-bg);
+  color: var(--chip-green-text);
+  border-left: 4px solid var(--chip-green-text);
+}
+
+.status-message--error {
+  background: #FFF0F0;
+  color: #B10000;
+  border-left: 4px solid #B10000;
+}
+
+.status-message--info {
+  background: var(--chip-blue-bg);
+  color: var(--chip-blue-text);
+  border-left: 4px solid var(--chip-blue-text);
+}
+
+/* Dismiss button within status message */
+.status-message__dismiss {
+  margin-left: auto;
+  min-height: 44px;
+  min-width: 44px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* ── Loading indicator ───────────────────────────────────────────────────── */
+
+.loading {
+  padding: var(--space-8) 0;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* ── Updates thread ──────────────────────────────────────────────────────── */
+
+.updates-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.update-item {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.update-meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.update-text {
+  margin: 0;
+}
+
+/* ── Member cards ────────────────────────────────────────────────────────── */
+
+.member-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.member-avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--chip-blue-bg);
+  color: var(--chip-blue-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--font-size-lg);
+  flex-shrink: 0;
+  /* aria-hidden on the avatar span — initials are redundant with the name heading */
+}
+
+.member-info {
+  flex: 1;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  padding: 0;
+  margin: var(--space-2) 0 0;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.2em 0.65em;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+/* ── Detail page layout ──────────────────────────────────────────────────── */
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+}
+
+@media (min-width: 768px) {
+  .detail-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.detail-meta-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.detail-meta-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.detail-meta-label {
+  font-weight: 700;
+  min-width: 10ch;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Board page sections ─────────────────────────────────────────────────── */
+
+.board-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border-radius: 6px;
+}
+
+.board-section {
+  margin-bottom: var(--space-10);
+}
+
+.board-section-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.board-section-count {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: normal;
+}
+
+/* ── Leaderboard rank bar ─────────────────────────────────────────────────── */
+
+.rank-cell {
+  font-weight: 700;
+}
+
+.rank-badge {
+  display: inline-block;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: normal;
+  margin-left: var(--space-2);
+}
+
+/* ── Sign-in page ────────────────────────────────────────────────────────── */
+
+.signin-page {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.signin-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-8);
+}
+
+/* ── Mobile adjustments ──────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .site-header {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .site-main {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 400px) {
+  .site-header nav ul {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+}

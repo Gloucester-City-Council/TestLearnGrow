@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New Experiment — Activity Board</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <script src="config.js"></script>
+</head>
+<body class="site-wrapper">
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <!-- shell:start -->
+  <header class="site-header">
+    <a class="site-name" href="index.html" id="site-name">Activity Board</a>
+    <nav aria-label="Main navigation">
+      <ul>
+        <li><a href="index.html">Board</a></li>
+        <li><a href="members.html">Members</a></li>
+        <li><a href="leaderboard.html">Leaderboard</a></li>
+        <li><a href="admin.html" id="nav-admin" hidden>Admin</a></li>
+      </ul>
+    </nav>
+    <div class="shell-actions">
+      <button type="button" id="theme-toggle" class="btn-secondary" aria-pressed="false">Dark mode</button>
+      <span class="user-name" id="user-name"></span>
+      <button type="button" id="sign-out" class="btn-secondary" hidden>Sign out</button>
+    </div>
+  </header>
+  <!-- shell:end -->
+
+  <main id="main" class="site-main">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <ol>
+        <li><a href="index.html">Board</a></li>
+        <li aria-current="page">New Experiment</li>
+      </ol>
+    </nav>
+
+    <h1 id="page-title">New Experiment</h1>
+    <p>Describe what you are testing and what you hope to learn.</p>
+
+    <div id="form-errors" class="error-summary" role="alert" hidden
+         aria-labelledby="form-errors-title">
+      <h2 id="form-errors-title" class="error-summary__title">There is a problem</h2>
+      <ul class="error-summary__list"></ul>
+    </div>
+
+    <form id="new-item-form" novalidate>
+
+      <div class="form-group">
+        <label for="title">Title (required)</label>
+        <span class="form-hint" id="title-hint">A short name for your experiment, for example "User interview: onboarding flow".</span>
+        <input type="text" id="title" name="title" autocomplete="off"
+               aria-describedby="title-hint" required maxlength="200">
+      </div>
+
+      <div class="form-group">
+        <label for="question">Question (required)</label>
+        <span class="form-hint" id="question-hint">What are you trying to find out?</span>
+        <textarea id="question" name="question" rows="3"
+                  aria-describedby="question-hint" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Background (optional)</label>
+        <span class="form-hint" id="description-hint">Any context that would help a collaborator understand the experiment.</span>
+        <textarea id="description" name="description" rows="4"
+                  aria-describedby="description-hint"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="difficulty">Difficulty (optional)</label>
+        <select id="difficulty" name="difficulty">
+          <option value="">Not specified</option>
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="effort">Effort (optional)</label>
+        <select id="effort" name="effort">
+          <option value="">Not specified</option>
+          <option value="Small">Small</option>
+          <option value="Medium">Medium</option>
+          <option value="Large">Large</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="deadline">Deadline (optional)</label>
+        <input type="date" id="deadline" name="deadline" autocomplete="off">
+      </div>
+
+      <div id="method-tags-group" class="form-group" hidden>
+        <fieldset>
+          <legend>Method tags (optional)</legend>
+          <span class="form-hint">Select all that apply.</span>
+          <div id="method-tags-options"></div>
+        </fieldset>
+      </div>
+
+      <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-top:var(--space-6)">
+        <button type="submit" class="btn">Create experiment</button>
+        <a href="index.html" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </main>
+
+  <div role="status" aria-live="polite" id="live-region" class="sr-only"></div>
+
+  <noscript>
+    <div class="noscript-notice">
+      <p>JavaScript is required to create an experiment.</p>
+    </div>
+  </noscript>
+
+  <script type="module" src="js/shell.js"></script>
+  <script type="module" src="js/pages/new-experiment.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in — Activity Board</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <script src="config.js"></script>
+</head>
+<body class="site-wrapper">
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <span class="site-name" id="site-name">Activity Board</span>
+  </header>
+
+  <main id="main" class="site-main signin-page">
+    <div class="signin-card">
+      <h1>Sign in to <span id="org-name">Activity Board</span></h1>
+
+      <p>You need to sign in to access the board.</p>
+
+      <div id="signin-action">
+        <p class="loading">Loading…</p>
+      </div>
+    </div>
+  </main>
+
+  <div role="status" aria-live="polite" id="live-region" class="sr-only"></div>
+
+  <noscript>
+    <div class="noscript-notice">
+      <p>JavaScript is required to sign in.</p>
+    </div>
+  </noscript>
+
+  <script type="module" src="js/pages/signin.js"></script>
+</body>
+</html>

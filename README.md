@@ -1,102 +1,95 @@
-# ⚔️ SW Side Quests
+# Activity Board
 
-A browser-run RPG quest board for the South West Test & Learn Network — post tasks, claim work, earn XP, and see who's done what.
+A white-label activity tracking board for teams and communities. Built on Azure Static Web Apps with Entra ID authentication, blob storage, and no build tools.
 
-> The RPG aesthetic is the product, not decoration.
-
----
-
-## What it does now
-
-**Quest Board** — Post quests, claim or release open quests, add progress updates, complete owned quests, earn XP.
-
-**Leaderboard** — Completed quests award XP and rank guild members by total score.
-
-**Mock sign-in** — Pick from seven seeded demo accounts or join as a custom demo user. Production Microsoft Entra/MSAL auth is planned but not wired.
-
-**Local storage** — Data persists to localStorage on one device. Shared Azure Blob Storage is planned; see BUILD.md.
-
-**Static design output** — The runnable design output lives in `Site/`; update those files directly unless a future phase explicitly adds tooling.
+The rebuilt `Site/v2/` app targets **WCAG 2.2 AAA** conformance. The original React app remains at the site root and both apps run on the same origin permanently (see `DEPLOYMENT.md`).
 
 ---
 
-## Planned roadmap
+## What it does
 
-- Quest types: Bounties, Idea Scrolls, Learning Quests
-- Town Crier announcement board
-- Guild Member Top Trumps-style profile cards
-- Azure Function API backed by a single Azure Blob Storage JSON document
-- Search, quest-count badges, XP-on-update, save-failure toasts
-
-Full phase plan in `BUILD.md`.
+- **Board** — view experiments, sessions, and challenges in one place
+- **Item actions** — advance statuses, sign up for sessions, join teams, share findings
+- **Members** — profiles with expertise and learning goals
+- **Leaderboard** — optional points system with configurable ranks
+- **Admin** — branding, terminology, features, and colour palette editable from the UI with live WCAG AAA contrast validation
 
 ---
 
-## Tech stack
+## Technology
 
-| Layer | Current | Planned |
-|---|---|---|
-| Frontend | React 18 CDN, Babel Standalone, plain CSS | Same unless a build system is explicitly adopted |
-| Storage | localStorage via `Store` | Azure Blob Storage single JSON document |
-| API | None | Azure Function HTTP trigger |
-| Auth | Mock account picker | Microsoft Entra ID / MSAL |
-| Build tools | None | None |
+| Layer | Choice |
+|---|---|
+| Frontend | Plain HTML5, vanilla JS ES modules, hand-written CSS |
+| Auth | Azure Static Web Apps built-in Entra ID |
+| API | Azure Functions v4 (Node.js) |
+| Storage | Azure Blob Storage (JSON blobs, one per item) |
+| Build | None — no bundler, no transpilation, no CDN dependencies |
 
 ---
 
-## Getting started (local dev)
+## Repository layout
 
-No build step. Serve the `Site/` folder with any static file server (the directory is capitalized in this repo, so use `Site/` on case-sensitive systems):
+```
+Site/
+├── (legacy React app at root — untouched until final cutover)
+└── v2/                  # rebuilt app — self-contained, relative paths
+    ├── index.html       # Board
+    ├── item.html        # Activity detail (?id=…)
+    ├── new-*.html       # Create experiment/session/challenge
+    ├── edit-item.html   # Edit any owned item
+    ├── members.html     # Members list with search
+    ├── member.html      # Member profile (?id=oid)
+    ├── member-edit.html # Edit own profile
+    ├── leaderboard.html # Points leaderboard
+    ├── admin.html       # Admin-only config editor
+    ├── signin.html      # Entra sign-in / mock picker
+    ├── 404.html
+    ├── css/             # tokens.css, base.css, components.css
+    ├── js/              # api, auth, config-loader, data, dom, shell, forms, contrast
+    └── js/pages/        # per-page modules
+api/
+├── function.js          # HTTP routes
+├── auth.js              # parsePrincipal, isAdmin, authorizeItemWrite
+├── points.js            # awardPointsForTransition (idempotent)
+├── config-store.js      # validateConfig (schema + WCAG AAA contrast)
+├── contrast.js          # luminance/ratio math
+└── tests/               # 26 node:test unit tests
+```
+
+---
+
+## Quick start (local dev)
 
 ```bash
-cd Site
-python3 -m http.server 8000
-```
+npm install -g @azure/static-web-apps-cli
 
-Then open:
+# Copy and edit the local config
+cp Site/v2/config.example.js Site/v2/config.js
+# Set AUTH_MODE: 'mock' for local dev without real Entra auth
 
-```
-http://localhost:8000/
-```
+# Start local server
+swa start Site --api-location api
+# Browse http://localhost:4280/v2/
 
-Opening the HTML file directly from the filesystem may work in some browsers, but a local static server is more reliable because Babel Standalone loads the JSX files as external scripts.
+# Run API tests
+cd api && node --test tests/auth.test.js tests/points.test.js tests/config.test.js
+```
 
 ---
 
-## Folder structure
+## Deployment
 
-```
-SWsidequests/
-├── Site/                        # All frontend files
-│   ├── index.html               # Entry point
-│   ├── quest-data.jsx           # Data utilities, local storage shim, seed data
-│   ├── quest-components.jsx     # Shared UI components
-│   ├── quest-app-1.jsx          # Sign-in and PostQuest modal
-│   ├── quest-app-2.jsx          # Root App, quest detail, state and handlers
-│   ├── quest-styles.css         # Full theme
-│   ├── config.example.js        # Future API config template
-│   ├── config.js                # Future local config (git-ignored; not loaded until Phase 1 wiring)
-│   └── avatars/                 # Pixel-art member portraits
-├── BUILD.md                     # Detailed roadmap and phase plan
-├── CLAUDE.md                    # Codebase guide for AI-assisted development
-└── README.md                    # You are here
-```
-
-Planned but not yet present: `api/`.
+See [`DEPLOYMENT.md`](DEPLOYMENT.md) — covers storage account, SWA Standard plan, Entra app registration, secrets, and tenant ID configuration.
 
 ---
 
-## Review notes for the next build pass
+## Accessibility
 
-These are the main changes to make before starting the roadmap phases:
-
-1. **Wire or remove `config.js` references.** `Site/config.example.js` exists, but the HTML entry point does not currently load `config.js`, and `Store` does not read `window.SW_CONFIG`. Treat config as Phase 1 work, not current behaviour.
-2. **Keep folder casing consistent.** The repo uses `Site/` with a capital `S`; use that spelling in commands and docs even if people casually call it the site folder.
-3. **Implement Phase 1 before API-dependent UI.** Announcements and member cards should persist through the same full-document data layer planned for Azure Blob Storage, rather than adding more per-key localStorage writes first.
-4. **Preserve the no-build design output.** The current design output is plain HTML/CSS/JSX in `Site/`; do not introduce package tooling unless the project explicitly changes direction.
+See [`ACCESSIBILITY.md`](ACCESSIBILITY.md) — full WCAG 2.2 A/AA/AAA conformance matrix, manual test checklist, and content style guide.
 
 ---
 
 ## Contributing
 
-Start with `BUILD.md` for product direction. Read `CLAUDE.md` before editing the site.
+See [`CLAUDE.md`](CLAUDE.md) for code conventions and the AAA accessibility checklist required on every PR.

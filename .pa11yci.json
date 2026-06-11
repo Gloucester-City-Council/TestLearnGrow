@@ -1,0 +1,15 @@
+{
+  "standard": "WCAG2AAA",
+  "runners": ["axe", "htmlcs"],
+  "timeout": 30000,
+  "wait": 1000,
+  "defaults": {
+    "chromeLaunchConfig": {
+      "args": ["--no-sandbox", "--disable-setuid-sandbox"]
+    }
+  },
+  "urls": [
+    "http://localhost:4280/v2/signin.html",
+    "http://localhost:4280/v2/404.html"
+  ]
+}

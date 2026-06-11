@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New Session — Activity Board</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <script src="config.js"></script>
+</head>
+<body class="site-wrapper">
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <!-- shell:start -->
+  <header class="site-header">
+    <a class="site-name" href="index.html" id="site-name">Activity Board</a>
+    <nav aria-label="Main navigation">
+      <ul>
+        <li><a href="index.html">Board</a></li>
+        <li><a href="members.html">Members</a></li>
+        <li><a href="leaderboard.html">Leaderboard</a></li>
+        <li><a href="admin.html" id="nav-admin" hidden>Admin</a></li>
+      </ul>
+    </nav>
+    <div class="shell-actions">
+      <button type="button" id="theme-toggle" class="btn-secondary" aria-pressed="false">Dark mode</button>
+      <span class="user-name" id="user-name"></span>
+      <button type="button" id="sign-out" class="btn-secondary" hidden>Sign out</button>
+    </div>
+  </header>
+  <!-- shell:end -->
+
+  <main id="main" class="site-main">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <ol>
+        <li><a href="index.html">Board</a></li>
+        <li aria-current="page">New Session</li>
+      </ol>
+    </nav>
+
+    <h1 id="page-title">New Session</h1>
+    <p>Schedule a learning session that others can sign up to attend.</p>
+
+    <div id="form-errors" class="error-summary" role="alert" hidden
+         aria-labelledby="form-errors-title">
+      <h2 id="form-errors-title" class="error-summary__title">There is a problem</h2>
+      <ul class="error-summary__list"></ul>
+    </div>
+
+    <form id="new-item-form" novalidate>
+
+      <div class="form-group">
+        <label for="title">Title (required)</label>
+        <span class="form-hint" id="title-hint">A short name, for example "Introduction to service blueprints".</span>
+        <input type="text" id="title" name="title" autocomplete="off"
+               aria-describedby="title-hint" required maxlength="200">
+      </div>
+
+      <div class="form-group">
+        <label for="topic">Topic (required)</label>
+        <span class="form-hint" id="topic-hint">What will the session cover?</span>
+        <textarea id="topic" name="topic" rows="3"
+                  aria-describedby="topic-hint" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="session-date">Session date (optional)</label>
+        <input type="date" id="session-date" name="session_date" autocomplete="off">
+      </div>
+
+      <div class="form-group">
+        <label for="format">Format (required)</label>
+        <select id="format" name="format" required>
+          <option value="remote">Remote</option>
+          <option value="in-person">In person</option>
+          <option value="hybrid">Hybrid</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="effort">Effort (optional)</label>
+        <select id="effort" name="effort">
+          <option value="">Not specified</option>
+          <option value="Small">Small</option>
+          <option value="Medium">Medium</option>
+          <option value="Large">Large</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="deadline">Registration deadline (optional)</label>
+        <input type="date" id="deadline" name="deadline" autocomplete="off">
+      </div>
+
+      <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-top:var(--space-6)">
+        <button type="submit" class="btn">Create session</button>
+        <a href="index.html" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </main>
+
+  <div role="status" aria-live="polite" id="live-region" class="sr-only"></div>
+
+  <noscript>
+    <div class="noscript-notice">
+      <p>JavaScript is required to create a session.</p>
+    </div>
+  </noscript>
+
+  <script type="module" src="js/shell.js"></script>
+  <script type="module" src="js/pages/new-session.js"></script>
+</body>
+</html>

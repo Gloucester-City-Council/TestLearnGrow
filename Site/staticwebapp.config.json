@@ -1,5 +1,31 @@
 {
+  "auth": {
+    "identityProviders": {
+      "azureActiveDirectory": {
+        "registration": {
+          "openIdIssuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+          "clientIdSettingName": "AAD_CLIENT_ID",
+          "clientSecretSettingName": "AAD_CLIENT_SECRET"
+        },
+        "login": {
+          "loginParameters": ["scope=openid profile email"]
+        }
+      }
+    }
+  },
+  "routes": [
+    { "route": "/.auth/login/github", "statusCode": 404 },
+    { "route": "/.auth/login/twitter", "statusCode": 404 },
+    { "route": "/api/config", "methods": ["GET"], "allowedRoles": ["anonymous", "authenticated"] },
+    { "route": "/api/me", "allowedRoles": ["anonymous", "authenticated"] },
+    { "route": "/api/*", "allowedRoles": ["authenticated"] },
+    { "route": "/v2/admin.html", "allowedRoles": ["authenticated"] }
+  ],
   "responseOverrides": {
+    "401": {
+      "redirect": "/v2/signin.html",
+      "statusCode": 302
+    },
     "404": {
       "rewrite": "/index.html"
     }

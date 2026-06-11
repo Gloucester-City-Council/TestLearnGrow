@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Board — Activity Board</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <script src="config.js"></script>
+</head>
+<body class="site-wrapper">
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <!-- shell:start -->
+  <header class="site-header">
+    <a class="site-name" href="index.html" id="site-name">Activity Board</a>
+    <nav aria-label="Main navigation">
+      <ul>
+        <li><a href="index.html">Board</a></li>
+        <li><a href="members.html">Members</a></li>
+        <li><a href="leaderboard.html">Leaderboard</a></li>
+        <li><a href="admin.html" id="nav-admin" hidden>Admin</a></li>
+      </ul>
+    </nav>
+    <div class="shell-actions">
+      <button type="button" id="theme-toggle" class="btn-secondary" aria-pressed="false">Dark mode</button>
+      <span class="user-name" id="user-name"></span>
+      <button type="button" id="sign-out" class="btn-secondary" hidden>Sign out</button>
+    </div>
+  </header>
+  <!-- shell:end -->
+
+  <main id="main" class="site-main">
+    <div class="section-toolbar">
+      <h1>Board</h1>
+      <div class="board-controls" aria-label="Board controls">
+        <button type="button" id="refresh-board" class="btn-secondary">Refresh board</button>
+        <label class="label-inline">
+          <input type="checkbox" id="auto-update">
+          Auto-refresh every 60 seconds
+        </label>
+      </div>
+    </div>
+
+    <p id="board-loading" class="loading" hidden>Loading activities…</p>
+
+    <div id="board-sections">
+      <p class="loading">Loading activities…</p>
+    </div>
+  </main>
+
+  <div role="status" aria-live="polite" id="live-region" class="sr-only"></div>
+
+  <noscript>
+    <div class="noscript-notice">
+      <p>JavaScript is required to load activities. Navigation and headings work without it, but the board list requires JS.</p>
+    </div>
+  </noscript>
+
+  <script type="module" src="js/shell.js"></script>
+  <script type="module" src="js/pages/board.js"></script>
+</body>
+</html>
