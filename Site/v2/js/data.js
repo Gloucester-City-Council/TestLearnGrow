@@ -61,6 +61,24 @@ export function migrateItem(raw) {
   return item;
 }
 
+/* Normalise a member record to the guild-card schema: skills is a
+   { tool: 'strength' | 'mentor' | 'stretch' } map and fun_facts an array.
+   Interim v2 records used flat arrays — fold those into skills. */
+export function migrateMember(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const m = { ...raw };
+  m.skills = (m.skills && typeof m.skills === 'object' && !Array.isArray(m.skills)) ? { ...m.skills } : {};
+  for (const [field, kind] of [['expertise', 'strength'], ['talk_about', 'mentor'], ['stretch', 'stretch']]) {
+    if (Array.isArray(m[field])) {
+      for (const tool of m[field]) {
+        if (typeof tool === 'string' && tool && !(tool in m.skills)) m.skills[tool] = kind;
+      }
+    }
+  }
+  if (!Array.isArray(m.fun_facts)) m.fun_facts = [];
+  return m;
+}
+
 /* ── API wrappers ─────────────────────────────────────────────────────────── */
 
 export async function loadItems() {
@@ -76,7 +94,7 @@ export async function saveItem(item) {
 
 export async function loadMembers() {
   const members = await apiGet('members');
-  return Array.isArray(members) ? members : [];
+  return (Array.isArray(members) ? members : []).map(migrateMember).filter(Boolean);
 }
 
 export async function saveMember(member) {

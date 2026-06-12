@@ -33,7 +33,7 @@
 
   <main id="main" class="site-main">
     <div class="section-toolbar">
-      <h1>Board</h1>
+      <h1 id="page-title">Board</h1>
       <div class="board-controls" aria-label="Board controls">
         <button type="button" id="refresh-board" class="btn-secondary">Refresh board</button>
         <label class="label-inline">
@@ -43,11 +43,53 @@
       </div>
     </div>
 
-    <p id="board-loading" class="loading" hidden>Loading activities…</p>
+    <p id="home-greeting" class="home-greeting"></p>
 
-    <div id="board-sections">
-      <p class="loading">Loading activities…</p>
+    <div class="home-grid" id="home-grid">
+      <section aria-labelledby="next-steps-heading">
+        <h2 id="next-steps-heading">Your next steps</h2>
+        <div id="next-steps">
+          <p class="loading">Loading…</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="learning-heading" id="learning-section" hidden>
+        <h2 id="learning-heading">Fresh learning</h2>
+        <div id="learning-list"></div>
+      </section>
     </div>
+
+    <section aria-labelledby="all-activity-heading">
+      <h2 id="all-activity-heading">All activity</h2>
+
+      <fieldset class="filter-bar">
+        <legend>Filter activities</legend>
+        <div class="filter-options">
+          <label class="label-inline">
+            <input type="radio" name="board-filter" value="all" checked>
+            All
+          </label>
+          <label class="label-inline">
+            <input type="radio" name="board-filter" value="mine">
+            Mine
+          </label>
+          <label class="label-inline">
+            <input type="radio" name="board-filter" value="active">
+            Active
+          </label>
+          <label class="label-inline">
+            <input type="radio" name="board-filter" value="done">
+            Completed
+          </label>
+        </div>
+      </fieldset>
+
+      <p id="board-loading" class="loading" hidden>Loading activities…</p>
+
+      <div id="board-sections">
+        <p class="loading">Loading activities…</p>
+      </div>
+    </section>
   </main>
 
   <div role="status" aria-live="polite" id="live-region" class="sr-only"></div>

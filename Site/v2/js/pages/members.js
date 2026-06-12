@@ -1,18 +1,17 @@
 import { requireSignIn } from '../auth.js';
-import { loadConfig, t } from '../config-loader.js';
-import { loadMembers } from '../data.js';
+import { loadConfig } from '../config-loader.js';
+import { loadMembers, loadLeaderboard, rankFor } from '../data.js';
 import { el, announce } from '../dom.js';
+import { buildGuildCard } from '../guild-card.js';
 
 let _members = [];
+let _leaderboard = {};
 let _config = null;
-
-function initials(name) {
-  return (name || '?').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-}
+let _session = null;
 
 async function init() {
-  const session = await requireSignIn();
-  if (!session) return;
+  _session = await requireSignIn();
+  if (!_session) return;
   _config = await loadConfig();
 
   const membersName = (_config.terminology || {}).members_name || 'Members';
@@ -21,8 +20,14 @@ async function init() {
   const bc = document.getElementById('breadcrumb-current');
   if (bc) bc.textContent = membersName;
 
+  const pointsOn = _config.points && _config.points.enabled;
   try {
-    _members = await loadMembers();
+    const [members, lb] = await Promise.all([
+      loadMembers(),
+      pointsOn ? loadLeaderboard().catch(() => ({})) : Promise.resolve({}),
+    ]);
+    _members = members;
+    _leaderboard = lb;
   } catch (err) {
     renderError(err);
     return;
@@ -41,7 +46,7 @@ function renderMembers(members) {
     return;
   }
 
-  const ul = el('ul', { class: 'card-grid', role: 'list' });
+  const ul = el('ul', { class: 'card-grid guild-grid', role: 'list' });
   for (const m of members) {
     ul.appendChild(buildMemberCard(m));
   }
@@ -49,31 +54,33 @@ function renderMembers(members) {
 }
 
 function buildMemberCard(m) {
-  const li = el('li', { class: 'card' });
-  const inner = el('div', { class: 'member-card' });
+  const isMe = _session && m.oid === _session.oid;
 
-  const avatar = el('span', { class: 'member-avatar', 'aria-hidden': 'true' }, initials(m.name));
-  inner.appendChild(avatar);
-
-  const info = el('div', { class: 'member-info' });
-  info.appendChild(el('h3', { class: 'card-title' },
+  const nameNode = el('h2', { class: 'guild-card-name' },
     el('a', { href: `member.html?id=${encodeURIComponent(m.oid)}` },
-      el('span', { class: 'sr-only' }, 'View member: '),
+      el('span', { class: 'sr-only' }, 'View guild card: '),
       m.name || 'Unknown',
     ),
-  ));
+    isMe ? el('span', { class: 'guild-card-you' }, ' (you)') : null,
+  );
 
-  if (m.expertise && m.expertise.length) {
-    const tagList = el('ul', { class: 'tag-list', role: 'list', 'aria-label': 'Expertise' });
-    for (const tag of m.expertise) {
-      tagList.appendChild(el('li', { class: 'tag', text: tag }));
-    }
-    info.appendChild(tagList);
+  let rankLine = '';
+  const pts = _config.points;
+  if (pts && pts.enabled) {
+    const entry = _leaderboard[m.oid];
+    const xp = entry && typeof entry.xp === 'number' ? entry.xp : 0;
+    const rank = rankFor(xp, pts.ranks);
+    const ptsName = (_config.terminology || {}).points_name || 'points';
+    rankLine = `${rank ? `${rank} · ` : ''}${xp} ${ptsName}`;
   }
 
-  inner.appendChild(info);
-  li.appendChild(inner);
-  return li;
+  return el('li', null, buildGuildCard(m, {
+    compact: true,
+    nameNode,
+    rankLine,
+    isMe,
+    headingTag: 'h3',
+  }));
 }
 
 function setupSearch() {
@@ -102,9 +109,10 @@ function filterMembers(members, q) {
   if (!q) return members;
   return members.filter((m) => {
     const name = (m.name || '').toLowerCase();
-    const expertise = (m.expertise || []).join(' ').toLowerCase();
-    const stretch = (m.stretch || []).join(' ').toLowerCase();
-    return name.includes(q) || expertise.includes(q) || stretch.includes(q);
+    const role = (m.role_team || '').toLowerCase();
+    const skills = Object.keys(m.skills || {}).join(' ').toLowerCase();
+    const facts = (m.fun_facts || []).join(' ').toLowerCase();
+    return name.includes(q) || role.includes(q) || skills.includes(q) || facts.includes(q);
   });
 }
 

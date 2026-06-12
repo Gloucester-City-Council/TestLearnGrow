@@ -435,10 +435,6 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-3);
-  margin-bottom: var(--space-6);
-  padding: var(--space-4);
-  background: var(--color-surface);
-  border-radius: 6px;
 }
 
 .board-section {
@@ -486,6 +482,287 @@
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: var(--space-8);
+}
+
+/* ── Home dashboard ──────────────────────────────────────────────────────── */
+
+.home-greeting {
+  font-size: var(--font-size-lg);
+  max-width: var(--measure);
+  margin: 0 0 var(--space-8);
+}
+
+.home-grid {
+  display: grid;
+  gap: var(--space-6) var(--space-10);
+  align-items: start;
+  margin-bottom: var(--space-8);
+}
+
+@media (min-width: 920px) {
+  .home-grid--two {
+    grid-template-columns: 3fr 2fr;
+  }
+}
+
+.home-grid .nudge-list,
+.home-grid .learning-list {
+  margin-bottom: 0;
+}
+
+.nudge-list,
+.learning-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-8);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.nudge-item,
+.learning-item {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-link);
+  border-radius: 4px;
+  padding: var(--space-3) var(--space-4);
+  max-width: var(--measure);
+}
+
+.nudge-context {
+  display: block;
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
+}
+
+.learning-snippet {
+  margin: var(--space-2) 0;
+  max-width: var(--measure);
+}
+
+/* ── Board filter bar ────────────────────────────────────────────────────── */
+
+.filter-bar {
+  border: none;
+  background: var(--color-surface);
+  border-radius: 6px;
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  margin: 0 0 var(--space-6);
+  max-width: var(--measure);
+}
+
+.filter-bar legend {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  padding: 0;
+}
+
+.filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+}
+
+/* Board type sections sit under the "All activity" h2, so their headings
+   are h3 — keep the original visual weight */
+.board-section-heading h3 {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+}
+
+/* ── Editable tag fields ─────────────────────────────────────────────────── */
+
+.tag-input-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  max-width: 30rem;
+}
+
+.tag-input-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.tag-list--editable .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-right: 0;
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+}
+
+.tag-remove:hover {
+  color: var(--color-link);
+}
+
+/* ── Guild cards (member profiles) ───────────────────────────────────────── */
+
+.guild-grid {
+  align-items: stretch;
+}
+
+.guild-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.guild-card--full {
+  max-width: 42rem;
+}
+
+.guild-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+.guild-card-head-text {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.guild-card-name {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  line-height: 1.3;
+}
+
+.guild-card-name a {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.guild-card-name a:hover {
+  color: var(--color-link);
+  text-decoration: underline;
+}
+
+.guild-card-you {
+  font-size: var(--font-size-sm);
+  font-weight: normal;
+  color: var(--color-text-secondary);
+}
+
+.guild-card-role {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.guild-card-rank {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+}
+
+.guild-band {
+  padding: var(--space-3) var(--space-5);
+}
+
+.guild-band--strength { background: var(--chip-green-bg); color: var(--chip-green-text); }
+.guild-band--mentor   { background: var(--chip-blue-bg);  color: var(--chip-blue-text); }
+.guild-band--stretch  { background: var(--chip-amber-bg); color: var(--chip-amber-text); }
+
+.guild-band-label {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.guild-tags {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  margin: 0;
+}
+
+.guild-tag {
+  border: 1px solid currentColor;
+  border-radius: 1em;
+  padding: 0.15em 0.6em;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.guild-about {
+  margin: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.guild-about dt {
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+}
+
+.guild-about dd {
+  margin: 0 0 var(--space-2);
+  max-width: var(--measure);
+}
+
+.guild-fun-list {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.guild-empty {
+  padding: var(--space-4) var(--space-5);
+  color: var(--color-text-secondary);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.guild-empty p {
+  margin: 0;
+}
+
+.guild-card-footer {
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin-top: auto;
+}
+
+.guild-card-footer p {
+  margin: 0;
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-6);
 }
 
 /* ── Mobile adjustments ──────────────────────────────────────────────────── */

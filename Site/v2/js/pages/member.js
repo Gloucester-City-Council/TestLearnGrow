@@ -2,24 +2,24 @@ import { requireSignIn } from '../auth.js';
 import { loadConfig } from '../config-loader.js';
 import { loadMembers, loadLeaderboard, rankFor } from '../data.js';
 import { el, moveFocus } from '../dom.js';
-
-function initials(name) {
-  return (name || '?').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-}
+import { buildGuildCard, isCardBlank } from '../guild-card.js';
 
 async function init() {
   const session = await requireSignIn();
   if (!session) return;
 
   const params = new URLSearchParams(location.search);
-  const oid = params.get('id');
-  if (!oid) { renderNotFound(); return; }
+  const oid = params.get('id') || session.oid;
 
   const config = await loadConfig();
+  const pointsOn = config.points && config.points.enabled;
 
   let member, lb;
   try {
-    const [members, leaderboard] = await Promise.all([loadMembers(), loadLeaderboard()]);
+    const [members, leaderboard] = await Promise.all([
+      loadMembers(),
+      pointsOn ? loadLeaderboard().catch(() => ({})) : Promise.resolve({}),
+    ]);
     member = members.find((m) => m.oid === oid);
     lb = leaderboard;
   } catch (err) {
@@ -27,7 +27,15 @@ async function init() {
     return;
   }
 
-  if (!member) { renderNotFound(); return; }
+  if (!member) {
+    /* Own card doesn't exist yet — go create it */
+    if (oid === session.oid) {
+      location.replace('member-edit.html');
+      return;
+    }
+    renderNotFound();
+    return;
+  }
 
   renderMember(member, lb, config, session);
 }
@@ -43,59 +51,33 @@ function renderMember(member, lb, config, session) {
   const bc = document.getElementById('breadcrumb-current');
   if (bc) bc.textContent = member.name;
 
+  const isMe = session.oid === member.oid;
   const frag = document.createDocumentFragment();
 
-  /* Avatar + name */
-  const profile = el('div', { class: 'member-card', style: 'margin-bottom: 2rem' });
-  profile.appendChild(el('span', { class: 'member-avatar', 'aria-hidden': 'true', style: 'width:4rem;height:4rem;font-size:1.5rem' }, initials(member.name)));
-  const info = el('div', { class: 'member-info' });
-  info.appendChild(el('p', { class: 'card-meta', text: member.email || '' }));
+  /* Edit link — own card or admin; blank own cards get the button inside the card */
+  if ((isMe || session.isAdmin) && !(isMe && isCardBlank(member))) {
+    frag.appendChild(el('p', null,
+      el('a', { href: `member-edit.html?id=${encodeURIComponent(member.oid)}`, class: 'btn btn-secondary' },
+        isMe ? 'Edit my guild card' : `Edit guild card for ${member.name}`),
+    ));
+  }
 
-  /* Points & rank */
+  let rankLine = '';
   const pts = config.points;
   if (pts && pts.enabled) {
     const entry = lb[member.oid];
-    const xp = entry ? entry.xp : 0;
+    const xp = entry && typeof entry.xp === 'number' ? entry.xp : 0;
     const rank = rankFor(xp, pts.ranks);
     const ptsName = (config.terminology || {}).points_name || 'points';
-    info.appendChild(el('p', { class: 'card-meta' },
-      `${xp} ${ptsName}`,
-      rank ? el('span', { class: 'rank-badge', text: ` · ${rank}` }) : '',
-    ));
+    rankLine = `${rank ? `${rank} · ` : ''}${xp} ${ptsName}`;
   }
 
-  profile.appendChild(info);
-  frag.appendChild(profile);
-
-  /* Edit link for own profile */
-  if (session.oid === member.oid || session.isAdmin) {
-    frag.appendChild(el('p', null,
-      el('a', { href: `member-edit.html?id=${encodeURIComponent(member.oid)}`, class: 'btn btn-secondary' },
-        'Edit profile'),
-    ));
-  }
-
-  /* Skills */
-  if (member.expertise && member.expertise.length) {
-    frag.appendChild(el('h2', { text: 'Expertise' }));
-    const tagList = el('ul', { class: 'tag-list', role: 'list' });
-    for (const tag of member.expertise) tagList.appendChild(el('li', { class: 'tag', text: tag }));
-    frag.appendChild(tagList);
-  }
-
-  if (member.stretch && member.stretch.length) {
-    frag.appendChild(el('h2', { text: 'Learning goals' }));
-    const tagList = el('ul', { class: 'tag-list', role: 'list' });
-    for (const tag of member.stretch) tagList.appendChild(el('li', { class: 'tag', text: tag }));
-    frag.appendChild(tagList);
-  }
-
-  if (member.talk_about && member.talk_about.length) {
-    frag.appendChild(el('h2', { text: 'Ask me about' }));
-    const list = el('ul', { role: 'list' });
-    for (const item of member.talk_about) list.appendChild(el('li', { text: item }));
-    frag.appendChild(list);
-  }
+  frag.appendChild(buildGuildCard(member, {
+    rankLine,
+    isMe,
+    headingTag: 'h2',
+    completeHref: `member-edit.html?id=${encodeURIComponent(member.oid)}`,
+  }));
 
   main.replaceChildren(frag);
   moveFocus(document.getElementById('page-title'));
