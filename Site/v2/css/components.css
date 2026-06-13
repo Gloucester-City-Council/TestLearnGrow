@@ -892,6 +892,16 @@
 
 /* ── Mobile adjustments ──────────────────────────────────────────────────── */
 
+/* Once the brand, full nav and actions stop fitting on one line, drop the nav
+   onto its own full-width row beneath them rather than letting it wrap raggedly
+   mid-row. Keeps a clean two-row header: [brand … actions] / [nav]. */
+@media (max-width: 1100px) {
+  .site-header nav {
+    order: 3;
+    flex: 0 0 100%;
+  }
+}
+
 @media (max-width: 640px) {
   .site-header {
     padding: var(--space-3) var(--space-4);
@@ -903,13 +913,6 @@
 
   .card-grid {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 400px) {
-  .site-header nav ul {
-    flex-direction: column;
-    gap: var(--space-1);
   }
 }
 
