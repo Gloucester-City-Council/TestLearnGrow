@@ -3,6 +3,7 @@ import { loadConfig } from '../config-loader.js';
 import { loadOutcomes, saveOutcome, loadItems, nano, fullDate } from '../data.js';
 import { el, chipEl, statusVariant, statusLabel, announce, moveFocus } from '../dom.js';
 import { validate, showErrors, clearErrors } from '../forms.js';
+import { VERDICTS } from '../verdict.js';
 
 /* Outcome dashboard (TLG Phase 4). Lists the missions experiments ladder up to,
    each with a count of linked experiments and an expandable list showing their
@@ -89,6 +90,11 @@ function buildOutcomeCard(outcome) {
     text: `${linked.length} experiment${linked.length !== 1 ? 's' : ''} linked.` }));
 
   if (linked.length) {
+    const ev = buildEvidenceSummary(linked);
+    if (ev) card.appendChild(ev);
+  }
+
+  if (linked.length) {
     const details = el('details');
     details.appendChild(el('summary', {}, `Show linked experiments (${linked.length})`));
     const ul = el('ul', { class: 'updates-list', role: 'list' });
@@ -106,6 +112,35 @@ function buildOutcomeCard(outcome) {
   }
 
   return card;
+}
+
+/* Evidence roll-up for a goal: how far its experiments have progressed and what
+   the findings actually said — so the dashboard shows progress, not just a list. */
+function buildEvidenceSummary(linked) {
+  const inProgress = linked.filter((i) => ['designing', 'running', 'wrapping-up'].includes(i.status)).length;
+  const shared = linked.filter((i) => ['finding-shared', 'growing'].includes(i.status)).length;
+  const growing = linked.filter((i) => i.status === 'growing').length;
+
+  const wrap = el('div', { class: 'outcome-evidence' });
+  const stats = [];
+  if (inProgress) stats.push(`${inProgress} in progress`);
+  if (shared) stats.push(`${shared} with a shared finding`);
+  if (growing) stats.push(`${growing} growing`);
+  if (stats.length) wrap.appendChild(el('p', { class: 'card-meta', text: `Evidence: ${stats.join(' · ')}.` }));
+
+  /* Verdict tally across the findings shared toward this goal — wins and
+     non-wins side by side. 'pivoted' is legacy but still counted for old data. */
+  const chips = el('div', { class: 'pipeline-chips' });
+  let any = false;
+  for (const key of ['validated', 'invalidated', 'inconclusive', 'pivoted']) {
+    const n = linked.filter((i) => i.verdict === key).length;
+    if (n) { chips.appendChild(chipEl(`${VERDICTS[key].label} ×${n}`, VERDICTS[key].variant)); any = true; }
+  }
+  if (any) {
+    chips.insertBefore(el('span', { class: 'sr-only' }, 'Verdicts: '), chips.firstChild);
+    wrap.appendChild(chips);
+  }
+  return (stats.length || any) ? wrap : null;
 }
 
 /* ── Add-goal form ────────────────────────────────────────────────────────── */

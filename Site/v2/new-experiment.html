@@ -117,6 +117,21 @@
           <input type="text" id="success_metric" name="success_metric" autocomplete="off"
                  aria-describedby="success-metric-hint" required maxlength="300">
         </div>
+
+        <div class="form-group">
+          <label for="test_type">Test type (optional)</label>
+          <span class="form-hint" id="test-type-hint">How will you compare — so it's a test, not a hunch?</span>
+          <select id="test_type" name="test_type" aria-describedby="test-type-hint">
+            <option value="">Not specified</option>
+            <option value="Before / after">Before / after comparison</option>
+            <option value="A/B test">A/B or split test</option>
+            <option value="Pilot">Pilot / trial</option>
+            <option value="Randomised controlled trial">Randomised controlled trial</option>
+            <option value="Qualitative">Qualitative (interviews, observation)</option>
+            <option value="Desk research">Desk research / analysis</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
       </fieldset>
 
       <div class="form-group">

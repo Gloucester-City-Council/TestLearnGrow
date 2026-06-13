@@ -34,6 +34,7 @@ Added to experiment blobs only (`item_type === 'experiment'`).
 | `success_metric` | string | `''` | **Yes** — form blocks advance from `designing` without it |
 | `baseline` | string | `''` | No — design-time starting value, paired with `success_metric` (the target) |
 | `measured_result` | string | `''` | No — captured at wrap-up on the share-finding form, compared against `success_metric` |
+| `test_type` | string | `''` | No — how the comparison is made (before/after, A/B, pilot, RCT, …), captured at design time. Stored as a human-readable label, like `difficulty`/`effort`. |
 
 `baseline` and `measured_result` are free text (so they can hold "62%", "3.4 days", etc.). They turn a verdict from a judgment call into an evidenced one: `baseline` → `success_metric` (target) → `measured_result` (actual). No server change — both pass through `questSave` verbatim.
 
@@ -44,6 +45,7 @@ if (typeof item.predicted_outcome !== 'string') item.predicted_outcome = '';
 if (typeof item.success_metric !== 'string') item.success_metric = '';
 if (typeof item.baseline !== 'string') item.baseline = '';
 if (typeof item.measured_result !== 'string') item.measured_result = '';
+if (typeof item.test_type !== 'string') item.test_type = '';
 ```
 
 ---

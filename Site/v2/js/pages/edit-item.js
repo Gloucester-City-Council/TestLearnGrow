@@ -72,6 +72,9 @@ function renderForm(item, draft, session, draftKey) {
     form.appendChild(buildTextField('predicted_outcome', 'Predicted outcome (optional)', values.predicted_outcome, false, 300));
     form.appendChild(buildTextField('baseline', 'Baseline (optional)', values.baseline, false, 300));
     form.appendChild(buildTextField('success_metric', 'Success measure', values.success_metric, true, 300));
+    form.appendChild(buildSelect('test_type', 'Test type (optional)',
+      ['', 'Before / after', 'A/B test', 'Pilot', 'Randomised controlled trial', 'Qualitative', 'Desk research', 'Other'],
+      values.test_type));
     form.appendChild(buildSelect('difficulty', 'Difficulty (optional)',
       ['', 'Easy', 'Medium', 'Hard'], values.difficulty));
     form.appendChild(buildSelect('effort', 'Effort (optional)',
@@ -152,6 +155,7 @@ function getDefaultValues(item) {
     predicted_outcome: item.predicted_outcome || '',
     success_metric:    item.success_metric || '',
     baseline:          item.baseline || '',
+    test_type:         item.test_type || '',
     topic:        item.topic || '',
     difficulty:   item.difficulty || '',
     effort:       item.effort || '',
@@ -171,6 +175,7 @@ function getFormValues(form, item) {
       question: v('question'), description: v('description'),
       hypothesis: v('hypothesis'), predicted_outcome: v('predicted_outcome'),
       success_metric: v('success_metric'), baseline: v('baseline'),
+      test_type: v('test_type'),
       difficulty: v('difficulty') || null, effort: v('effort') || null,
       deadline: v('deadline') || null,
       method_tags: [...form.querySelectorAll('input[name="method_tags"]:checked')].map((c) => c.value),

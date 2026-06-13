@@ -1,6 +1,6 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
-import { loadItems, loadMembers, loadOutcomes, saveItem, deleteItem, timeAgo, fullDate, nano } from '../data.js';
+import { loadItems, loadMembers, loadOutcomes, saveItem, deleteItem, timeAgo, fullDate, nano, daysBetween } from '../data.js';
 import { el, chipEl, statusVariant, statusLabel, moveFocus, announce, skeleton } from '../dom.js';
 import { validate, showErrors, clearErrors } from '../forms.js';
 import { initials } from '../profile-card.js';
@@ -217,6 +217,7 @@ function buildDesignSection(item) {
     ['Predicted outcome', item.predicted_outcome],
     ['Baseline', item.baseline],
     ['Success measure (target)', item.success_metric],
+    ['Test type', item.test_type],
   ].filter(([, value]) => value);
   if (!rows.length) return null;
 
@@ -301,6 +302,14 @@ function buildLearningSnapshot(item) {
 
   if (item.verdict && VERDICTS[item.verdict]) {
     sec.appendChild(el('p', { class: 'snapshot-hint', text: VERDICTS[item.verdict].hint }));
+  }
+
+  /* Cycle time — how long the loop took, from creation to the finding being
+     shared. A learning-velocity signal that reinforces the fail-fast intent. */
+  const cycle = daysBetween(item.created_at, item.closed_at);
+  if (cycle != null) {
+    sec.appendChild(el('p', { class: 'card-meta',
+      text: `Cycle time: ${cycle} day${cycle !== 1 ? 's' : ''} from design to shared.` }));
   }
 
   if (item.question) {

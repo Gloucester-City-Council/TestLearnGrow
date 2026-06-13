@@ -1,6 +1,6 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
-import { loadItems, loadOutcomes, fullDate } from '../data.js';
+import { loadItems, loadOutcomes, fullDate, daysBetween } from '../data.js';
 import { el, chipEl, statusLabel, announce, moveFocus, skeleton } from '../dom.js';
 import { verdictChip, verdictLabel } from '../verdict.js';
 import { LEARN_DECISION_LABELS, GROW_DECISION_LABELS } from '../decisions.js';
@@ -72,13 +72,16 @@ function render(item, goal) {
     ['Predicted outcome', item.predicted_outcome],
     ['Baseline', item.baseline],
     ['Success measure (target)', item.success_metric],
+    ['Test type', item.test_type],
     ['Goal', goal ? goal.title : ''],
   ]));
 
   /* What happened */
+  const cycle = daysBetween(item.created_at, item.closed_at);
   frag.appendChild(buildSection('What happened', [
     ['Verdict', verdictLabel(item.verdict)],
     ['Measured result', item.measured_result],
+    ['Cycle time', cycle != null ? `${cycle} day${cycle !== 1 ? 's' : ''} (design → shared)` : ''],
     ['Finding', item.finding],
     ['What we expected', item.learning_expected],
     ['What actually happened', item.learning_actual],

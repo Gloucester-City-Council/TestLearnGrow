@@ -28,6 +28,11 @@ const NEXT = {
   running:     { next: 'wrapping-up', label: 'Wrapping up' },
 };
 
+/* An active experiment with no activity for this many days reads as stale —
+   a gentle nudge to update it or move it on, not a hard rule. */
+const STALE_DAYS = 21;
+const ACTIVE_STAGES = ['designing', 'running', 'wrapping-up'];
+
 let _items = [];
 let _config = null;
 let _session = null;
@@ -235,6 +240,18 @@ function buildChips(item, stage) {
       wrap.appendChild(chipEl(`Due ${fullDate(item.deadline)}`, 'neutral'));
     }
     any = true;
+  }
+
+  /* Staleness — an active experiment that's gone quiet for a while. */
+  if (ACTIVE_STAGES.includes(stage.status)) {
+    const last = item.updated_at || item.created_at;
+    if (last) {
+      const quiet = Math.floor((Date.now() - new Date(last).getTime()) / 86_400_000);
+      if (quiet >= STALE_DAYS) {
+        wrap.appendChild(chipEl(`Stale — ${quiet} days quiet`, 'amber'));
+        any = true;
+      }
+    }
   }
   return any ? wrap : null;
 }
