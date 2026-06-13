@@ -2,18 +2,10 @@ import { requireSignIn } from '../auth.js';
 import { loadConfig } from '../config-loader.js';
 import { loadMembers, saveMember } from '../data.js';
 import { el, moveFocus } from '../dom.js';
-import { buildTagsField } from '../tag-field.js';
-import { skillsByKind } from '../guild-card.js';
+import { buildSkillToolkit, getToolkitValue } from '../skill-toolkit.js';
 import { validate, showErrors, clearErrors, loadDraft, clearDraft, autosaveDraft } from '../forms.js';
 
-const MAX_PER_BAND = 8;
 const FUN_FACT_SLOTS = 3;
-
-const SKILL_BANDS = [
-  ['strengths', 'strength', 'Core strengths (optional)', 'Things you are good at. Add one at a time with Enter or comma.'],
-  ['mentors',   'mentor',   'Happy to mentor (optional)', 'Things you can help others learn.'],
-  ['stretches', 'stretch',  'Stretch goals (optional)', 'Things you want to learn.'],
-];
 
 const ABOUT_FIELDS = [
   ['what_to_know',    'What you would like people to know (optional)'],
@@ -73,13 +65,11 @@ function renderForm(member, config, draft, draftKey, isNew) {
   const container = document.getElementById('edit-form-container');
   if (!container) return;
 
-  const by = skillsByKind(member);
   const values = {
     name: member.name || '',
     role_team: member.role_team || '',
-    strengths: by.strength,
-    mentors: by.mentor,
-    stretches: by.stretch,
+    skills: (member.skills && typeof member.skills === 'object' && !Array.isArray(member.skills))
+      ? member.skills : {},
     what_to_know: member.what_to_know || '',
     how_i_work_best: member.how_i_work_best || '',
     how_to_get_best: member.how_to_get_best || '',
@@ -88,12 +78,6 @@ function renderForm(member, config, draft, draftKey, isNew) {
     availability: member.availability || '',
     ...(draft || {}),
   };
-
-  /* Skill suggestions from the configured catalogue, if there is one */
-  const suggestions = [];
-  for (const cat of (config.skills || [])) {
-    for (const tool of (cat.tools || [])) suggestions.push(tool);
-  }
 
   const form = el('form', { id: 'edit-form', novalidate: true });
 
@@ -115,10 +99,8 @@ function renderForm(member, config, draft, draftKey, isNew) {
   roleGroup.appendChild(roleInput);
   form.appendChild(roleGroup);
 
-  /* Skill bands */
-  for (const [id, , label, hint] of SKILL_BANDS) {
-    form.appendChild(buildTagsField(id, label, hint, values[id] || [], MAX_PER_BAND, suggestions));
-  }
+  /* Skills & tools toolkit (S / M / X per tool) */
+  form.appendChild(buildSkillToolkit('skills', config.skills || [], values.skills || {}));
 
   /* Working with me */
   for (const [id, label] of ABOUT_FIELDS) {
@@ -192,17 +174,12 @@ function renderForm(member, config, draft, draftKey, isNew) {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Saving…';
 
-    const skills = {};
-    for (const [id, kind] of SKILL_BANDS.map(([i, k]) => [i, k])) {
-      for (const tool of v[id]) skills[tool] = kind;
-    }
-
     const out = {
       ...member,
       ...(isNew ? { joined_at: new Date().toISOString() } : {}),
       name: v.name,
       role_team: v.role_team,
-      skills,
+      skills: v.skills,
       what_to_know: v.what_to_know,
       how_i_work_best: v.how_i_work_best,
       how_to_get_best: v.how_to_get_best,
@@ -234,7 +211,6 @@ function renderForm(member, config, draft, draftKey, isNew) {
 
 function getFormValues(form) {
   const v = (id) => { const n = form.querySelector(`#${id}`); return n ? n.value : ''; };
-  const parseHidden = (id) => { try { return JSON.parse(v(id)) || []; } catch { return []; } };
   const facts = [];
   for (let i = 1; i <= FUN_FACT_SLOTS; i++) {
     const f = v(`fun-fact-${i}`).trim();
@@ -243,9 +219,7 @@ function getFormValues(form) {
   return {
     name:              v('name').trim(),
     role_team:         v('role_team').trim(),
-    strengths:         parseHidden('strengths'),
-    mentors:           parseHidden('mentors'),
-    stretches:         parseHidden('stretches'),
+    skills:            getToolkitValue('skills', form),
     what_to_know:      v('what_to_know').trim(),
     how_i_work_best:   v('how_i_work_best').trim(),
     how_to_get_best:   v('how_to_get_best').trim(),

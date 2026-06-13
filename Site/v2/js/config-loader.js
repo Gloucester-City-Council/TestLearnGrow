@@ -48,6 +48,57 @@ export const DEFAULT_CONFIG = {
     challenges: true,
     sessions: true,
   },
+  /* Skills & Tools catalogue for the guild-card toolkit. Each tool can be
+     marked on a member's card as a strength, something they'll mentor, or a
+     stretch goal. White-label: override `skills` in server/window config. */
+  skills: [
+    { category: 'Strategy & Direction', tools: [
+      'Vision, storytelling, narrative, case for change',
+      'Design principles',
+      'Blueprints, target operating models, future state mapping',
+    ] },
+    { category: 'Insight & Diagnosis', tools: [
+      'Root cause analysis',
+      'Fishbone / cause and effect analysis',
+      '5 whys',
+      'Process mapping',
+      'Journey mapping',
+      'Demand reduction',
+      'Value mapping',
+      'Data & analysis',
+      'Dashboards',
+      'KPIs & measures',
+      'Integration',
+    ] },
+    { category: 'Design & Innovation', tools: [
+      'User stories',
+      'Architecture (service, data, technology)',
+      'Pilots',
+      'Prototypes',
+      'Hackathons',
+      'AI',
+      'Power Apps',
+      'Digital development',
+    ] },
+    { category: 'Delivery & Execution', tools: [
+      'Cadence',
+      'Kanban',
+      'Scrums',
+      'Sprints',
+      'Stand ups',
+      'Reviews',
+      'Retros',
+      'Project, programme and change management',
+      'Risk identification, analysis and management',
+      'Benefits realisation',
+    ] },
+    { category: 'People & Culture', tools: [
+      'Peer challenge',
+      'Coaching and mentoring',
+      'Behavioural frameworks',
+      'Psychological safety practices',
+    ] },
+  ],
 };
 
 let _config = null;

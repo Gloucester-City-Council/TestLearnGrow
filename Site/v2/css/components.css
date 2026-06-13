@@ -572,43 +572,93 @@
 
 /* ── Editable tag fields ─────────────────────────────────────────────────── */
 
-.tag-input-row {
+/* ── Skills & tools toolkit (guild-card editor) ──────────────────────────── */
+
+.skill-toolkit {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  margin: 0 0 var(--space-6);
+}
+
+.skill-key {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+}
+
+.skill-key-item {
+  white-space: nowrap;
+}
+
+.skill-tog-glyph {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 0 0.35em;
+  border-radius: 4px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.skill-tog-glyph--strength { background: var(--chip-green-bg); color: var(--chip-green-text); }
+.skill-tog-glyph--mentor   { background: var(--chip-blue-bg);  color: var(--chip-blue-text); }
+.skill-tog-glyph--stretch  { background: var(--chip-amber-bg); color: var(--chip-amber-text); }
+
+.skill-cat {
+  margin-top: var(--space-5);
+}
+
+.skill-cat-label {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+}
+
+.skill-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.skill-name {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.skill-toggles {
   display: flex;
   gap: var(--space-2);
-  margin-top: var(--space-2);
-  max-width: 30rem;
 }
 
-.tag-input-row input {
-  flex: 1;
-  min-width: 0;
-}
-
-.tag-list--editable .tag {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding-right: 0;
-}
-
-.tag-remove {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
+.skill-tog {
   min-height: 44px;
   min-width: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: inherit;
-  font-size: var(--font-size-lg);
-  line-height: 1;
+  padding: 0 var(--space-2);
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-weight: 700;
+  cursor: pointer;
 }
 
-.tag-remove:hover {
-  color: var(--color-link);
+.skill-tog:hover {
+  border-color: var(--color-text-secondary);
 }
+
+.skill-tog.on {
+  border-color: currentColor;
+}
+
+.skill-tog--strength.on { background: var(--chip-green-bg); color: var(--chip-green-text); }
+.skill-tog--mentor.on   { background: var(--chip-blue-bg);  color: var(--chip-blue-text); }
+.skill-tog--stretch.on  { background: var(--chip-amber-bg); color: var(--chip-amber-text); }
 
 /* ── Guild cards (member profiles) ───────────────────────────────────────── */
 
