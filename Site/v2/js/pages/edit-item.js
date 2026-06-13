@@ -67,6 +67,8 @@ function renderForm(item, draft, session, draftKey) {
     form.appendChild(buildSelect('effort', 'Effort (optional)',
       ['', 'Small', 'Medium', 'Large'], values.effort));
     form.appendChild(buildDateField('deadline', 'Deadline (optional)', values.deadline));
+    const methodTags = buildMethodTags(_config, values.method_tags || []);
+    if (methodTags) form.appendChild(methodTags);
   }
 
   if (item.item_type === 'session') {
@@ -136,6 +138,7 @@ function getDefaultValues(item) {
     format:       item.format || 'remote',
     deadline:     item.deadline || '',
     session_date: item.session_date || '',
+    method_tags:  Array.isArray(item.method_tags) ? item.method_tags : [],
   };
 }
 
@@ -147,6 +150,7 @@ function getFormValues(form, item) {
       question: v('question'), description: v('description'),
       difficulty: v('difficulty') || null, effort: v('effort') || null,
       deadline: v('deadline') || null,
+      method_tags: [...form.querySelectorAll('input[name="method_tags"]:checked')].map((c) => c.value),
     });
   }
   if (item.item_type === 'session') {
@@ -191,6 +195,30 @@ function buildSelect(id, label, options, selected, required) {
     sel.appendChild(o);
   }
   group.appendChild(sel);
+  return group;
+}
+
+/* Method tags — a checkbox grid grouped by the config skills catalogue, with
+   the item's current tags pre-checked. Returns null when no catalogue exists. */
+function buildMethodTags(config, selected) {
+  const skills = (config && config.skills) || [];
+  if (!skills.length) return null;
+  const chosen = new Set(selected);
+  const group = el('div', { class: 'form-group' });
+  const fieldset = el('fieldset');
+  fieldset.appendChild(el('legend', { text: 'Method tags (optional)' }));
+  fieldset.appendChild(el('span', { class: 'form-hint', text: 'Select all that apply.' }));
+  for (const cat of skills) {
+    const catEl = el('div');
+    catEl.appendChild(el('p', { style: 'font-weight:600;margin-bottom:var(--space-2)', text: cat.category }));
+    for (const tool of (cat.tools || [])) {
+      const cb = el('input', { type: 'checkbox', name: 'method_tags', value: tool });
+      if (chosen.has(tool)) cb.checked = true;
+      catEl.appendChild(el('label', { class: 'label-inline' }, cb, tool));
+    }
+    fieldset.appendChild(catEl);
+  }
+  group.appendChild(fieldset);
   return group;
 }
 

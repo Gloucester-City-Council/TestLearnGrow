@@ -1,7 +1,7 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
 import { loadItems, saveItem, timeAgo, fullDate } from '../data.js';
-import { el, announce, chipEl, moveFocus } from '../dom.js';
+import { el, announce, chipEl, moveFocus, skeleton } from '../dom.js';
 import { initials } from '../profile-card.js';
 
 /* The experiment pipeline — a Monday-light board where experiments flow
@@ -53,8 +53,14 @@ function applyTerminology() {
 async function refresh() {
   const loadingEl = document.getElementById('pipeline-loading');
   const board = document.getElementById('pipeline');
-  if (loadingEl) loadingEl.hidden = false;
-  if (board) board.hidden = true;
+  /* Show skeleton columns in place of the board while data loads; the live
+     region still announces "Loading…" for assistive tech. */
+  if (loadingEl) loadingEl.hidden = true;
+  if (board) {
+    board.hidden = false;
+    board.replaceChildren(...STAGES.map(() => skeleton(['short', 'block', 'block'])));
+  }
+  announce('Loading pipeline…');
   try {
     const items = await loadItems();
     _items = items.filter((i) => i.item_type === 'experiment');

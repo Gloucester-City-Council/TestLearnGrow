@@ -11,6 +11,41 @@ function markCurrentPage() {
   }
 }
 
+/* Collapsible navigation for narrow screens. Progressive enhancement: without
+   JS the full nav is always visible (good for noscript); JS reveals the
+   hamburger and lets CSS collapse the nav behind it at mobile widths. The
+   button carries aria-expanded/aria-controls; CSS keys off the header's
+   .nav-open class so there's a single source of truth. */
+function initNav() {
+  const header = document.querySelector('.site-header');
+  const toggle = document.getElementById('nav-toggle');
+  const nav = document.getElementById('main-nav');
+  if (!header || !toggle || !nav) return;
+
+  header.classList.add('js-nav');
+  toggle.hidden = false;
+
+  toggle.addEventListener('click', () => {
+    const open = header.classList.toggle('nav-open');
+    toggle.setAttribute('aria-expanded', String(open));
+  });
+
+  /* Close the menu after following a link, and on Escape (2.1.2 — no trap). */
+  nav.addEventListener('click', (e) => {
+    if (e.target.closest('a') && header.classList.contains('nav-open')) {
+      header.classList.remove('nav-open');
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && header.classList.contains('nav-open')) {
+      header.classList.remove('nav-open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.focus();
+    }
+  });
+}
+
 /* Theme switcher — persists to localStorage */
 function initTheme() {
   const btn = document.getElementById('theme-toggle');
@@ -87,6 +122,7 @@ async function initConfig() {
 }
 
 markCurrentPage();
+initNav();
 initTheme();
 initSignOut();
 initUser();

@@ -103,20 +103,40 @@ export async function deleteItem(id) {
   return apiDelete(`quests/${id}`);
 }
 
-export async function loadMembers() {
-  const members = await apiGet('members');
-  return (Array.isArray(members) ? members : []).map(migrateMember).filter(Boolean);
+/* Members are read on several pages (item, pipeline, members, home). Within a
+   single page load the same list is often requested more than once (e.g. the
+   item page's "who can help"), so cache the in-flight promise and reuse it.
+   Writes invalidate the cache so the next read re-fetches. */
+let _membersPromise = null;
+
+export async function loadMembers({ force = false } = {}) {
+  if (force) _membersPromise = null;
+  if (!_membersPromise) {
+    _membersPromise = (async () => {
+      const members = await apiGet('members');
+      return (Array.isArray(members) ? members : []).map(migrateMember).filter(Boolean);
+    })().catch((err) => { _membersPromise = null; throw err; });
+  }
+  return _membersPromise;
+}
+
+export function clearMembersCache() {
+  _membersPromise = null;
 }
 
 export async function saveMember(member) {
   const { oid } = member;
   if (!oid) throw new Error('oid required');
-  return apiPost(`members/${oid}`, member);
+  const result = await apiPost(`members/${oid}`, member);
+  _membersPromise = null;
+  return result;
 }
 
 export async function deleteMember(oid) {
   if (!oid) throw new Error('oid required');
-  return apiDelete(`members/${oid}`);
+  const result = await apiDelete(`members/${oid}`);
+  _membersPromise = null;
+  return result;
 }
 
 export async function loadLeaderboard() {

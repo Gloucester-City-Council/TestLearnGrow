@@ -60,6 +60,21 @@ export function chipEl(label, variant) {
   return el('span', { class: `chip chip-${variant}` }, label);
 }
 
+/* Build a decorative loading skeleton. Hidden from assistive tech — pair with
+   announce('Loading…') so screen-reader users still get a status update.
+   `parts` is an array of: 'title' | 'line' | 'short' | 'block'. */
+export function skeleton(parts = ['title', 'line', 'line', 'short']) {
+  const cls = {
+    title: 'skeleton skeleton-line skeleton-line--title',
+    short: 'skeleton skeleton-line skeleton-line--short',
+    block: 'skeleton skeleton-block',
+    line:  'skeleton skeleton-line',
+  };
+  const wrap = el('div', { class: 'skeleton-group', 'aria-hidden': 'true' });
+  for (const p of parts) wrap.appendChild(el('div', { class: cls[p] || cls.line }));
+  return wrap;
+}
+
 /* Chip variant from item status */
 export function statusVariant(status) {
   const map = {

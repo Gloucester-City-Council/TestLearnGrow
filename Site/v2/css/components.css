@@ -10,16 +10,25 @@
   min-height: 100vh;
 }
 
-/* Not sticky: header must not obscure focus — WCAG 2.4.12 */
+/* Not sticky: header must not obscure focus — WCAG 2.4.12.
+   Two deliberate rows: a top utility bar (brand + theme + identity) and the
+   navigation beneath it. Separating identity controls from navigation stops
+   the title, username and buttons reading as one jumbled run. */
 .site-header {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-4);
+  flex-direction: column;
+  gap: var(--space-3);
   padding: var(--space-4) var(--space-6);
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
+}
+
+.site-header-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
 }
 
 .site-name {
@@ -28,7 +37,7 @@
   letter-spacing: -0.01em;
   text-decoration: none;
   color: var(--color-text);
-  flex-shrink: 0;
+  margin-right: auto; /* pushes the utility controls to the far right */
 }
 
 .site-name:visited {
@@ -40,10 +49,6 @@
 }
 
 /* ── Navigation ───────────────────────────────────────────────────────────── */
-
-.site-header nav {
-  flex: 1;
-}
 
 .site-header nav ul {
   display: flex;
@@ -79,18 +84,44 @@
   text-decoration-thickness: 2px;
 }
 
+/* Hide a nav item whose only link is hidden (e.g. Admin for non-admins) so it
+   leaves no phantom gap. Visibility is driven by shell.js from the session's
+   admin state, keeping the link and the page guard in step. */
+.site-header nav li:has(> a[hidden]) {
+  display: none;
+}
+
 .shell-actions {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-left: auto;
+  gap: var(--space-3);
 }
 
+/* Thin rule separating the theme control from the user-identity group, so the
+   two read as distinct clusters rather than one row of look-alike buttons. */
+.shell-divider {
+  width: 1px;
+  height: 1.75rem;
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
+.shell-user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Username is metadata, not a control — keep it quiet and clip if very long. */
 .user-name {
   font-weight: 600;
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+  max-width: 18ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Small buttons in the shell */
@@ -106,6 +137,52 @@
 .shell-actions button:hover {
   background: var(--color-surface);
 }
+
+/* ── Collapsible navigation toggle (mobile) ──────────────────────────────── */
+
+/* Hidden on desktop; revealed by JS (.js-nav) only at narrow widths below. */
+.nav-toggle {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-link);
+  background: var(--color-bg);
+  border: 1px solid var(--color-link);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.nav-toggle:hover {
+  background: var(--color-surface);
+}
+
+.nav-toggle-icon,
+.nav-toggle-icon::before,
+.nav-toggle-icon::after {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+}
+
+.nav-toggle-icon {
+  position: relative;
+}
+
+.nav-toggle-icon::before,
+.nav-toggle-icon::after {
+  content: '';
+  position: absolute;
+  left: 0;
+}
+
+.nav-toggle-icon::before { top: -5px; }
+.nav-toggle-icon::after  { top: 5px; }
 
 /* ── Main content area ────────────────────────────────────────────────────── */
 
@@ -526,6 +603,19 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* One-line orientation sentence above the personal greeting. Empty until JS
+   fills it, so it collapses cleanly when there's nothing to say. */
+.board-intro {
+  font-size: var(--font-size-lg);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-4);
+}
+
+.board-intro:empty {
+  display: none;
+}
+
 .home-grid {
   display: grid;
   gap: var(--space-6) var(--space-10);
@@ -892,13 +982,26 @@
 
 /* ── Mobile adjustments ──────────────────────────────────────────────────── */
 
-/* Once the brand, full nav and actions stop fitting on one line, drop the nav
-   onto its own full-width row beneath them rather than letting it wrap raggedly
-   mid-row. Keeps a clean two-row header: [brand … actions] / [nav]. */
-@media (max-width: 1100px) {
-  .site-header nav {
-    order: 3;
-    flex: 0 0 100%;
+/* Below this width the nav collapses behind the hamburger. JS adds .js-nav so
+   that, without JS, the full nav stays visible (progressive enhancement). The
+   header's .nav-open class is the single source of truth, kept in sync with the
+   toggle's aria-expanded. */
+@media (max-width: 760px) {
+  .site-header.js-nav .nav-toggle {
+    display: inline-flex;
+  }
+
+  .site-header.js-nav #main-nav {
+    display: none;
+  }
+
+  .site-header.js-nav.nav-open #main-nav {
+    display: block;
+  }
+
+  .site-header.js-nav #main-nav ul {
+    flex-direction: column;
+    gap: var(--space-1);
   }
 }
 
@@ -1186,4 +1289,66 @@
 
 .learning-more {
   margin-top: var(--space-4);
+}
+
+/* ── Verdict error (share-finding) ───────────────────────────────────────── */
+
+/* The radio group's validation error sits under the legend/hint and spans the
+   full fieldset, rather than being attached to a non-announced <fieldset>. */
+.verdict-fieldset > .field-error {
+  margin: 0 0 var(--space-3);
+}
+
+/* ── Loading skeletons ────────────────────────────────────────────────────── */
+
+/* Decorative placeholders shown while data loads. aria-hidden in markup; the
+   live region announces "Loading…" for assistive tech. Shimmer is motion, so
+   it is disabled under prefers-reduced-motion (2.3.3 / animation guard). */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--color-bg), transparent);
+  opacity: 0.6;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; }
+}
+
+.skeleton-group {
+  margin-bottom: var(--space-6);
+}
+
+.skeleton-line {
+  height: 1rem;
+  margin-bottom: var(--space-3);
+}
+
+.skeleton-line--title {
+  height: 2rem;
+  width: 45%;
+  margin-bottom: var(--space-5);
+}
+
+.skeleton-line--short {
+  width: 35%;
+}
+
+.skeleton-block {
+  height: 8rem;
+  margin-bottom: var(--space-4);
 }

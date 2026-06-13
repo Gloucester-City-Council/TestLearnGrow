@@ -14,8 +14,22 @@
 
   <!-- shell:start -->
   <header class="site-header">
-    <a class="site-name" href="index.html" id="site-name">Activity Board</a>
-    <nav aria-label="Main navigation">
+    <div class="site-header-bar">
+      <a class="site-name" href="index.html" id="site-name">Activity Board</a>
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-controls="main-nav" aria-expanded="false" hidden>
+        <span class="nav-toggle-icon" aria-hidden="true"></span>
+        Menu
+      </button>
+      <div class="shell-actions">
+        <button type="button" id="theme-toggle" class="btn-secondary" aria-pressed="false">Dark mode</button>
+        <span class="shell-divider" aria-hidden="true"></span>
+        <span class="shell-user">
+          <span class="user-name" id="user-name"></span>
+          <button type="button" id="sign-out" class="btn-secondary" hidden>Sign out</button>
+        </span>
+      </div>
+    </div>
+    <nav aria-label="Main navigation" id="main-nav">
       <ul>
         <li><a href="index.html">Board</a></li>
         <li><a href="pipeline.html">Pipeline</a></li>
@@ -25,26 +39,22 @@
         <li><a href="admin.html" id="nav-admin" hidden>Admin</a></li>
       </ul>
     </nav>
-    <div class="shell-actions">
-      <button type="button" id="theme-toggle" class="btn-secondary" aria-pressed="false">Dark mode</button>
-      <span class="user-name" id="user-name"></span>
-      <button type="button" id="sign-out" class="btn-secondary" hidden>Sign out</button>
-    </div>
   </header>
   <!-- shell:end -->
 
-  <main id="main" class="site-main">
+  <main id="main" class="site-main" tabindex="-1">
     <div class="section-toolbar">
       <h1 id="page-title">Board</h1>
-      <div class="board-controls" aria-label="Board controls">
+      <div class="board-controls" role="group" aria-label="Board controls">
         <button type="button" id="refresh-board" class="btn-secondary">Refresh board</button>
-        <label class="label-inline">
+        <label class="label-inline" for="auto-update">
           <input type="checkbox" id="auto-update">
           Auto-refresh every 60 seconds
         </label>
       </div>
     </div>
 
+    <p id="board-intro" class="board-intro"></p>
     <p id="home-greeting" class="home-greeting"></p>
 
     <div class="home-grid" id="home-grid">
@@ -67,20 +77,20 @@
       <fieldset class="filter-bar">
         <legend>Filter activities</legend>
         <div class="filter-options">
-          <label class="label-inline">
-            <input type="radio" name="board-filter" value="all" checked>
+          <label class="label-inline" for="board-filter-all">
+            <input type="radio" name="board-filter" id="board-filter-all" value="all" checked>
             All
           </label>
-          <label class="label-inline">
-            <input type="radio" name="board-filter" value="mine">
+          <label class="label-inline" for="board-filter-mine">
+            <input type="radio" name="board-filter" id="board-filter-mine" value="mine">
             Mine
           </label>
-          <label class="label-inline">
-            <input type="radio" name="board-filter" value="active">
+          <label class="label-inline" for="board-filter-active">
+            <input type="radio" name="board-filter" id="board-filter-active" value="active">
             Active
           </label>
-          <label class="label-inline">
-            <input type="radio" name="board-filter" value="done">
+          <label class="label-inline" for="board-filter-done">
+            <input type="radio" name="board-filter" id="board-filter-done" value="done">
             Completed
           </label>
         </div>

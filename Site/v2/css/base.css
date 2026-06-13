@@ -113,6 +113,14 @@ a:visited {
   outline-offset: var(--focus-offset);
 }
 
+/* The skip link moves focus to <main>, which is a programmatic target, not an
+   interactive control — suppress the full-width outline that would otherwise
+   ring the whole content area. Focus still lands here so the next Tab continues
+   from the main content (2.4.3). */
+main[tabindex="-1"]:focus {
+  outline: none;
+}
+
 /* ── Utilities ────────────────────────────────────────────────────────────── */
 
 /* Screen-reader only (visually hidden but accessible) */

@@ -40,6 +40,15 @@ function applyTerminology() {
   const boardName = (_config.terminology || {}).board_name || 'Board';
   const h1 = document.getElementById('page-title');
   if (h1) h1.textContent = boardName;
+
+  /* One-line orientation for first-time and returning users. Uses the org's
+     configured intro text when set, otherwise a sensible default. */
+  const intro = document.getElementById('board-intro');
+  if (intro) {
+    const configured = (_config.branding || {}).intro_text;
+    intro.textContent = configured
+      || `Everything your team is testing, learning and running — pick up where you left off, or start something new.`;
+  }
 }
 
 /* ── Data loading ─────────────────────────────────────────────────────────── */
@@ -418,12 +427,23 @@ function cardFacts(item) {
 
 function renderError(err) {
   const container = document.getElementById('board-sections');
-  if (!container) return;
-  container.replaceChildren(
-    el('div', { class: 'status-message status-message--error', role: 'alert' },
-      el('p', { text: `Failed to load activities: ${err.message}` }),
-    ),
-  );
+  if (container) {
+    container.replaceChildren(
+      el('div', { class: 'status-message status-message--error', role: 'alert' },
+        el('p', { text: `Failed to load activities: ${err.message}` }),
+      ),
+    );
+  }
+  /* Clear the other loading areas so none are left stuck on "Loading…". */
+  const nextSteps = document.getElementById('next-steps');
+  if (nextSteps) {
+    nextSteps.replaceChildren(
+      el('p', { class: 'empty-state', text: 'Could not load your next steps. Try refreshing the board.' }),
+    );
+  }
+  const learningSection = document.getElementById('learning-section');
+  if (learningSection) learningSection.hidden = true;
+  announce(`Could not load the board: ${err.message}`);
 }
 
 /* ── Controls ─────────────────────────────────────────────────────────────── */

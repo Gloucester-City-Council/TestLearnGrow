@@ -34,6 +34,7 @@ async function init() {
   }
 
   renderMembers(_members);
+  announce(`${_members.length} member${_members.length !== 1 ? 's' : ''} loaded`);
   setupSearch();
 }
 

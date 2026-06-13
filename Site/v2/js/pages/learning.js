@@ -47,8 +47,9 @@ function buildFilterOptions() {
   const box = document.getElementById('verdict-filter');
   if (!box) return;
   for (const key of VERDICT_ORDER) {
-    box.appendChild(el('label', { class: 'label-inline' },
-      el('input', { type: 'radio', name: 'verdict-filter', value: key }),
+    const id = `verdict-filter-${key}`;
+    box.appendChild(el('label', { class: 'label-inline', for: id },
+      el('input', { type: 'radio', name: 'verdict-filter', id, value: key }),
       VERDICTS[key].label,
     ));
   }
