@@ -169,6 +169,11 @@ function buildNudges() {
       } else if (item.status === 'wrapping-up') {
         nudges.push({ href, link: `Share the finding for “${title}”`,
           context: `Wrapping up.${pointsNote('experiment_complete')}` });
+      } else if (item.status === 'growing' && item.grow_date
+                 && new Date(item.grow_date).getTime() <= now) {
+        /* Close the Grow loop: at the scale-up target date, prompt a check-back. */
+        nudges.push({ href, link: `Check in on scaling “${title}”`,
+          context: 'Scale-up target date has passed — did it hold?' });
       }
     } else if (item.item_type === 'session' && owner) {
       const date = item.session_date ? new Date(item.session_date).getTime() : null;

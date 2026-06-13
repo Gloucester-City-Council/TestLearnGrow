@@ -16,7 +16,7 @@ function experiment(overrides) {
     method_tags: [], difficulty: null, effort: null, reward: null, deadline: null,
     status: 'running', posted_by_oid: 'oid-alice', posted_by_name: 'Alice',
     team_oids: ['oid-alice'], team_names: ['Alice'], finding: '', outcome: '',
-    hypothesis: '', predicted_outcome: '', success_metric: '', baseline: '', measured_result: '',
+    hypothesis: '', predicted_outcome: '', success_metric: '', baseline: '', measured_result: '', test_type: '',
     grow_decision: '', active_ingredients: '', grow_owner: '', grow_date: '',
     grow_points_awarded_at: null,
     learn_decision: '', spawned_ids: [], parent_id: '',

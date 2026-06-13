@@ -112,6 +112,7 @@ async function init() {
         success_metric: values.success_metric || '',
         baseline: values.baseline || '',
         measured_result: '',
+        test_type: values.test_type || '',
         difficulty: values.difficulty || null,
         effort: values.effort || null,
         deadline: values.deadline || null,
@@ -155,6 +156,7 @@ function getValues() {
     predicted_outcome: (document.getElementById('predicted_outcome') || {}).value || '',
     success_metric:    (document.getElementById('success_metric') || {}).value || '',
     baseline:          (document.getElementById('baseline') || {}).value || '',
+    test_type:         (document.getElementById('test_type') || {}).value || '',
     difficulty:  (document.getElementById('difficulty') || {}).value || '',
     effort:      (document.getElementById('effort') || {}).value || '',
     deadline:    (document.getElementById('deadline') || {}).value || '',
@@ -172,6 +174,7 @@ function restoreForm(draft) {
   set('predicted_outcome', draft.predicted_outcome);
   set('success_metric', draft.success_metric);
   set('baseline', draft.baseline);
+  set('test_type', draft.test_type);
   set('difficulty', draft.difficulty);
   set('effort', draft.effort);
   set('deadline', draft.deadline);

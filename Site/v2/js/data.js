@@ -29,6 +29,16 @@ export function fullDate(isoString) {
   }).format(new Date(isoString));
 }
 
+/* Whole days between two ISO timestamps, or null if either is missing/invalid.
+   Used for experiment cycle time (design → shared) and staleness signals. */
+export function daysBetween(aIso, bIso) {
+  if (!aIso || !bIso) return null;
+  const a = new Date(aIso).getTime();
+  const b = new Date(bIso).getTime();
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.max(0, Math.round((b - a) / 86_400_000));
+}
+
 export function rankFor(xp, ranks) {
   if (!ranks || !ranks.length) return '';
   const sorted = [...ranks].sort((a, b) => b.min - a.min);
@@ -76,6 +86,11 @@ export function migrateItem(raw) {
      hold "62%", "3.4 days", etc. */
   if (typeof item.baseline !== 'string') item.baseline = '';
   if (typeof item.measured_result !== 'string') item.measured_result = '';
+
+  /* Test type — how the comparison is being made (before/after, A/B, pilot,
+     RCT, …). Captured at design time so a test is designed, not just logged.
+     Stored as its own human-readable label (like difficulty/effort). */
+  if (typeof item.test_type !== 'string') item.test_type = '';
 
   /* TLG Phase 2 — grow / scale stage. Captured when a shared finding is taken
      forward to scale or adopt. grow_points_awarded_at is server-managed (like
