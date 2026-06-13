@@ -7,12 +7,17 @@ import { el, chipEl } from './dom.js';
 
    Colour is always paired with the verdict word (1.4.1 — never colour alone). */
 
-export const VERDICT_ORDER = ['validated', 'invalidated', 'inconclusive', 'pivoted'];
+/* Verdict = "what the data said". A pivot is a *decision*, not a data outcome,
+   so it is no longer an offered verdict (it lives in learn_decision instead).
+   'pivoted' is kept in VERDICTS — but out of VERDICT_ORDER — so older records
+   that stored it still render their chip and label correctly. */
+export const VERDICT_ORDER = ['validated', 'invalidated', 'inconclusive'];
 
 export const VERDICTS = {
   validated:    { label: 'Validated',    variant: 'green',   hint: 'The hypothesis held up.' },
   invalidated:  { label: 'Invalidated',  variant: 'amber',   hint: 'The hypothesis was disproved — a real result worth sharing.' },
   inconclusive: { label: 'Inconclusive', variant: 'neutral', hint: 'Not enough signal to call it either way.' },
+  /* Legacy only — retained for display of records created before the change. */
   pivoted:      { label: 'Pivoted',      variant: 'purple',  hint: 'We changed direction based on what we saw.' },
 };
 

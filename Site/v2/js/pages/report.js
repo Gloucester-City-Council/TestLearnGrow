@@ -3,19 +3,11 @@ import { loadConfig, t } from '../config-loader.js';
 import { loadItems, loadOutcomes, fullDate } from '../data.js';
 import { el, chipEl, statusLabel, announce, moveFocus, skeleton } from '../dom.js';
 import { verdictChip, verdictLabel } from '../verdict.js';
+import { LEARN_DECISION_LABELS, GROW_DECISION_LABELS } from '../decisions.js';
 
 /* Evidence card (TLG Phase 5). A clean, print-ready summary of one experiment —
    the design-time prediction, the verdict, what happened, and the grow decision
    — for sharing TLG results upward as a PDF. */
-
-const GROW_DECISION_LABELS = {
-  scale: 'Scale it', adopt: 'Adopt as standard',
-  stop: 'Stop — not worth scaling', rerun: 'Run again with changes',
-};
-const LEARN_DECISION_LABELS = {
-  persevere: 'Persevere', pivot: 'Pivot — run a variation',
-  stop: 'Stop', escalate: 'Escalate for scaling',
-};
 
 let _config = null;
 

@@ -6,28 +6,9 @@ import { validate, showErrors, clearErrors } from '../forms.js';
 import { initials } from '../profile-card.js';
 import { whoCanHelp, hasHelpers, HELP_BANDS } from '../skills-match.js';
 import { VERDICTS, verdictChip, buildVerdictFieldset, selectedVerdict } from '../verdict.js';
+import { LEARN_DECISIONS, GROW_DECISIONS, LEARN_DECISION_LABELS, GROW_DECISION_LABELS } from '../decisions.js';
 
 const ACTIVE_EXPERIMENT = ['designing', 'running', 'wrapping-up'];
-
-/* TLG grow / scale decision options (Phase 2). Values are stored; labels are
-   shown in the form and the grow snapshot. */
-const GROW_DECISIONS = [
-  { value: 'scale', label: 'Scale it' },
-  { value: 'adopt', label: 'Adopt as standard' },
-  { value: 'stop',  label: 'Stop — not worth scaling' },
-  { value: 'rerun', label: 'Run again with changes' },
-];
-const GROW_DECISION_LABELS = Object.fromEntries(GROW_DECISIONS.map((d) => [d.value, d.label]));
-
-/* TLG learning loop decision options (Phase 3). Recorded when a finding is
-   shared, then drives whether the team perseveres, pivots, stops or escalates. */
-const LEARN_DECISIONS = [
-  { value: 'persevere', label: 'Persevere' },
-  { value: 'pivot',     label: 'Pivot — run a variation' },
-  { value: 'stop',      label: 'Stop' },
-  { value: 'escalate',  label: 'Escalate for scaling' },
-];
-const LEARN_DECISION_LABELS = Object.fromEntries(LEARN_DECISIONS.map((d) => [d.value, d.label]));
 
 let _item = null;
 let _items = [];
