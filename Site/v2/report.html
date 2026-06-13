@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evidence card — Activity Board</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <script src="config.js"></script>
+</head>
+<body class="site-wrapper">
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <!-- shell:start -->
+  <header class="site-header">
+    <div class="site-header-bar">
+      <a class="site-name" href="index.html" id="site-name">Activity Board</a>
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-controls="main-nav" aria-expanded="false" hidden>
+        <span class="nav-toggle-icon" aria-hidden="true"></span>
+        Menu
+      </button>
+      <div class="shell-actions">
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false">
+          <span class="theme-toggle-glyph" aria-hidden="true"></span>
+          <span class="theme-toggle-label">Dark mode</span>
+        </button>
+        <div class="shell-user" id="shell-user" hidden>
+          <span class="shell-avatar" id="user-avatar" aria-hidden="true"></span>
+          <span class="user-name" id="user-name"></span>
+          <button type="button" id="sign-out" class="shell-signout" hidden>Sign out</button>
+        </div>
+      </div>
+    </div>
+    <nav aria-label="Main navigation" id="main-nav">
+      <ul>
+        <li><a href="index.html">Board</a></li>
+        <li><a href="pipeline.html">Pipeline</a></li>
+        <li><a href="outcomes.html">Outcomes</a></li>
+        <li><a href="learning.html">Learning</a></li>
+        <li><a href="members.html">Members</a></li>
+        <li><a href="leaderboard.html">Leaderboard</a></li>
+        <li><a href="admin.html" id="nav-admin" hidden>Admin</a></li>
+      </ul>
+    </nav>
+  </header>
+  <!-- shell:end -->
+
+  <main id="main" class="site-main" tabindex="-1">
+    <nav aria-label="Breadcrumb" class="breadcrumb report-controls">
+      <ol>
+        <li><a href="index.html">Board</a></li>
+        <li aria-current="page">Evidence card</li>
+      </ol>
+    </nav>
+
+    <div class="report-controls" style="margin-bottom:var(--space-6)">
+      <button type="button" id="print-report" class="btn">Print / Save as PDF</button>
+    </div>
+
+    <article id="report-content" class="evidence-card">
+      <p class="loading">Loading evidence card…</p>
+    </article>
+  </main>
+
+  <div role="status" aria-live="polite" id="live-region" class="sr-only"></div>
+
+  <noscript>
+    <div class="noscript-notice">
+      <p>JavaScript is required to view the evidence card.</p>
+    </div>
+  </noscript>
+
+  <script type="module" src="js/shell.js"></script>
+  <script type="module" src="js/pages/report.js"></script>
+</body>
+</html>

@@ -205,16 +205,19 @@ per-experiment "evidence card" printable view and a portfolio-level summary expo
 
 ### To-do
 
-- [ ] **`Site/v2/css/base.css` print section** — add print-optimised layout for
+- [x] **`Site/v2/css/base.css` print section** — add print-optimised layout for
   experiment evidence cards (already has `@media print` — extend it):
   - Show: title, hypothesis, success_metric, verdict, learning_expected vs actual, grow_decision, active_ingredients.
   - Hide: nav, pipeline controls, move buttons.
-- [ ] **New page `Site/v2/report.html` + `js/pages/report.js`** — URL param `?id=…` loads one experiment and renders a structured evidence card for printing / PDF export.
+  - *Print block now hides `.site-header`, `.breadcrumb`, `.report-controls`, `.board-toolbar`, pipeline move controls and buttons; strips card chrome and URL annotations from the evidence card; and avoids mid-section page breaks.*
+- [x] **New page `Site/v2/report.html` + `js/pages/report.js`** — URL param `?id=…` loads one experiment and renders a structured evidence card for printing / PDF export.
   - "Print / Save as PDF" button (`window.print()`).
   - Link from item page: "Export evidence card".
-- [ ] **`Site/v2/js/pages/outcomes.js`** — "Export portfolio summary" button — generates a
+  - *Renders The test / What happened / Growing / Who and how sections. The item page shows "Export evidence card" once a finding or verdict exists.*
+- [x] **`Site/v2/js/pages/outcomes.js`** — "Export portfolio summary" button — generates a
   plain-text / CSV summary of all experiments per outcome (no server round-trip;
   use `Blob` + `URL.createObjectURL`).
+  - *Implemented with `Blob` + `URL.createObjectURL`, one row per linked experiment (plus an "(No goal)" section for unlinked experiments), with RFC-style CSV escaping.*
 
 ### Acceptance criteria
 
@@ -237,13 +240,13 @@ per-experiment "evidence card" printable view and a portfolio-level summary expo
 
 ## Suggested delivery order
 
-| Sprint | Phase | Key deliverable |
-|---|---|---|
-| 1 | Phase 1 | Hypothesis fields locked at design time |
-| 1 | Phase 2 | Grow stage on pipeline |
-| 2 | Phase 3 | Learning loops + spawn |
-| 3 | Phase 4 | Outcome hierarchy + outcomes page |
-| 4 | Phase 5 | Evidence card + export |
+| Sprint | Phase | Key deliverable | Status |
+|---|---|---|---|
+| 1 | Phase 1 | Hypothesis fields locked at design time | ✅ Done |
+| 1 | Phase 2 | Grow stage on pipeline | ✅ Done |
+| 2 | Phase 3 | Learning loops + spawn | ✅ Done |
+| 3 | Phase 4 | Outcome hierarchy + outcomes page | ✅ Done |
+| 4 | Phase 5 | Evidence card + export | ✅ Done |
 
 Phases 1 and 2 are independent and can be built in parallel.
 Phase 3 depends on Phase 1 (it references `success_metric` in the decision).

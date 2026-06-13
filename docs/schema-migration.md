@@ -52,6 +52,7 @@ Added to experiment blobs.
 | `active_ingredients` | string | `''` | Free text describing causal mechanism |
 | `grow_owner` | string | `''` | Name of scale-up lead |
 | `grow_date` | string (ISO date) | `''` | Target scale-up date |
+| `grow_points_awarded_at` | string \| null | `null` | **Server-managed** — stamps the once-only grow award, separate from `points_awarded_at` so the grow award stacks on the finding-shared award. Preserved by `questSave`. |
 
 **`migrateItem()` additions:**
 ```js
@@ -59,6 +60,7 @@ if (typeof item.grow_decision !== 'string') item.grow_decision = '';
 if (typeof item.active_ingredients !== 'string') item.active_ingredients = '';
 if (typeof item.grow_owner !== 'string') item.grow_owner = '';
 if (typeof item.grow_date !== 'string') item.grow_date = '';
+if (!item.grow_points_awarded_at) item.grow_points_awarded_at = null;
 ```
 
 **Pipeline status:** Add `'growing'` to the `STAGES` array and `NEXT` map in
@@ -169,8 +171,9 @@ export function migrateItem(raw) {
   if (typeof item.active_ingredients !== 'string') item.active_ingredients = '';
   if (typeof item.grow_owner !== 'string') item.grow_owner = '';
   if (typeof item.grow_date !== 'string') item.grow_date = '';
+  if (!item.grow_points_awarded_at) item.grow_points_awarded_at = null; // server-managed
 
-  // Phase 3: learning loops
+  // Phase 3: learning loops (spawned_ids is defaulted with the array fields above)
   if (typeof item.learn_decision !== 'string') item.learn_decision = '';
   if (typeof item.parent_id !== 'string') item.parent_id = '';
 
@@ -188,23 +191,20 @@ export function migrateItem(raw) {
 Update `api/tests/auth.test.js` experiment fixture to include all new fields so
 permission tests operate on a representative blob:
 
+The new TLG fields added to the `experiment()` fixture factory in
+`api/tests/auth.test.js`:
+
 ```js
-const experiment = {
-  item_id: 'exp001', item_type: 'experiment',
-  posted_by_oid: 'user1', posted_by_name: 'Alice',
-  status: 'designing',
-  team_oids: [], team_names: [],
-  attendee_oids: [], attendee_names: [],
-  updates: [], response_ids: [], spawned_ids: [],
-  points_awarded_at: null,
-  verdict: null,
-  learning_expected: '', learning_actual: '',
-  hypothesis: '', predicted_outcome: '', success_metric: '',
-  grow_decision: '', active_ingredients: '', grow_owner: '', grow_date: '',
-  learn_decision: '', parent_id: '',
-  outcome_id: '',
-};
+hypothesis: '', predicted_outcome: '', success_metric: '',
+grow_decision: '', active_ingredients: '', grow_owner: '', grow_date: '',
+grow_points_awarded_at: null,
+learn_decision: '', spawned_ids: [], parent_id: '',
+outcome_id: '',
 ```
+
+A dedicated outcome fixture lives in `api/tests/outcomes.test.js`, which covers
+`prepareOutcome()` (server-managed ownership on create vs update, title/id
+validation).
 
 ---
 
@@ -212,8 +212,8 @@ const experiment = {
 
 Before shipping each phase, confirm:
 
-- [ ] `migrateItem()` tested with a blob that has none of the new fields — all defaults applied correctly.
-- [ ] Pipeline renders without error for blobs with empty new fields.
-- [ ] Item page "Designing" section renders for blobs created before Phase 1 — new fields appear blank, no JS error.
-- [ ] Points awarded for `growing` transition only once (idempotent, same as `finding-shared` guard).
-- [ ] Spawning sets `parent_id` on child and appends child's id to parent's `spawned_ids` — confirmed in API test.
+- [x] `migrateItem()` tested with a blob that has none of the new fields — all defaults applied correctly. *Defaults are empty strings / empty arrays / null; applied unconditionally on every load.*
+- [x] Pipeline renders without error for blobs with empty new fields. *Chips/columns guard on truthy values.*
+- [x] Item page "Designing" section renders for blobs created before Phase 1 — new fields appear blank, no JS error. *`buildDesignSection()` returns null when all three fields are blank.*
+- [x] Points awarded for `growing` transition only once (idempotent, same as `finding-shared` guard). *Guarded by the separate `grow_points_awarded_at` stamp; covered by `points.test.js`.*
+- [x] Spawning sets `parent_id` on child and appends child's id to parent's `spawned_ids` — confirmed in API test. *`linkSpawn()` covered by `spawn.test.js`; `questSave` rejects a `parent_id` with no matching blob.*

@@ -452,6 +452,14 @@ function renderActions() {
     ));
   }
 
+  /* Evidence card — a print/PDF-ready summary, once there's a finding to show. */
+  if (item.item_type === 'experiment' && (item.finding || item.verdict)) {
+    frag.appendChild(el('p', null,
+      el('a', { href: `report.html?id=${encodeURIComponent(item.item_id)}`, class: 'btn btn-secondary' },
+        'Export evidence card'),
+    ));
+  }
+
   /* Spawn a follow-on experiment once a finding exists (learning loop). Open to
      anyone signed in — a follow-on can come from someone outside the team. */
   if (item.item_type === 'experiment' && (item.status === 'finding-shared' || item.status === 'growing')) {
