@@ -178,10 +178,13 @@ test('stranger may join and leave a session', () => {
   assert.equal(authorizeItemWrite(joined, left, bob, false).ok, true);
 });
 
-test('stranger may not add someone else as attendee', () => {
+test('stranger may not add someone else or forge their own attendee name', () => {
   const cur = session();
   const forged = { ...cur, attendee_oids: ['oid-carol'], attendee_names: ['Carol'] };
   assert.equal(authorizeItemWrite(cur, forged, bob, false).ok, false);
+
+  const impersonated = { ...cur, attendee_oids: ['oid-bob'], attendee_names: ['CEO Bob'] };
+  assert.equal(authorizeItemWrite(cur, impersonated, bob, false).ok, false);
 });
 
 test('stranger may join an experiment team but not change anything else', () => {
@@ -200,6 +203,9 @@ test('stranger may append updates they authored, not forge or rewrite them', () 
 
   const forged = { ...cur, updates: [...cur.updates, { id: 'u3', author_oid: 'oid-alice', author_name: 'Alice', text: 'fake', timestamp: 't1' }] };
   assert.equal(authorizeItemWrite(cur, forged, bob, false).ok, false);
+
+  const forgedName = { ...cur, updates: [...cur.updates, { id: 'u4', author_oid: 'oid-bob', author_name: 'CEO Bob', text: 'fake name', timestamp: 't1' }] };
+  assert.equal(authorizeItemWrite(cur, forgedName, bob, false).ok, false);
 
   const rewritten = { ...cur, updates: [{ ...cur.updates[0], text: 'edited' }] };
   assert.equal(authorizeItemWrite(cur, rewritten, bob, false).ok, false);
