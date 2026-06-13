@@ -121,25 +121,28 @@ learning chain visible.
 
 ### To-do
 
-- [ ] **`Site/v2/js/data.js` → `migrateItem()`** — add:
+- [x] **`Site/v2/js/data.js` → `migrateItem()`** — add:
   ```js
   if (typeof item.learn_decision !== 'string') item.learn_decision = '';
   if (!Array.isArray(item.spawned_ids)) item.spawned_ids = [];
   if (typeof item.parent_id !== 'string') item.parent_id = '';
   ```
-- [ ] **`Site/v2/js/pages/item.js`** — in the "Wrapping up" section, add:
+- [x] **`Site/v2/js/pages/item.js`** — in the "Wrapping up" section, add:
   - `learn_decision` — radio: "Persevere", "Pivot — run a variation", "Stop", "Escalate for scaling"
   - "Spawn follow-on experiment" button — creates a new experiment pre-filled with:
     - `parent_id` set to current experiment's `item_id`
     - hypothesis pre-populated with "Follow-on from: [parent title]"
   - Display existing `spawned_ids` as links: "Spawned: [title]", "…"
-- [ ] **`Site/v2/js/pages/item.js`** — show `parent_id` breadcrumb at top of item page
+  - *The `learn_decision` radio is in the share-finding form (the wrapping-up section). The spawn button appears on `finding-shared`/`growing` items and opens the new-experiment form pre-seeded via `?parent_id=&parent_title=`. Spawned follow-ons are listed as links on the item page.*
+- [x] **`Site/v2/js/pages/item.js`** — show `parent_id` breadcrumb at top of item page
   when it exists: "Part of a learning chain — view parent experiment →"
-- [ ] **`Site/v2/js/pages/pipeline.js` → `buildCard()`** — show a "Spawned N" chip on
+- [x] **`Site/v2/js/pages/pipeline.js` → `buildCard()`** — show a "Spawned N" chip on
   cards where `spawned_ids.length > 0`, linking to the board filtered to those ids.
-- [ ] **`api/function.js`** — when saving a spawn, verify `parent_id` points to a real
+  - *The chip links to the parent item page (`#spawned-heading`), where the follow-ons are listed — the board has no id-filter view, so this is the working equivalent.*
+- [x] **`api/function.js`** — when saving a spawn, verify `parent_id` points to a real
   blob (`readBlob(quests/${parent_id}.json)` returns non-null) and append the new
   `item_id` to the parent's `spawned_ids` array in a single write. Add test.
+  - *On create with a `parent_id`, the parent is read and a missing parent is rejected with 400. The append is done via the pure `linkSpawn()` helper (in `api/spawn.js`, dedup + no-mutation), unit-tested in `api/tests/spawn.test.js`. CI now runs `tests/*.test.js`.*
 
 ### Acceptance criteria
 

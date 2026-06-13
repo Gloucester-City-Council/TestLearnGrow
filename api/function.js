@@ -2,6 +2,7 @@ const { app } = require('@azure/functions');
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { parsePrincipal, isAdmin, isItemOwner, authorizeItemWrite } = require('./auth');
 const { awardPointsForTransition } = require('./points');
+const { linkSpawn } = require('./spawn');
 const { effectiveConfig, redactConfig, validateConfig } = require('./config-store');
 
 const CONTAINER = process.env.AZURE_STORAGE_CONTAINER || 'sw-sidequests';
@@ -220,6 +221,15 @@ app.http('questSave', {
       const admin = isAdmin(principal, config);
       const current = await readBlob(`quests/${id}.json`);
 
+      /* Spawned follow-on (TLG learning loops): a brand-new item carrying a
+         parent_id must reference a real parent, which then gains this child in
+         its spawned_ids. Verify the parent up front so we can reject early. */
+      let parent = null;
+      if (!current && item.parent_id) {
+        parent = await readBlob(`quests/${item.parent_id}.json`);
+        if (!parent) return err(request, 400, 'parent_id does not reference an existing item');
+      }
+
       if (current) {
         item.points_awarded_at = current.points_awarded_at || null; // server-managed
         item.grow_points_awarded_at = current.grow_points_awarded_at || null; // server-managed
@@ -243,6 +253,13 @@ app.http('questSave', {
 
       await writeBlob(`quests/${id}.json`, item);
       if (awards.length > 0) await writeBlob('leaderboard.json', leaderboard);
+
+      /* Link the new child into the parent's spawned_ids (single extra write). */
+      if (parent) {
+        const updatedParent = linkSpawn(parent, id);
+        if (updatedParent) await writeBlob(`quests/${parent.item_id || item.parent_id}.json`, updatedParent);
+      }
+
       return ok(request, { ok: true, item, awards });
     } catch (e) {
       context.error('questSave failed:', e.message);

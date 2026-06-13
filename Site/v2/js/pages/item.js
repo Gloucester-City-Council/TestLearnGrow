@@ -19,7 +19,18 @@ const GROW_DECISIONS = [
 ];
 const GROW_DECISION_LABELS = Object.fromEntries(GROW_DECISIONS.map((d) => [d.value, d.label]));
 
+/* TLG learning loop decision options (Phase 3). Recorded when a finding is
+   shared, then drives whether the team perseveres, pivots, stops or escalates. */
+const LEARN_DECISIONS = [
+  { value: 'persevere', label: 'Persevere' },
+  { value: 'pivot',     label: 'Pivot — run a variation' },
+  { value: 'stop',      label: 'Stop' },
+  { value: 'escalate',  label: 'Escalate for scaling' },
+];
+const LEARN_DECISION_LABELS = Object.fromEntries(LEARN_DECISIONS.map((d) => [d.value, d.label]));
+
 let _item = null;
+let _items = [];
 let _config = null;
 let _session = null;
 let _members = [];
@@ -46,6 +57,7 @@ async function init() {
     return;
   }
   _config = config;
+  _items = items;
   _item = items.find((i) => i.item_id === id);
 
   if (!_item) { renderNotFound(); return; }
@@ -100,6 +112,11 @@ function renderMain() {
   }
   frag.appendChild(header);
 
+  /* Learning chain: if this experiment was spawned from another, link back. */
+  if (item.item_type === 'experiment' && item.parent_id) {
+    frag.appendChild(buildParentChain(item));
+  }
+
   /* Body */
   const bodyText = item.description || item.question || item.topic;
   if (bodyText) frag.appendChild(el('p', { text: bodyText }));
@@ -126,6 +143,11 @@ function renderMain() {
   if (item.output) {
     frag.appendChild(el('h2', { text: 'Output' }));
     frag.appendChild(el('p', { text: item.output }));
+  }
+
+  /* Follow-on experiments spawned from this one (learning chain, downward). */
+  if (item.item_type === 'experiment' && (item.spawned_ids || []).length) {
+    frag.appendChild(buildSpawnedList(item));
   }
 
   /* Who can help — match active experiments to people by method. */
@@ -240,6 +262,41 @@ function buildGrowSnapshot(item) {
   return sec;
 }
 
+/* ── Learning loops (TLG: pivot / persevere / spawn) ─────────────────────── */
+
+function buildParentChain(item) {
+  const parent = _items.find((i) => i.item_id === item.parent_id);
+  const p = el('p', { class: 'learning-chain-note' });
+  p.appendChild(el('span', { 'aria-hidden': 'true' }, '↳ '));
+  p.appendChild(document.createTextNode('Part of a learning chain — '));
+  if (parent) {
+    p.appendChild(el('a', { href: `item.html?id=${encodeURIComponent(parent.item_id)}` },
+      `view the parent experiment: ${parent.title || 'Untitled'}`));
+  } else {
+    p.appendChild(document.createTextNode('the parent experiment is no longer available.'));
+  }
+  return p;
+}
+
+function buildSpawnedList(item) {
+  const sec = el('section', { 'aria-labelledby': 'spawned-heading', style: 'margin-top:var(--space-6)' });
+  sec.appendChild(el('h2', { id: 'spawned-heading', text: 'Follow-on experiments' }));
+  sec.appendChild(el('p', { class: 'card-meta', text: 'Experiments spawned from this one to carry the learning forward.' }));
+  const ul = el('ul', { class: 'updates-list', role: 'list' });
+  for (const cid of item.spawned_ids) {
+    const child = _items.find((i) => i.item_id === cid);
+    const li = el('li', { class: 'update-item' });
+    if (child) {
+      li.appendChild(el('a', { href: `item.html?id=${encodeURIComponent(cid)}` }, child.title || 'Untitled experiment'));
+    } else {
+      li.appendChild(el('span', { class: 'card-meta', text: 'A follow-on experiment that is no longer available.' }));
+    }
+    ul.appendChild(li);
+  }
+  sec.appendChild(ul);
+  return sec;
+}
+
 /* ── Learning snapshot (fail-fast showcase) ──────────────────────────────── */
 
 function buildLearningSnapshot(item) {
@@ -280,6 +337,11 @@ function buildLearningSnapshot(item) {
   if (item.outcome) {
     sec.appendChild(el('h3', { text: 'What we’d do differently' }));
     sec.appendChild(el('p', { text: item.outcome }));
+  }
+
+  if (item.learn_decision && LEARN_DECISION_LABELS[item.learn_decision]) {
+    sec.appendChild(el('h3', { text: 'What next' }));
+    sec.appendChild(el('p', { text: LEARN_DECISION_LABELS[item.learn_decision] }));
   }
 
   const methods = (item.method_tags || []).filter(Boolean);
@@ -378,6 +440,16 @@ function renderActions() {
     frag.appendChild(el('p', null,
       el('a', { href: `edit-item.html?id=${encodeURIComponent(item.item_id)}`, class: 'btn btn-secondary' },
         `Edit ${t(_config, `items.${item.item_type}.singular`).toLowerCase()}`),
+    ));
+  }
+
+  /* Spawn a follow-on experiment once a finding exists (learning loop). Open to
+     anyone signed in — a follow-on can come from someone outside the team. */
+  if (item.item_type === 'experiment' && (item.status === 'finding-shared' || item.status === 'growing')) {
+    const spawnUrl = `new-experiment.html?parent_id=${encodeURIComponent(item.item_id)}`
+      + `&parent_title=${encodeURIComponent(item.title || '')}`;
+    frag.appendChild(el('p', null,
+      el('a', { href: spawnUrl, class: 'btn btn-secondary' }, 'Spawn follow-on experiment'),
     ));
   }
 
@@ -570,6 +642,18 @@ function buildShareFindingForm() {
   outcomeGroup.appendChild(el('textarea', { id: 'outcome-text', name: 'outcome', rows: '3' }));
   form.appendChild(outcomeGroup);
 
+  /* Learning loop decision — persevere / pivot / stop / escalate. Optional, but
+     prompts the team to close the loop rather than letting the finding float. */
+  const learnFs = el('fieldset', { id: 'learn-decision-group' });
+  learnFs.appendChild(el('legend', { text: 'What next? (optional)' }));
+  learnFs.appendChild(el('span', { class: 'form-hint', text: 'The learning decision this finding leads to.' }));
+  for (const d of LEARN_DECISIONS) {
+    const radio = el('input', { type: 'radio', name: 'learn_decision', id: `learn-decision-${d.value}`, value: d.value });
+    if (_item.learn_decision === d.value) radio.checked = true;
+    learnFs.appendChild(el('label', { class: 'label-inline' }, radio, d.label));
+  }
+  form.appendChild(learnFs);
+
   const confirmWrap = buildConfirmBeforeSubmit(
     'Share finding',
     summary,
@@ -578,6 +662,7 @@ function buildShareFindingForm() {
       const outcomeEl = form.querySelector('#outcome-text');
       const expectedEl = form.querySelector('#expected-text');
       const actualEl = form.querySelector('#actual-text');
+      const learnDecision = (form.querySelector('input[name="learn_decision"]:checked') || {}).value || '';
       const verdict = selectedVerdict(form);
       resetVerdictError(form);
       const fieldErrors = validate([
@@ -597,7 +682,7 @@ function buildShareFindingForm() {
       }
       clearErrors('share-finding-errors');
       await doShareFinding(findingEl.value.trim(), outcomeEl.value.trim(),
-        verdict, expectedEl.value.trim(), actualEl.value.trim());
+        verdict, expectedEl.value.trim(), actualEl.value.trim(), learnDecision);
       return true;
     },
   );
@@ -874,7 +959,7 @@ async function doAddUpdate(text) {
   if (ta) ta.value = '';
 }
 
-async function doShareFinding(finding, outcome, verdict, expected, actual) {
+async function doShareFinding(finding, outcome, verdict, expected, actual, learnDecision) {
   const now = new Date().toISOString();
   await doSave({
     ..._item,
@@ -884,6 +969,7 @@ async function doShareFinding(finding, outcome, verdict, expected, actual) {
     verdict: verdict || null,
     learning_expected: expected || '',
     learning_actual: actual || '',
+    learn_decision: learnDecision || _item.learn_decision || '',
     updated_at: now,
     closed_at: now,
   }, 'Finding shared successfully.');

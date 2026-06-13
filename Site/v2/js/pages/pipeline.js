@@ -164,6 +164,19 @@ function buildCard(item, stage) {
     card.appendChild(wrap);
   }
 
+  /* Learning chain: how many follow-on experiments grew out of this one. The
+     chip links to the item page, where the follow-ons are listed. */
+  const spawnedCount = (item.spawned_ids || []).length;
+  if (spawnedCount) {
+    const wrap = el('div', { class: 'pipeline-chips' });
+    wrap.appendChild(el('a', {
+      class: 'chip chip-purple',
+      href: `item.html?id=${encodeURIComponent(item.item_id)}#spawned-heading`,
+      'aria-label': `Spawned ${spawnedCount} follow-on experiment${spawnedCount !== 1 ? 's' : ''}`,
+    }, `Spawned ${spawnedCount}`));
+    card.appendChild(wrap);
+  }
+
   /* Footer: last activity + move control */
   const foot = el('div', { class: 'pipeline-card-foot' });
   const when = item.updated_at || item.created_at;

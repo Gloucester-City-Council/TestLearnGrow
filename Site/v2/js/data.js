@@ -79,6 +79,12 @@ export function migrateItem(raw) {
   if (typeof item.grow_date !== 'string') item.grow_date = '';
   if (!item.grow_points_awarded_at) item.grow_points_awarded_at = null;
 
+  /* TLG Phase 3 — learning loops. pivot / persevere / spawn. spawned_ids is
+     defaulted with the other array fields above; parent_id links a follow-on
+     back to the experiment it grew out of. */
+  if (typeof item.learn_decision !== 'string') item.learn_decision = '';
+  if (typeof item.parent_id !== 'string') item.parent_id = '';
+
   return item;
 }
 

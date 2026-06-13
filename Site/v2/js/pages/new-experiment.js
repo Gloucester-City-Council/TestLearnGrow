@@ -6,6 +6,12 @@ import { validate, showErrors, clearErrors, saveDraft, loadDraft, clearDraft, au
 
 const DRAFT_KEY = 'new-experiment';
 
+/* When spawning a follow-on (TLG learning loop), the parent experiment is
+   passed in the query string so the new experiment links back to it. */
+const _params = new URLSearchParams(location.search);
+const _parentId = _params.get('parent_id') || '';
+const _parentTitle = _params.get('parent_title') || '';
+
 async function init() {
   const session = await requireSignIn();
   if (!session) return;
@@ -42,6 +48,16 @@ async function init() {
   /* Restore draft */
   const draft = loadDraft(DRAFT_KEY);
   if (draft) restoreForm(draft);
+
+  /* Spawning a follow-on: announce the link to the parent and seed the
+     hypothesis so the chain is explicit. Only seed when the field is empty so a
+     restored draft is never clobbered. */
+  if (_parentId) {
+    const intro = document.querySelector('main > p');
+    if (intro) intro.textContent = `Follow-on experiment from “${_parentTitle || 'an earlier experiment'}”. What does it lead you to test next?`;
+    const hypo = document.getElementById('hypothesis');
+    if (hypo && !hypo.value) hypo.value = `Follow-on from: ${_parentTitle || 'parent experiment'}`;
+  }
 
   const form = document.getElementById('new-item-form');
   autosaveDraft(form, DRAFT_KEY, getValues);
@@ -83,6 +99,8 @@ async function init() {
         team_names: [session.name],
         finding: '',
         outcome: '',
+        parent_id: _parentId || '',
+        spawned_ids: [],
         challenge_id: null,
         xp_reward: (config.points && config.points.values) ? config.points.values.experiment_complete : 100,
         created_at: now,
