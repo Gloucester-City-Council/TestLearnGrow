@@ -1,7 +1,7 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
 import { loadItems, loadMembers, loadOutcomes, saveItem, deleteItem, timeAgo, fullDate, nano } from '../data.js';
-import { el, chipEl, statusVariant, moveFocus, announce, skeleton } from '../dom.js';
+import { el, chipEl, statusVariant, statusLabel, moveFocus, announce, skeleton } from '../dom.js';
 import { validate, showErrors, clearErrors } from '../forms.js';
 import { initials } from '../profile-card.js';
 import { whoCanHelp, hasHelpers, HELP_BANDS } from '../skills-match.js';
@@ -106,7 +106,7 @@ function renderMain() {
 
   /* Header: chip + meta */
   const header = el('div', { class: 'card-header', style: 'margin-bottom:var(--space-6)' });
-  header.appendChild(chipEl(item.status || 'unknown', statusVariant(item.status)));
+  header.appendChild(chipEl(statusLabel(item.status), statusVariant(item.status)));
   const postedBy = item.item_type === 'session' ? item.host_name : item.posted_by_name;
   if (postedBy) {
     const meta = el('span', { class: 'card-meta' }, `By ${postedBy}`);
@@ -790,11 +790,11 @@ function buildGrowForm() {
   form.appendChild(dateGroup);
 
   const submitBtn = el('button', { type: 'button', class: 'btn' }, isGrowing ? 'Update grow plan' : 'Move to Growing');
-  submitBtn.addEventListener('click', async () => {
+  submitBtn.addEventListener('click', () => withSubmitting(submitBtn, async () => {
     const decision = (form.querySelector('input[name="grow_decision"]:checked') || {}).value || '';
     if (!decision) {
       showErrors([{ field: 'grow-decision-scale', message: 'Choose a grow decision' }], 'grow-errors');
-      return;
+      return false;
     }
     clearErrors('grow-errors');
     await doMoveToGrowing({
@@ -803,7 +803,7 @@ function buildGrowForm() {
       grow_owner: ownerInput.value.trim(),
       grow_date: dateInput.value || '',
     });
-  });
+  }));
   form.appendChild(submitBtn);
   wrapper.appendChild(form);
   return wrapper;
@@ -860,16 +860,36 @@ function buildShareOutputForm() {
   return wrapper;
 }
 
+/* Run an async submit handler with in-flight feedback and a double-submit
+   guard. On both success and failure the actions section is re-rendered (by
+   doSave → renderAll / renderError), detaching the button — so we only need to
+   restore it here when the handler reports it did not proceed (validation
+   failed) or throws before the save. */
+async function withSubmitting(btn, handler) {
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const proceeded = await handler();
+    if (proceeded === false) {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = original;
+    announce(`Could not save: ${err.message}`);
+  }
+}
+
 /* Two-step confirm button — replaces submit with a preview + confirm/cancel step */
 function buildConfirmBeforeSubmit(submitLabel, consequence, onConfirm) {
   const wrapper = el('div');
   const submitBtn = el('button', { type: 'button', class: 'btn' }, submitLabel);
 
-  submitBtn.addEventListener('click', async () => {
-    /* Run validation first */
-    const proceed = await onConfirm();
-    if (proceed === false) return; /* validation failed — errors shown */
-  });
+  /* Disable + show "Saving…" while the save is in flight (validation runs first
+     inside onConfirm; a false return means it failed and the button restores). */
+  submitBtn.addEventListener('click', () => withSubmitting(submitBtn, onConfirm));
 
   wrapper.appendChild(submitBtn);
   return wrapper;
@@ -896,16 +916,19 @@ function buildUpdateForm() {
   const textarea = el('textarea', { id: 'update-text', name: 'text', rows: '3', required: true });
   group.appendChild(textarea);
   form.appendChild(group);
-  form.appendChild(el('button', { type: 'submit', class: 'btn' }, 'Post update'));
+  const submitBtn = el('button', { type: 'submit', class: 'btn' }, 'Post update');
+  form.appendChild(submitBtn);
 
-  form.addEventListener('submit', async (e) => {
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const errors = validate([
-      { id: 'update-text', label: 'Update', value: textarea.value, required: true, minLength: 5 },
-    ]);
-    if (errors.length) { showErrors(errors, 'update-errors'); return; }
-    clearErrors('update-errors');
-    await doAddUpdate(textarea.value.trim());
+    withSubmitting(submitBtn, async () => {
+      const errors = validate([
+        { id: 'update-text', label: 'Update', value: textarea.value, required: true, minLength: 5 },
+      ]);
+      if (errors.length) { showErrors(errors, 'update-errors'); return false; }
+      clearErrors('update-errors');
+      await doAddUpdate(textarea.value.trim());
+    });
   });
 
   wrapper.appendChild(form);

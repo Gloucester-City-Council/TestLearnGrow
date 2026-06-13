@@ -1,7 +1,7 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
 import { loadItems, loadOutcomes, fullDate } from '../data.js';
-import { el, chipEl, announce, moveFocus } from '../dom.js';
+import { el, chipEl, statusLabel, announce, moveFocus, skeleton } from '../dom.js';
 import { verdictChip, verdictLabel } from '../verdict.js';
 
 /* Evidence card (TLG Phase 5). A clean, print-ready summary of one experiment —
@@ -28,6 +28,10 @@ async function init() {
   if (!id) { renderMessage('No experiment specified.'); return; }
 
   document.getElementById('print-report')?.addEventListener('click', () => window.print());
+
+  const loadingEl = document.getElementById('report-content');
+  if (loadingEl) loadingEl.replaceChildren(skeleton(['title', 'line', 'block', 'short']));
+  announce('Loading evidence card…');
 
   let config, items;
   try {
@@ -66,7 +70,7 @@ function render(item, goal) {
   header.appendChild(el('h1', { id: 'report-title', text: item.title || 'Untitled experiment' }));
   const vChip = verdictChip(item.verdict);
   if (vChip) header.appendChild(vChip);
-  header.appendChild(chipEl(item.status || 'unknown', 'neutral'));
+  header.appendChild(chipEl(statusLabel(item.status), 'neutral'));
   frag.appendChild(header);
 
   /* The test (design-time) */

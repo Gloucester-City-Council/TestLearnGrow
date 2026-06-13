@@ -21,6 +21,10 @@ async function init() {
   const form = document.getElementById('new-item-form');
   autosaveDraft(form, DRAFT_KEY, getValues);
 
+  /* Focus the first field so the form is ready to type into on load. */
+  const firstField = form.querySelector('input, textarea, select');
+  if (firstField) firstField.focus();
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const values = getValues();

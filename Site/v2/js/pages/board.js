@@ -2,7 +2,7 @@ import { requireSignIn } from '../auth.js';
 import { promptCardCreation } from '../onboarding.js';
 import { loadConfig, t } from '../config-loader.js';
 import { loadItems, loadLeaderboard, loadMembers, rankFor, timeAgo, fullDate } from '../data.js';
-import { el, announce, chipEl, statusVariant } from '../dom.js';
+import { el, announce, chipEl, statusVariant, statusLabel } from '../dom.js';
 import { isCardBlank } from '../profile-card.js';
 import { experimentsWantingMe } from '../skills-match.js';
 import { verdictChip } from '../verdict.js';
@@ -383,7 +383,7 @@ function buildCard(item) {
     ),
   );
   header.appendChild(titleEl);
-  header.appendChild(chipEl(item.status || 'unknown', statusVariant(item.status)));
+  header.appendChild(chipEl(statusLabel(item.status), statusVariant(item.status)));
   article.appendChild(header);
 
   const postedBy = item.item_type === 'session' ? item.host_name : item.posted_by_name;

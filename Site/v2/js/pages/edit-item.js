@@ -1,7 +1,7 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
 import { loadItems, saveItem, loadOutcomes } from '../data.js';
-import { el, moveFocus } from '../dom.js';
+import { el } from '../dom.js';
 import { validate, showErrors, clearErrors, saveDraft, loadDraft, clearDraft, autosaveDraft } from '../forms.js';
 
 let _item = null;
@@ -136,7 +136,10 @@ function renderForm(item, draft, session, draftKey) {
   });
 
   container.replaceChildren(form);
-  moveFocus(form.querySelector('input, textarea'));
+  /* Focus the first field. Plain focus() (not moveFocus, which would add
+     tabindex="-1") keeps the native input in the Tab order. */
+  const firstField = form.querySelector('input, textarea, select');
+  if (firstField) firstField.focus();
 }
 
 function getDefaultValues(item) {

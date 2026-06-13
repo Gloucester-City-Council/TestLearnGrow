@@ -1,7 +1,7 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig } from '../config-loader.js';
 import { loadOutcomes, saveOutcome, loadItems, nano, fullDate } from '../data.js';
-import { el, chipEl, statusVariant, announce, moveFocus } from '../dom.js';
+import { el, chipEl, statusVariant, statusLabel, announce, moveFocus } from '../dom.js';
 import { validate, showErrors, clearErrors } from '../forms.js';
 
 /* Outcome dashboard (TLG Phase 4). Lists the missions experiments ladder up to,
@@ -96,9 +96,9 @@ function buildOutcomeCard(outcome) {
       const li = el('li', { class: 'update-item' });
       li.appendChild(el('a', { href: `item.html?id=${encodeURIComponent(exp.item_id)}` },
         exp.title || 'Untitled experiment'));
-      li.appendChild(el('span', { class: 'sr-only' }, ` — status: ${exp.status || 'unknown'}`));
+      li.appendChild(el('span', { class: 'sr-only' }, ` — status: ${statusLabel(exp.status)}`));
       li.appendChild(document.createTextNode(' '));
-      li.appendChild(chipEl(exp.status || 'unknown', statusVariant(exp.status)));
+      li.appendChild(chipEl(statusLabel(exp.status), statusVariant(exp.status)));
       ul.appendChild(li);
     }
     details.appendChild(ul);
