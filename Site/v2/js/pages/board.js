@@ -14,7 +14,9 @@ const SECTIONS = [
 ];
 
 const ACTIVE_STATUSES = ['designing', 'running', 'wrapping-up', 'scheduled', 'happened', 'open'];
-const DONE_STATUSES = ['finding-shared', 'output-shared', 'closed'];
+/* 'growing' counts as done for the board's active/done split: the test is
+   finished (finding shared) and it's now being scaled. */
+const DONE_STATUSES = ['finding-shared', 'output-shared', 'closed', 'growing'];
 
 const FILTER_LABELS = { all: 'All', mine: 'Mine', active: 'Active', done: 'Completed' };
 
@@ -254,7 +256,7 @@ function renderLearning() {
   if (!section || !box) return;
 
   const shared = _items
-    .filter((i) => (i.status === 'finding-shared' && i.finding) || (i.status === 'output-shared' && i.output))
+    .filter((i) => ((i.status === 'finding-shared' || i.status === 'growing') && i.finding) || (i.status === 'output-shared' && i.output))
     .sort((a, b) => new Date(b.closed_at || b.updated_at || 0) - new Date(a.closed_at || a.updated_at || 0))
     .slice(0, 4);
 
@@ -269,7 +271,7 @@ function renderLearning() {
 
   const ul = el('ul', { class: 'learning-list', role: 'list' });
   for (const item of shared) {
-    const isFinding = item.status === 'finding-shared';
+    const isFinding = item.status === 'finding-shared' || item.status === 'growing';
     const text = (isFinding ? item.finding : item.output) || '';
     const snippet = text.length > 160 ? `${text.slice(0, 160)}…` : text;
     const who = item.item_type === 'session' ? item.host_name : item.posted_by_name;
