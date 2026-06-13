@@ -36,6 +36,7 @@
       <ul>
         <li><a href="index.html">Board</a></li>
         <li><a href="pipeline.html">Pipeline</a></li>
+        <li><a href="outcomes.html">Outcomes</a></li>
         <li><a href="learning.html">Learning</a></li>
         <li><a href="members.html">Members</a></li>
         <li><a href="leaderboard.html">Leaderboard</a></li>
@@ -142,6 +143,14 @@
           <span class="form-hint">Select all that apply.</span>
           <div id="method-tags-options"></div>
         </fieldset>
+      </div>
+
+      <div id="outcome-group" class="form-group" hidden>
+        <label for="outcome_id">Which goal does this test evidence? (optional)</label>
+        <span class="form-hint" id="outcome-hint">Link this experiment to a mission so its impact is attributable.</span>
+        <select id="outcome_id" name="outcome_id" aria-describedby="outcome-hint">
+          <option value="">Not linked to a goal</option>
+        </select>
       </div>
 
       <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-top:var(--space-6)">

@@ -163,27 +163,30 @@ generating evidence and how the portfolio is progressing against real goals.
 
 ### To-do
 
-- [ ] **`api/function.js`** — add CRUD routes for `outcomes/{id}`:
+- [x] **`api/function.js`** — add CRUD routes for `outcomes/{id}`:
   - `GET /api/outcomes` — list all outcome blobs
   - `POST /api/outcomes/{id}` — create / update (admin or any signed-in user?)
   - `DELETE /api/outcomes/{id}` — admin only
   - Each outcome blob: `{ outcome_id, title, goal_metric, target_value, target_date, owner_oid, owner_name }`
   - Add server-side tests.
-- [ ] **`Site/v2/js/data.js`** — add `loadOutcomes()`, `saveOutcome()`, `deleteOutcome()` following the same pattern as `loadItems()`.
-- [ ] **`Site/v2/js/pages/item.js`** — add `outcome_id` select picker on the experiment
+  - *Any signed-in user may create/update (ownership server-managed via the pure `prepareOutcome()` helper in `api/outcomes.js`); delete is admin-only. Server tests in `api/tests/outcomes.test.js`.*
+- [x] **`Site/v2/js/data.js`** — add `loadOutcomes()`, `saveOutcome()`, `deleteOutcome()` following the same pattern as `loadItems()`. *Plus `migrateOutcome()`.*
+- [x] **`Site/v2/js/pages/item.js`** — add `outcome_id` select picker on the experiment
   form (populated from `loadOutcomes()`). Label: "Which goal does this test evidence?"
-- [ ] **`Site/v2/js/data.js` → `migrateItem()`** — add:
+  - *Picker added to the create (`new-experiment`) and edit (`edit-item`) forms — where the experiment is actually built. `item.js` shows the linked goal as a "Goal" detail row.*
+- [x] **`Site/v2/js/data.js` → `migrateItem()`** — add:
   ```js
   if (typeof item.outcome_id !== 'string') item.outcome_id = '';
   ```
-- [ ] **New page `Site/v2/outcomes.html` + `js/pages/outcomes.js`** — outcome dashboard:
+- [x] **New page `Site/v2/outcomes.html` + `js/pages/outcomes.js`** — outcome dashboard:
   - Table: outcome title, goal metric, target date, experiments linked, stage breakdown
   - Expandable rows: list linked experiments with their current status
   - "Add outcome" form (inline, same GOV.UK pattern as other forms)
   - Add `outcomes.html` to the shell nav (after "Pipeline").
-- [ ] **Shell nav update** — add `outcomes.html` link to all 14 + 1 HTML pages
-  simultaneously (CLAUDE.md rule 4).
-- [ ] **`Site/v2/js/pages/admin.js`** — add outcomes management section for admins.
+  - *Each goal renders as a card (title, metric, target, owner, linked count) with a native `<details>` disclosure listing linked experiments and their status chips — the accessible equivalent of expandable table rows.*
+- [x] **Shell nav update** — add `outcomes.html` link to all 14 + 1 HTML pages
+  simultaneously (CLAUDE.md rule 4). *Inserted into the 14 shell pages via a single byte-identical search-replace; CI shell-sync check passes. signin.html has no shell.*
+- [x] **`Site/v2/js/pages/admin.js`** — add outcomes management section for admins. *Lists goals with an admin-only inline-confirm delete.*
 
 ### Acceptance criteria
 

@@ -1,6 +1,7 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, DEFAULT_CONFIG } from '../config-loader.js';
 import { apiPost } from '../api.js';
+import { loadOutcomes, deleteOutcome, fullDate } from '../data.js';
 import { el, announce, moveFocus } from '../dom.js';
 import { ratio } from '../contrast.js';
 import { validate, showErrors, clearErrors } from '../forms.js';
@@ -32,6 +33,89 @@ async function init() {
 
   _config = await loadConfig();
   renderAdmin();
+  renderOutcomesAdmin();
+}
+
+/* ── Outcomes management (admin-only delete) ─────────────────────────────── */
+
+async function renderOutcomesAdmin() {
+  const container = document.getElementById('admin-content');
+  if (!container) return;
+
+  const sec = el('div', { class: 'board-section', id: 'section-outcomes' });
+  sec.appendChild(el('h2', { text: 'Outcomes (goals)' }));
+  sec.appendChild(el('p', { class: 'form-hint' },
+    'Goals experiments ladder up to. Create and link goals on the ',
+    el('a', { href: 'outcomes.html' }, 'Outcomes page'),
+    '. Deleting a goal here does not delete its experiments — they simply become unlinked.',
+  ));
+
+  const listEl = el('div', { id: 'outcomes-admin-list' });
+  listEl.appendChild(el('p', { class: 'loading', text: 'Loading goals…' }));
+  sec.appendChild(listEl);
+  container.appendChild(sec);
+
+  let outcomes = [];
+  try {
+    outcomes = await loadOutcomes();
+  } catch (err) {
+    listEl.replaceChildren(el('div', { class: 'status-message status-message--error', role: 'alert' },
+      el('p', { text: `Failed to load goals: ${err.message}` })));
+    return;
+  }
+  renderOutcomesAdminList(listEl, outcomes);
+}
+
+function renderOutcomesAdminList(listEl, outcomes) {
+  if (!outcomes.length) {
+    listEl.replaceChildren(el('p', { class: 'empty-state', text: 'No goals yet.' }));
+    return;
+  }
+  const ul = el('ul', { class: 'updates-list', role: 'list' });
+  for (const o of outcomes) ul.appendChild(buildOutcomeAdminRow(o, listEl, outcomes));
+  listEl.replaceChildren(ul);
+}
+
+function buildOutcomeAdminRow(outcome, listEl, outcomes) {
+  const li = el('li', { class: 'update-item' });
+  const head = el('p', { class: 'update-meta' }, outcome.title || 'Untitled goal');
+  if (outcome.target_date) head.appendChild(el('time', { datetime: outcome.target_date }, ` · target ${fullDate(outcome.target_date)}`));
+  li.appendChild(head);
+  if (outcome.owner_name) li.appendChild(el('p', { class: 'card-meta', text: `Owner: ${outcome.owner_name}` }));
+
+  const action = el('div');
+  const delBtn = el('button', { type: 'button', class: 'btn btn-danger', style: 'font-size:0.875rem' },
+    `Delete goal: ${outcome.title || 'Untitled'}`);
+  delBtn.addEventListener('click', () => {
+    const confirm = el('div', {
+      class: 'status-message status-message--error', role: 'alertdialog',
+      'aria-label': `Confirm deleting ${outcome.title || 'this goal'}`,
+    });
+    confirm.appendChild(el('p', { text: 'Delete this goal? Linked experiments will become unlinked. This cannot be undone.' }));
+    const row = el('div', { style: 'display:flex;gap:var(--space-3)' });
+    const yes = el('button', { type: 'button', class: 'btn btn-danger' }, 'Yes, delete');
+    const no = el('button', { type: 'button', class: 'btn-secondary' }, 'Cancel');
+    yes.addEventListener('click', async () => {
+      yes.disabled = true;
+      try {
+        await deleteOutcome(outcome.outcome_id);
+        const remaining = outcomes.filter((o) => o.outcome_id !== outcome.outcome_id);
+        announce(`Goal “${outcome.title || 'Untitled'}” deleted.`);
+        renderOutcomesAdminList(listEl, remaining);
+      } catch (err) {
+        const detail = err.status === 403 ? 'Admins only.' : err.message;
+        confirm.replaceChildren(el('p', { text: `Could not delete: ${detail}` }));
+      }
+    });
+    no.addEventListener('click', () => { action.replaceChildren(delBtn); moveFocus(delBtn); });
+    row.appendChild(yes); row.appendChild(no);
+    confirm.appendChild(row);
+    action.replaceChildren(confirm);
+    moveFocus(yes);
+  });
+  action.appendChild(delBtn);
+  li.appendChild(action);
+  return li;
 }
 
 function renderAdmin() {

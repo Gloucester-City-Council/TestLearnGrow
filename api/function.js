@@ -3,6 +3,7 @@ const { BlobServiceClient } = require('@azure/storage-blob');
 const { parsePrincipal, isAdmin, isItemOwner, authorizeItemWrite } = require('./auth');
 const { awardPointsForTransition } = require('./points');
 const { linkSpawn } = require('./spawn');
+const { prepareOutcome } = require('./outcomes');
 const { effectiveConfig, redactConfig, validateConfig } = require('./config-store');
 
 const CONTAINER = process.env.AZURE_STORAGE_CONTAINER || 'sw-sidequests';
@@ -378,6 +379,74 @@ app.http('memberSave', {
       return ok(request, { ok: true });
     } catch (e) {
       context.error('memberSave failed:', e.message);
+      return err(request, 500, e.message);
+    }
+  },
+});
+
+/* GET /api/outcomes — list all outcome blobs (TLG missions/goals) */
+app.http('outcomesList', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'outcomes',
+  handler: async (request, context) => {
+    const guard = guardStorage(request);
+    if (guard) return guard;
+    try {
+      if (!parsePrincipal(request)) return err(request, 401, 'Sign in required');
+      const names = await listBlobNames('outcomes/');
+      const outcomes = await Promise.all(names.map((n) => readJson(n)));
+      return ok(request, outcomes.filter(Boolean));
+    } catch (e) {
+      context.error('outcomesList failed:', e.message);
+      return err(request, 500, e.message);
+    }
+  },
+});
+
+/* POST /api/outcomes/{id} — any signed-in user may create or update an outcome.
+   Ownership is server-managed (creator on create, preserved on update). */
+app.http('outcomeSave', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'outcomes/{id}',
+  handler: async (request, context) => {
+    const guard = guardStorage(request);
+    if (guard) return guard;
+    try {
+      const principal = parsePrincipal(request);
+      if (!principal) return err(request, 401, 'Sign in required');
+      const { id } = request.params;
+      const incoming = await request.json();
+      const current = await readBlob(`outcomes/${id}.json`);
+      const result = prepareOutcome(id, incoming, principal, current);
+      if (!result.ok) return err(request, result.status, result.reason);
+      await writeBlob(`outcomes/${id}.json`, result.outcome);
+      return ok(request, { ok: true, outcome: result.outcome });
+    } catch (e) {
+      context.error('outcomeSave failed:', e.message);
+      return err(request, 500, e.message);
+    }
+  },
+});
+
+/* DELETE /api/outcomes/{id} — admins only. */
+app.http('outcomeDelete', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'outcomes/{id}',
+  handler: async (request, context) => {
+    const guard = guardStorage(request);
+    if (guard) return guard;
+    try {
+      const principal = parsePrincipal(request);
+      if (!principal) return err(request, 401, 'Sign in required');
+      if (!isAdmin(principal, await loadConfig())) return err(request, 403, 'Admins only');
+      const { id } = request.params;
+      await deleteBlob(`outcomes/${id}.json`);
+      return ok(request, { ok: true });
+    } catch (e) {
+      context.error('outcomeDelete failed:', e.message);
       return err(request, 500, e.message);
     }
   },

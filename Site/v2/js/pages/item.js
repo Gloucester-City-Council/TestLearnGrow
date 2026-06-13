@@ -1,6 +1,6 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
-import { loadItems, loadMembers, saveItem, deleteItem, timeAgo, fullDate, nano } from '../data.js';
+import { loadItems, loadMembers, loadOutcomes, saveItem, deleteItem, timeAgo, fullDate, nano } from '../data.js';
 import { el, chipEl, statusVariant, moveFocus, announce, skeleton } from '../dom.js';
 import { validate, showErrors, clearErrors } from '../forms.js';
 import { initials } from '../profile-card.js';
@@ -34,6 +34,7 @@ let _items = [];
 let _config = null;
 let _session = null;
 let _members = [];
+let _outcomes = [];
 
 async function init() {
   renderLoading();
@@ -62,9 +63,13 @@ async function init() {
 
   if (!_item) { renderNotFound(); return; }
 
-  /* Experiments match their methods against member profiles (who can help). */
+  /* Experiments match their methods against member profiles (who can help) and
+     may ladder up to a goal (outcome). Both are optional — ignore failures. */
   if (_item.item_type === 'experiment') {
-    _members = await loadMembers().catch(() => []);
+    [_members, _outcomes] = await Promise.all([
+      loadMembers().catch(() => []),
+      _item.outcome_id ? loadOutcomes().catch(() => []) : Promise.resolve([]),
+    ]);
   }
 
   updateMeta(_item, _config);
@@ -204,6 +209,10 @@ function buildUpdateEl(u) {
 function buildMetaItems(item, config) {
   const rows = [];
   rows.push(['Type', t(config, `items.${item.item_type}.singular`)]);
+  if (item.outcome_id) {
+    const goal = _outcomes.find((o) => o.outcome_id === item.outcome_id);
+    if (goal) rows.push(['Goal', goal.title || 'Untitled goal']);
+  }
   if (item.difficulty) rows.push(['Difficulty', item.difficulty]);
   if (item.effort) rows.push(['Effort', item.effort]);
   if (item.deadline) rows.push(['Deadline', fullDate(item.deadline)]);

@@ -1,6 +1,6 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
-import { saveItem, nano } from '../data.js';
+import { saveItem, loadOutcomes, nano } from '../data.js';
 import { el } from '../dom.js';
 import { validate, showErrors, clearErrors, saveDraft, loadDraft, clearDraft, autosaveDraft } from '../forms.js';
 
@@ -44,6 +44,22 @@ async function init() {
       }
     }
   }
+
+  /* Populate the outcome (goal) picker, if any goals exist. Optional — load
+     failures are non-fatal, the experiment just won't be linked to a goal. */
+  try {
+    const outcomes = await loadOutcomes();
+    if (outcomes.length) {
+      const group = document.getElementById('outcome-group');
+      const sel = document.getElementById('outcome_id');
+      if (group && sel) {
+        for (const o of outcomes) {
+          sel.appendChild(el('option', { value: o.outcome_id, text: o.title || 'Untitled goal' }));
+        }
+        group.hidden = false;
+      }
+    }
+  } catch { /* outcomes are optional */ }
 
   /* Restore draft */
   const draft = loadDraft(DRAFT_KEY);
@@ -92,6 +108,7 @@ async function init() {
         effort: values.effort || null,
         deadline: values.deadline || null,
         method_tags: values.method_tags,
+        outcome_id: values.outcome_id || '',
         status: 'designing',
         posted_by_oid: session.oid,
         posted_by_name: session.name,
@@ -133,6 +150,7 @@ function getValues() {
     effort:      (document.getElementById('effort') || {}).value || '',
     deadline:    (document.getElementById('deadline') || {}).value || '',
     method_tags: [...document.querySelectorAll('input[name="method_tags"]:checked')].map((c) => c.value),
+    outcome_id:  (document.getElementById('outcome_id') || {}).value || '',
   };
 }
 
@@ -147,6 +165,7 @@ function restoreForm(draft) {
   set('difficulty', draft.difficulty);
   set('effort', draft.effort);
   set('deadline', draft.deadline);
+  set('outcome_id', draft.outcome_id);
   if (draft.method_tags) {
     for (const cb of document.querySelectorAll('input[name="method_tags"]')) {
       cb.checked = draft.method_tags.includes(cb.value);

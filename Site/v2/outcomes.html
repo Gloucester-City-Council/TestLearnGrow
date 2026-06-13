@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>New Session — Activity Board</title>
+  <title>Outcomes — Activity Board</title>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
@@ -50,67 +50,59 @@
     <nav aria-label="Breadcrumb" class="breadcrumb">
       <ol>
         <li><a href="index.html">Board</a></li>
-        <li aria-current="page">New Session</li>
+        <li aria-current="page">Outcomes</li>
       </ol>
     </nav>
 
-    <h1 id="page-title">New Session</h1>
-    <p>Schedule a learning session that others can sign up to attend.</p>
+    <h1 id="page-title">Outcomes</h1>
+    <p>The missions experiments ladder up to. Link a test to a goal so its impact is attributable, and see which goals are gathering evidence.</p>
+
+    <div class="board-toolbar" style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-6)">
+      <button type="button" id="export-portfolio" class="btn btn-secondary">Export portfolio summary (CSV)</button>
+    </div>
+
+    <div id="outcomes-list">
+      <p class="loading">Loading outcomes…</p>
+    </div>
+
+    <h2>Add a goal</h2>
+    <p>Create a mission for experiments to ladder up to.</p>
 
     <div id="form-errors" class="error-summary" role="alert" hidden
          aria-labelledby="form-errors-title">
-      <h2 id="form-errors-title" class="error-summary__title">There is a problem</h2>
+      <h3 id="form-errors-title" class="error-summary__title">There is a problem</h3>
       <ul class="error-summary__list"></ul>
     </div>
 
-    <form id="new-item-form" novalidate>
-
+    <form id="outcome-form" novalidate>
       <div class="form-group">
-        <label for="title">Title (required)</label>
-        <span class="form-hint" id="title-hint">A short name, for example "Introduction to service blueprints".</span>
+        <label for="title">Goal title (required)</label>
+        <span class="form-hint" id="title-hint">A short name, for example "Reduce missed appointments by 20% by Q4".</span>
         <input type="text" id="title" name="title" autocomplete="off"
                aria-describedby="title-hint" required maxlength="200">
       </div>
 
       <div class="form-group">
-        <label for="topic">Topic (required)</label>
-        <span class="form-hint" id="topic-hint">What will the session cover?</span>
-        <textarea id="topic" name="topic" rows="3"
-                  aria-describedby="topic-hint" required></textarea>
+        <label for="goal_metric">Goal metric (optional)</label>
+        <span class="form-hint" id="goal-metric-hint">What is being measured, for example "missed appointment rate".</span>
+        <input type="text" id="goal_metric" name="goal_metric" autocomplete="off"
+               aria-describedby="goal-metric-hint" maxlength="300">
       </div>
 
       <div class="form-group">
-        <label for="session-date">Session date (optional)</label>
-        <input type="date" id="session-date" name="session_date" autocomplete="off">
+        <label for="target_value">Target (optional)</label>
+        <span class="form-hint" id="target-value-hint">The target, for example "20% reduction".</span>
+        <input type="text" id="target_value" name="target_value" autocomplete="off"
+               aria-describedby="target-value-hint" maxlength="200">
       </div>
 
       <div class="form-group">
-        <label for="format">Format (required)</label>
-        <select id="format" name="format" required>
-          <option value="remote">Remote</option>
-          <option value="in-person">In person</option>
-          <option value="hybrid">Hybrid</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="effort">Effort (optional)</label>
-        <select id="effort" name="effort">
-          <option value="">Not specified</option>
-          <option value="Small">Small</option>
-          <option value="Medium">Medium</option>
-          <option value="Large">Large</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="deadline">Registration deadline (optional)</label>
-        <input type="date" id="deadline" name="deadline" autocomplete="off">
+        <label for="target_date">Target date (optional)</label>
+        <input type="date" id="target_date" name="target_date" autocomplete="off">
       </div>
 
       <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-top:var(--space-6)">
-        <button type="submit" class="btn">Create session</button>
-        <a href="index.html" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn">Add goal</button>
       </div>
     </form>
   </main>
@@ -119,11 +111,11 @@
 
   <noscript>
     <div class="noscript-notice">
-      <p>JavaScript is required to create a session.</p>
+      <p>JavaScript is required to view and manage outcomes.</p>
     </div>
   </noscript>
 
   <script type="module" src="js/shell.js"></script>
-  <script type="module" src="js/pages/new-session.js"></script>
+  <script type="module" src="js/pages/outcomes.js"></script>
 </body>
 </html>

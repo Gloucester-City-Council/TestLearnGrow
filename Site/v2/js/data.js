@@ -85,7 +85,26 @@ export function migrateItem(raw) {
   if (typeof item.learn_decision !== 'string') item.learn_decision = '';
   if (typeof item.parent_id !== 'string') item.parent_id = '';
 
+  /* TLG Phase 4 — outcome hierarchy. Links an experiment to the mission/goal it
+     provides evidence for. */
+  if (typeof item.outcome_id !== 'string') item.outcome_id = '';
+
   return item;
+}
+
+/* Normalise an outcome (TLG mission/goal) record, filling missing fields with
+   safe defaults so the dashboard renders consistently. */
+export function migrateOutcome(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = { ...raw };
+  if (typeof o.outcome_id !== 'string') o.outcome_id = '';
+  if (typeof o.title !== 'string') o.title = '';
+  if (typeof o.goal_metric !== 'string') o.goal_metric = '';
+  if (typeof o.target_value !== 'string') o.target_value = '';
+  if (typeof o.target_date !== 'string') o.target_date = '';
+  if (typeof o.owner_oid !== 'string') o.owner_oid = '';
+  if (typeof o.owner_name !== 'string') o.owner_name = '';
+  return o;
 }
 
 /* Normalise a member record to the profile-card schema: skills is a
@@ -122,6 +141,24 @@ export async function saveItem(item) {
 export async function deleteItem(id) {
   if (!id) throw new Error('item_id required');
   return apiDelete(`quests/${id}`);
+}
+
+/* ── Outcomes (TLG missions/goals) ─────────────────────────────────────────── */
+
+export async function loadOutcomes() {
+  const outcomes = await apiGet('outcomes');
+  return (Array.isArray(outcomes) ? outcomes : []).map(migrateOutcome).filter(Boolean);
+}
+
+export async function saveOutcome(outcome) {
+  const id = outcome.outcome_id;
+  if (!id) throw new Error('outcome_id required');
+  return apiPost(`outcomes/${id}`, outcome);
+}
+
+export async function deleteOutcome(id) {
+  if (!id) throw new Error('outcome_id required');
+  return apiDelete(`outcomes/${id}`);
 }
 
 /* Members are read on several pages (item, pipeline, members, home). Within a
