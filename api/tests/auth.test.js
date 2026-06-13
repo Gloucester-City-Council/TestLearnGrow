@@ -211,6 +211,22 @@ test('stranger may append updates they authored, not forge or rewrite them', () 
   assert.equal(authorizeItemWrite(cur, rewritten, bob, false).ok, false);
 });
 
+test('stranger may append a peer-review entry they authored on a shared finding', () => {
+  // Peer review is a flagged update entry (kind: 'review'); the additive-only
+  // path must allow it as an authored update, and reject one forged as someone
+  // else. No points or status change — just an appended update.
+  const cur = experiment({ status: 'finding-shared', finding: 'X held', updates: [] });
+  const reviewed = { ...cur, updated_at: 't1', updates: [
+    { id: 'r1', author_oid: 'oid-bob', author_name: 'Bob', text: 'Evidence supports it', timestamp: 't1', kind: 'review' },
+  ] };
+  assert.equal(authorizeItemWrite(cur, reviewed, bob, false).ok, true);
+
+  const forged = { ...cur, updated_at: 't1', updates: [
+    { id: 'r2', author_oid: 'oid-alice', author_name: 'Alice', text: 'forged', timestamp: 't1', kind: 'review' },
+  ] };
+  assert.equal(authorizeItemWrite(cur, forged, bob, false).ok, false);
+});
+
 test('stranger may append challenge response ids, not remove them', () => {
   const cur = {
     item_id: 'c1', item_type: 'challenge', title: 'C', question: 'Q?',

@@ -109,6 +109,8 @@ function buildCard(item) {
     el('a', { href: `item.html?id=${encodeURIComponent(item.item_id)}` }, item.title || '(Untitled)')));
   const chip = verdictChip(item.verdict);
   if (chip) header.appendChild(chip);
+  const reviewCount = (item.updates || []).filter((u) => u && u.kind === 'review').length;
+  if (reviewCount) header.appendChild(chipEl(`Peer reviewed ×${reviewCount}`, 'blue'));
   card.appendChild(header);
 
   const who = item.posted_by_name;

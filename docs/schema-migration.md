@@ -151,6 +151,18 @@ export function migrateOutcome(raw) {
 
 ---
 
+## Peer review (non-gating)
+
+Peer review adds **no new field**. A review is recorded as an entry in the
+existing `updates` array, flagged `kind: 'review'`, and authored by the
+reviewer. This reuses the server's existing additive-update authorization
+(`authorizeItemWrite` → "updates must be authored by you"), so an independent
+viewer can review a shared finding without any auth change. Reviews are **never
+gated against points** — they record a sanity-check for transparency only.
+Render code partitions `updates` on `kind === 'review'`.
+
+---
+
 ## Summary: `migrateItem()` final state (all phases applied)
 
 ```js
