@@ -1,7 +1,7 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig } from '../config-loader.js';
 import { loadLeaderboard, loadMembers, rankFor } from '../data.js';
-import { el, announce } from '../dom.js';
+import { el, announce, skeleton } from '../dom.js';
 
 async function init() {
   const session = await requireSignIn();
@@ -16,6 +16,10 @@ async function init() {
   }
 
   const ptsName = (config.terminology || {}).points_name || 'points';
+
+  const loadingEl = document.getElementById('leaderboard-content');
+  if (loadingEl) loadingEl.replaceChildren(skeleton(['line', 'line', 'line', 'line']));
+  announce('Loading leaderboard…');
 
   let lb, members;
   try {

@@ -78,6 +78,12 @@ async function init() {
   const form = document.getElementById('new-item-form');
   autosaveDraft(form, DRAFT_KEY, getValues);
 
+  /* Land focus on the first field so keyboard and screen-reader users can start
+     typing straight away. Plain focus() (not moveFocus) keeps the native input
+     in the Tab order. */
+  const firstField = form.querySelector('input, textarea, select');
+  if (firstField) firstField.focus();
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const values = getValues();

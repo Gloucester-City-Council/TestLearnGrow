@@ -1,7 +1,7 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig } from '../config-loader.js';
 import { loadMembers, loadLeaderboard, rankFor } from '../data.js';
-import { el, announce } from '../dom.js';
+import { el, announce, skeleton } from '../dom.js';
 import { buildProfileCard } from '../profile-card.js';
 
 let _members = [];
@@ -20,6 +20,8 @@ async function init() {
   const bc = document.getElementById('breadcrumb-current');
   if (bc) bc.textContent = membersName;
 
+  renderLoading();
+
   const pointsOn = _config.points && _config.points.enabled;
   try {
     const [members, lb] = await Promise.all([
@@ -36,6 +38,17 @@ async function init() {
   renderMembers(_members);
   announce(`${_members.length} member${_members.length !== 1 ? 's' : ''} loaded`);
   setupSearch();
+}
+
+function renderLoading() {
+  const container = document.getElementById('members-list');
+  if (!container) return;
+  const grid = el('ul', { class: 'card-grid profile-grid', role: 'list', 'aria-hidden': 'true' });
+  for (let i = 0; i < 4; i += 1) {
+    grid.appendChild(el('li', null, el('div', { class: 'card' }, skeleton(['title', 'line', 'short']))));
+  }
+  container.replaceChildren(grid);
+  announce('Loading members…');
 }
 
 function renderMembers(members) {

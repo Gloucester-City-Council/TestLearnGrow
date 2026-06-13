@@ -1,7 +1,7 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig } from '../config-loader.js';
 import { loadMembers, saveMember } from '../data.js';
-import { el, moveFocus } from '../dom.js';
+import { el } from '../dom.js';
 import { buildSkillToolkit, getToolkitValue } from '../skill-toolkit.js';
 import { validate, showErrors, clearErrors, loadDraft, clearDraft, autosaveDraft } from '../forms.js';
 
@@ -210,7 +210,10 @@ function renderForm(member, config, draft, draftKey, isNew) {
   });
 
   container.replaceChildren(form);
-  moveFocus(form.querySelector('#name'));
+  /* Focus the name field. Plain focus() (not moveFocus, which would add
+     tabindex="-1") keeps the native input in the Tab order. */
+  const nameField = form.querySelector('#name');
+  if (nameField) nameField.focus();
 }
 
 function getFormValues(form) {
