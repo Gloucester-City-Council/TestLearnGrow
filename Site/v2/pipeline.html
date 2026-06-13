@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Edit profile — Activity Board</title>
+  <title>Pipeline — Activity Board</title>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
@@ -33,37 +33,43 @@
   <!-- shell:end -->
 
   <main id="main" class="site-main">
-    <nav aria-label="Breadcrumb" class="breadcrumb">
-      <ol>
-        <li><a href="index.html">Board</a></li>
-        <li><a href="members.html">Members</a></li>
-        <li><a href="" id="breadcrumb-member">Profile</a></li>
-        <li aria-current="page">Edit</li>
-      </ol>
-    </nav>
-
-    <h1 id="page-title">Edit profile</h1>
-
-    <div id="form-errors" class="error-summary" role="alert" hidden
-         aria-labelledby="form-errors-title">
-      <h2 id="form-errors-title" class="error-summary__title">There is a problem</h2>
-      <ul class="error-summary__list"></ul>
+    <div class="section-toolbar">
+      <h1 id="page-title">Pipeline</h1>
+      <a href="new-experiment.html" class="btn btn-secondary" id="new-experiment-link">
+        <span aria-hidden="true">+ </span>New experiment
+      </a>
     </div>
 
-    <div id="edit-form-container">
-      <p class="loading">Loading…</p>
-    </div>
+    <p id="pipeline-intro" class="home-greeting">Every experiment, by stage. Move yours along as it progresses.</p>
+
+    <fieldset class="filter-bar">
+      <legend>Show</legend>
+      <div class="filter-options">
+        <label class="label-inline">
+          <input type="radio" name="pipeline-filter" value="all" checked>
+          Everyone’s
+        </label>
+        <label class="label-inline">
+          <input type="radio" name="pipeline-filter" value="mine">
+          Mine
+        </label>
+      </div>
+    </fieldset>
+
+    <p id="pipeline-loading" class="loading">Loading pipeline…</p>
+
+    <div id="pipeline" class="pipeline" hidden></div>
   </main>
 
   <div role="status" aria-live="polite" id="live-region" class="sr-only"></div>
 
   <noscript>
     <div class="noscript-notice">
-      <p>JavaScript is required to edit your profile.</p>
+      <p>JavaScript is required to load the pipeline. Navigation and headings work without it, but the board itself requires JS.</p>
     </div>
   </noscript>
 
   <script type="module" src="js/shell.js"></script>
-  <script type="module" src="js/pages/member-edit.js"></script>
+  <script type="module" src="js/pages/pipeline.js"></script>
 </body>
 </html>

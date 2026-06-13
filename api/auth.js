@@ -59,7 +59,10 @@ function parsePrincipal(request) {
       if (!email && looksLikeEmail(p.userDetails)) email = String(p.userDetails).toLowerCase();
 
       const composed = [claim(GIVEN_CLAIMS), claim(FAMILY_CLAIMS)].filter(Boolean).join(' ').trim();
-      let name = claim(NAME_CLAIMS) || composed;
+      /* Some Entra tenants set the `name` claim to the UPN/email — ignore it
+         when it's an address so we never surface a raw email as a display name. */
+      const nameClaim = claim(NAME_CLAIMS);
+      let name = (nameClaim && !looksLikeEmail(nameClaim)) ? nameClaim : composed;
       if (!name && p.userDetails && !looksLikeEmail(p.userDetails)) name = p.userDetails;
       if (!name && email) name = humanizeEmail(email);
       if (!name) name = oid;

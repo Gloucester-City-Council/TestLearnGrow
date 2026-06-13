@@ -77,6 +77,34 @@ test('parsePrincipal name is never an email even when userDetails is the address
   assert.equal(p.name, 'Grace Hopper');
 });
 
+test('parsePrincipal ignores a name claim that is itself an email', () => {
+  // Tenants that set the `name` claim to the UPN must not leak the address
+  // into the display name — fall back to given+family, then a humanised email.
+  const composed = parsePrincipal(swaRequest({
+    userId: 'swa-id', userDetails: 'katherine.johnson@nasa.gov',
+    claims: [
+      { typ: 'http://schemas.microsoft.com/identity/claims/objectidentifier', val: 'oid-kj' },
+      { typ: 'name', val: 'katherine.johnson@nasa.gov' },
+      { typ: 'given_name', val: 'Katherine' },
+      { typ: 'family_name', val: 'Johnson' },
+      { typ: 'email', val: 'katherine.johnson@nasa.gov' },
+    ],
+  }));
+  assert.equal(composed.name, 'Katherine Johnson');
+  assert.equal(composed.email, 'katherine.johnson@nasa.gov');
+
+  // With no given/family to fall back on, humanise the email local part.
+  const humanised = parsePrincipal(swaRequest({
+    userId: 'swa-id', userDetails: 'mary.jackson@nasa.gov',
+    claims: [
+      { typ: 'http://schemas.microsoft.com/identity/claims/objectidentifier', val: 'oid-mj' },
+      { typ: 'name', val: 'mary.jackson@nasa.gov' },
+      { typ: 'email', val: 'mary.jackson@nasa.gov' },
+    ],
+  }));
+  assert.equal(humanised.name, 'Mary Jackson');
+});
+
 test('admin email match works against the Entra-derived email claim', () => {
   process.env.ADMIN_EMAILS = 'grace.hopper@navy.mil';
   const p = parsePrincipal(swaRequest({
