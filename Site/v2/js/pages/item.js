@@ -6,28 +6,9 @@ import { validate, showErrors, clearErrors } from '../forms.js';
 import { initials } from '../profile-card.js';
 import { whoCanHelp, hasHelpers, HELP_BANDS } from '../skills-match.js';
 import { VERDICTS, verdictChip, buildVerdictFieldset, selectedVerdict } from '../verdict.js';
+import { LEARN_DECISIONS, GROW_DECISIONS, LEARN_DECISION_LABELS, GROW_DECISION_LABELS } from '../decisions.js';
 
 const ACTIVE_EXPERIMENT = ['designing', 'running', 'wrapping-up'];
-
-/* TLG grow / scale decision options (Phase 2). Values are stored; labels are
-   shown in the form and the grow snapshot. */
-const GROW_DECISIONS = [
-  { value: 'scale', label: 'Scale it' },
-  { value: 'adopt', label: 'Adopt as standard' },
-  { value: 'stop',  label: 'Stop — not worth scaling' },
-  { value: 'rerun', label: 'Run again with changes' },
-];
-const GROW_DECISION_LABELS = Object.fromEntries(GROW_DECISIONS.map((d) => [d.value, d.label]));
-
-/* TLG learning loop decision options (Phase 3). Recorded when a finding is
-   shared, then drives whether the team perseveres, pivots, stops or escalates. */
-const LEARN_DECISIONS = [
-  { value: 'persevere', label: 'Persevere' },
-  { value: 'pivot',     label: 'Pivot — run a variation' },
-  { value: 'stop',      label: 'Stop' },
-  { value: 'escalate',  label: 'Escalate for scaling' },
-];
-const LEARN_DECISION_LABELS = Object.fromEntries(LEARN_DECISIONS.map((d) => [d.value, d.label]));
 
 let _item = null;
 let _items = [];
@@ -234,7 +215,8 @@ function buildDesignSection(item) {
   const rows = [
     ['Hypothesis', item.hypothesis],
     ['Predicted outcome', item.predicted_outcome],
-    ['Success measure', item.success_metric],
+    ['Baseline', item.baseline],
+    ['Success measure (target)', item.success_metric],
   ].filter(([, value]) => value);
   if (!rows.length) return null;
 
@@ -330,8 +312,17 @@ function buildLearningSnapshot(item) {
     sec.appendChild(el('p', { text: item.finding }));
   }
 
-  if (item.learning_expected || item.learning_actual) {
+  if (item.measured_result || item.learning_expected || item.learning_actual) {
     const dl = el('dl', { class: 'snapshot-grid' });
+    /* Result against target leads — the headline of a measured test. */
+    if (item.measured_result) {
+      dl.appendChild(el('dt', { text: 'Measured result' }));
+      dl.appendChild(el('dd', { text: item.measured_result }));
+      if (item.success_metric) {
+        dl.appendChild(el('dt', { text: 'Against target' }));
+        dl.appendChild(el('dd', { text: item.success_metric }));
+      }
+    }
     if (item.learning_expected) {
       dl.appendChild(el('dt', { text: 'What we expected' }));
       dl.appendChild(el('dd', { text: item.learning_expected }));
@@ -641,6 +632,19 @@ function buildShareFindingForm() {
   findingGroup.appendChild(el('textarea', { id: 'finding-text', name: 'finding', rows: '4', required: true }));
   form.appendChild(findingGroup);
 
+  /* Measured result against the pre-registered target — turns the verdict from
+     a judgment call into an evidenced one. */
+  const measuredGroup = el('div', { class: 'form-group' });
+  measuredGroup.appendChild(el('label', { for: 'measured-result', text: 'Measured result (optional)' }));
+  const measuredHint = _item.success_metric
+    ? `The value you actually measured, against your target: “${_item.success_metric}”.`
+    : 'The value you actually measured against your success measure.';
+  measuredGroup.appendChild(el('span', { class: 'form-hint', text: measuredHint }));
+  const measuredInput = el('input', { type: 'text', id: 'measured-result', name: 'measured_result', autocomplete: 'off', maxlength: '300' });
+  measuredInput.value = _item.measured_result || '';
+  measuredGroup.appendChild(measuredInput);
+  form.appendChild(measuredGroup);
+
   const expectedGroup = el('div', { class: 'form-group' });
   expectedGroup.appendChild(el('label', { for: 'expected-text', text: 'What we expected (optional)' }));
   expectedGroup.appendChild(el('span', { class: 'form-hint', text: 'The hypothesis going in.' }));
@@ -679,6 +683,7 @@ function buildShareFindingForm() {
       const outcomeEl = form.querySelector('#outcome-text');
       const expectedEl = form.querySelector('#expected-text');
       const actualEl = form.querySelector('#actual-text');
+      const measuredEl = form.querySelector('#measured-result');
       const learnDecision = (form.querySelector('input[name="learn_decision"]:checked') || {}).value || '';
       const verdict = selectedVerdict(form);
       resetVerdictError(form);
@@ -699,7 +704,8 @@ function buildShareFindingForm() {
       }
       clearErrors('share-finding-errors');
       await doShareFinding(findingEl.value.trim(), outcomeEl.value.trim(),
-        verdict, expectedEl.value.trim(), actualEl.value.trim(), learnDecision);
+        verdict, expectedEl.value.trim(), actualEl.value.trim(), learnDecision,
+        measuredEl.value.trim());
       return true;
     },
   );
@@ -999,7 +1005,7 @@ async function doAddUpdate(text) {
   if (ta) ta.value = '';
 }
 
-async function doShareFinding(finding, outcome, verdict, expected, actual, learnDecision) {
+async function doShareFinding(finding, outcome, verdict, expected, actual, learnDecision, measuredResult) {
   const now = new Date().toISOString();
   await doSave({
     ..._item,
@@ -1009,6 +1015,7 @@ async function doShareFinding(finding, outcome, verdict, expected, actual, learn
     verdict: verdict || null,
     learning_expected: expected || '',
     learning_actual: actual || '',
+    measured_result: measuredResult || _item.measured_result || '',
     learn_decision: learnDecision || _item.learn_decision || '',
     updated_at: now,
     closed_at: now,

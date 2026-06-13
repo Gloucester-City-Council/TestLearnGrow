@@ -105,8 +105,15 @@
         </div>
 
         <div class="form-group">
+          <label for="baseline">Baseline (optional)</label>
+          <span class="form-hint" id="baseline-hint">Where things stand today — the starting value you'll measure against, e.g. "45% completion now".</span>
+          <input type="text" id="baseline" name="baseline" autocomplete="off"
+                 aria-describedby="baseline-hint" maxlength="300">
+        </div>
+
+        <div class="form-group">
           <label for="success_metric">Success measure (required)</label>
-          <span class="form-hint" id="success-metric-hint">How will you know? A measurable outcome you can check, e.g. "completion rate above 60%".</span>
+          <span class="form-hint" id="success-metric-hint">How will you know? A measurable target you can check, e.g. "completion rate above 60%".</span>
           <input type="text" id="success_metric" name="success_metric" autocomplete="off"
                  aria-describedby="success-metric-hint" required maxlength="300">
         </div>

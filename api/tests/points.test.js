@@ -22,13 +22,13 @@ test('experiment finding-shared awards each team member once', () => {
   assert.equal(lb.a.xp, 150);
 });
 
-test('experiment growing awards the team once, stacking on finding-shared', () => {
+test('experiment growing with a scale decision awards the team once, stacking on finding-shared', () => {
   const shared = {
     item_type: 'experiment', status: 'finding-shared', xp_reward: 100,
     team_oids: ['a', 'b'], team_names: ['Alice', 'Bob'],
     points_awarded_at: 'tShared', grow_points_awarded_at: null,
   };
-  const growing = { ...shared, status: 'growing' };
+  const growing = { ...shared, status: 'growing', grow_decision: 'scale' };
   const lb = { a: { oid: 'a', name: 'Alice', xp: 100 }, b: { oid: 'b', name: 'Bob', xp: 100 } };
 
   // The finding-shared completion award is already stamped, so only the grow
@@ -42,6 +42,47 @@ test('experiment growing awards the team once, stacking on finding-shared', () =
   // saving the same growing item again must not double-award
   const again = awardPointsForTransition(shared, growing, null, lb);
   assert.equal(again.length, 0);
+  assert.equal(lb.a.xp, 200);
+});
+
+test('experiment growing with a stop decision awards nothing', () => {
+  // "Stop — not worth scaling" lands in the growing stage but is not a scale-up,
+  // so it must not pay out the grow award (no points farming for dead ends).
+  const shared = {
+    item_type: 'experiment', status: 'finding-shared', xp_reward: 100,
+    team_oids: ['a', 'b'], team_names: ['Alice', 'Bob'],
+    points_awarded_at: 'tShared', grow_points_awarded_at: null,
+  };
+  const stopped = { ...shared, status: 'growing', grow_decision: 'stop' };
+  const lb = { a: { oid: 'a', name: 'Alice', xp: 100 }, b: { oid: 'b', name: 'Bob', xp: 100 } };
+
+  const awards = awardPointsForTransition(shared, stopped, null, lb);
+  assert.equal(awards.length, 0);
+  assert.equal(lb.a.xp, 100);
+  assert.equal(lb.b.xp, 100);
+  assert.equal(stopped.grow_points_awarded_at, null);
+});
+
+test('correcting a parked stop to scale later still earns the grow award once', () => {
+  // Entered growing as "stop" (no award, no stamp). Both prev and item are
+  // already in the growing stage, so a transition guard would wrongly block
+  // this — the once-only stamp is what guarantees it fires at most once.
+  const stopped = {
+    item_type: 'experiment', status: 'growing', xp_reward: 100,
+    grow_decision: 'stop',
+    team_oids: ['a'], team_names: ['Alice'],
+    points_awarded_at: 'tShared', grow_points_awarded_at: null,
+  };
+  const scaled = { ...stopped, grow_decision: 'scale' };
+  const lb = { a: { oid: 'a', name: 'Alice', xp: 100 } };
+
+  const awards = awardPointsForTransition(stopped, scaled, null, lb);
+  assert.equal(awards.length, 1);
+  assert.equal(lb.a.xp, 200);
+  assert.ok(scaled.grow_points_awarded_at);
+
+  // and not again
+  assert.equal(awardPointsForTransition(stopped, scaled, null, lb).length, 0);
   assert.equal(lb.a.xp, 200);
 });
 

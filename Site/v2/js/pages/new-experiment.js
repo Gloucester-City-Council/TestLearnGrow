@@ -110,6 +110,8 @@ async function init() {
         hypothesis: values.hypothesis || '',
         predicted_outcome: values.predicted_outcome || '',
         success_metric: values.success_metric || '',
+        baseline: values.baseline || '',
+        measured_result: '',
         difficulty: values.difficulty || null,
         effort: values.effort || null,
         deadline: values.deadline || null,
@@ -152,6 +154,7 @@ function getValues() {
     hypothesis:        (document.getElementById('hypothesis') || {}).value || '',
     predicted_outcome: (document.getElementById('predicted_outcome') || {}).value || '',
     success_metric:    (document.getElementById('success_metric') || {}).value || '',
+    baseline:          (document.getElementById('baseline') || {}).value || '',
     difficulty:  (document.getElementById('difficulty') || {}).value || '',
     effort:      (document.getElementById('effort') || {}).value || '',
     deadline:    (document.getElementById('deadline') || {}).value || '',
@@ -168,6 +171,7 @@ function restoreForm(draft) {
   set('hypothesis', draft.hypothesis);
   set('predicted_outcome', draft.predicted_outcome);
   set('success_metric', draft.success_metric);
+  set('baseline', draft.baseline);
   set('difficulty', draft.difficulty);
   set('effort', draft.effort);
   set('deadline', draft.deadline);

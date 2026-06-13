@@ -32,12 +32,18 @@ Added to experiment blobs only (`item_type === 'experiment'`).
 | `hypothesis` | string | `''` | No (encouraged) |
 | `predicted_outcome` | string | `''` | No (encouraged) |
 | `success_metric` | string | `''` | **Yes** — form blocks advance from `designing` without it |
+| `baseline` | string | `''` | No — design-time starting value, paired with `success_metric` (the target) |
+| `measured_result` | string | `''` | No — captured at wrap-up on the share-finding form, compared against `success_metric` |
+
+`baseline` and `measured_result` are free text (so they can hold "62%", "3.4 days", etc.). They turn a verdict from a judgment call into an evidenced one: `baseline` → `success_metric` (target) → `measured_result` (actual). No server change — both pass through `questSave` verbatim.
 
 **`migrateItem()` additions:**
 ```js
 if (typeof item.hypothesis !== 'string') item.hypothesis = '';
 if (typeof item.predicted_outcome !== 'string') item.predicted_outcome = '';
 if (typeof item.success_metric !== 'string') item.success_metric = '';
+if (typeof item.baseline !== 'string') item.baseline = '';
+if (typeof item.measured_result !== 'string') item.measured_result = '';
 ```
 
 ---
@@ -52,7 +58,7 @@ Added to experiment blobs.
 | `active_ingredients` | string | `''` | Free text describing causal mechanism |
 | `grow_owner` | string | `''` | Name of scale-up lead |
 | `grow_date` | string (ISO date) | `''` | Target scale-up date |
-| `grow_points_awarded_at` | string \| null | `null` | **Server-managed** — stamps the once-only grow award, separate from `points_awarded_at` so the grow award stacks on the finding-shared award. Preserved by `questSave`. |
+| `grow_points_awarded_at` | string \| null | `null` | **Server-managed** — stamps the once-only grow award, separate from `points_awarded_at` so the grow award stacks on the finding-shared award. Preserved by `questSave`. The grow award is only granted for a `scale` or `adopt` decision — a `stop` or `rerun` lands in the growing stage but earns nothing (`points.js` → `GROW_REWARDED_DECISIONS`). |
 
 **`migrateItem()` additions:**
 ```js
@@ -195,7 +201,7 @@ The new TLG fields added to the `experiment()` fixture factory in
 `api/tests/auth.test.js`:
 
 ```js
-hypothesis: '', predicted_outcome: '', success_metric: '',
+hypothesis: '', predicted_outcome: '', success_metric: '', baseline: '', measured_result: '',
 grow_decision: '', active_ingredients: '', grow_owner: '', grow_date: '',
 grow_points_awarded_at: null,
 learn_decision: '', spawned_ids: [], parent_id: '',
