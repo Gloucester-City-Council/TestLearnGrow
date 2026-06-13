@@ -70,6 +70,13 @@ export function migrateItem(raw) {
   if (typeof item.predicted_outcome !== 'string') item.predicted_outcome = '';
   if (typeof item.success_metric !== 'string') item.success_metric = '';
 
+  /* Quantitative measurement. baseline is the starting value captured at design
+     time; measured_result is the actual value captured at wrap-up, compared
+     against success_metric (the target). Both optional free text so they can
+     hold "62%", "3.4 days", etc. */
+  if (typeof item.baseline !== 'string') item.baseline = '';
+  if (typeof item.measured_result !== 'string') item.measured_result = '';
+
   /* TLG Phase 2 — grow / scale stage. Captured when a shared finding is taken
      forward to scale or adopt. grow_points_awarded_at is server-managed (like
      points_awarded_at) and stamps the once-only grow award. */

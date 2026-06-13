@@ -78,13 +78,15 @@ function render(item, goal) {
     ['Question', item.question],
     ['Hypothesis', item.hypothesis],
     ['Predicted outcome', item.predicted_outcome],
-    ['Success measure', item.success_metric],
+    ['Baseline', item.baseline],
+    ['Success measure (target)', item.success_metric],
     ['Goal', goal ? goal.title : ''],
   ]));
 
   /* What happened */
   frag.appendChild(buildSection('What happened', [
     ['Verdict', verdictLabel(item.verdict)],
+    ['Measured result', item.measured_result],
     ['Finding', item.finding],
     ['What we expected', item.learning_expected],
     ['What actually happened', item.learning_actual],

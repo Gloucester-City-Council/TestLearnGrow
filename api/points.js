@@ -10,6 +10,12 @@ const DEFAULT_VALUES = {
   challenge_post: 25,
 };
 
+/* Grow decisions that actually carry a finding forward, and so earn the grow
+   award. 'stop' (not worth scaling) and 'rerun' land in the growing stage too
+   but are not a scale-up, so they earn nothing — this keeps "Growing" a
+   meaningful signal rather than a points farm for parking dead ends. */
+const GROW_REWARDED_DECISIONS = ['scale', 'adopt'];
+
 /* Mutates `leaderboard` and (on first award) stamps `item.points_awarded_at`.
    `prev` is the stored item before this write, or null on create.
    Returns the list of awards made: [{ oid, name, amount }]. */
@@ -51,12 +57,16 @@ function awardPointsForTransition(prev, item, config, leaderboard) {
   }
 
   /* TLG Grow award (Phase 2): taking a shared finding forward to scale/adopt is
-     its own milestone, awarded once — separately stamped so it stacks on top of
-     the finding-shared completion award rather than being blocked by it. */
+     its own milestone, awarded once and separately stamped so it stacks on top
+     of the finding-shared completion award rather than being blocked by it.
+     Only a decision that actually carries the finding forward earns it (see
+     GROW_REWARDED_DECISIONS). The grow_points_awarded_at stamp guarantees the
+     award fires at most once, so a status-transition guard isn't needed —
+     correcting a parked "stop" to "scale" later still earns it. */
   if (!item.grow_points_awarded_at &&
       item.item_type === 'experiment' &&
       item.status === 'growing' &&
-      (!prev || prev.status !== 'growing')) {
+      GROW_REWARDED_DECISIONS.includes(item.grow_decision)) {
     const before = awards.length;
     const amount = item.xp_reward || values.experiment_complete;
     (item.team_oids || []).forEach((oid, i) => add(oid, (item.team_names || [])[i], amount));
