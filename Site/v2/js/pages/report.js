@@ -98,6 +98,13 @@ function render(item, goal) {
   ];
   if (growRows.some(([, v]) => v)) frag.appendChild(buildSection('Growing', growRows));
 
+  /* Peer review — independent challenges of the finding, recorded for
+     transparency. Only shown when at least one review exists. */
+  const reviews = (item.updates || []).filter((u) => u && u.kind === 'review');
+  if (reviews.length) {
+    frag.appendChild(buildSection('Peer review', reviews.map((r) => [r.author_name || 'Reviewer', r.text])));
+  }
+
   /* Who and how */
   const methods = (item.method_tags || []).filter(Boolean);
   const names = (item.team_names && item.team_names.length)

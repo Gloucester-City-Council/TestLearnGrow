@@ -13,7 +13,7 @@ const bob = { oid: 'oid-bob', name: 'Bob', email: 'bob@example.org', roles: [] }
 function experiment(overrides) {
   return {
     item_id: 'x1', item_type: 'experiment', title: 'T', question: 'Q', description: '',
-    method_tags: [], difficulty: null, effort: null, reward: null, deadline: null,
+    method_tags: [], themes: [], difficulty: null, effort: null, reward: null, deadline: null,
     status: 'running', posted_by_oid: 'oid-alice', posted_by_name: 'Alice',
     team_oids: ['oid-alice'], team_names: ['Alice'], finding: '', outcome: '',
     hypothesis: '', predicted_outcome: '', success_metric: '', baseline: '', measured_result: '', test_type: '',
@@ -209,6 +209,22 @@ test('stranger may append updates they authored, not forge or rewrite them', () 
 
   const rewritten = { ...cur, updates: [{ ...cur.updates[0], text: 'edited' }] };
   assert.equal(authorizeItemWrite(cur, rewritten, bob, false).ok, false);
+});
+
+test('stranger may append a peer-review entry they authored on a shared finding', () => {
+  // Peer review is a flagged update entry (kind: 'review'); the additive-only
+  // path must allow it as an authored update, and reject one forged as someone
+  // else. No points or status change — just an appended update.
+  const cur = experiment({ status: 'finding-shared', finding: 'X held', updates: [] });
+  const reviewed = { ...cur, updated_at: 't1', updates: [
+    { id: 'r1', author_oid: 'oid-bob', author_name: 'Bob', text: 'Evidence supports it', timestamp: 't1', kind: 'review' },
+  ] };
+  assert.equal(authorizeItemWrite(cur, reviewed, bob, false).ok, true);
+
+  const forged = { ...cur, updated_at: 't1', updates: [
+    { id: 'r2', author_oid: 'oid-alice', author_name: 'Alice', text: 'forged', timestamp: 't1', kind: 'review' },
+  ] };
+  assert.equal(authorizeItemWrite(cur, forged, bob, false).ok, false);
 });
 
 test('stranger may append challenge response ids, not remove them', () => {

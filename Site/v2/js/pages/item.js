@@ -88,6 +88,10 @@ function renderMain() {
   /* Header: chip + meta */
   const header = el('div', { class: 'card-header', style: 'margin-bottom:var(--space-6)' });
   header.appendChild(chipEl(statusLabel(item.status), statusVariant(item.status)));
+  const reviewCount = (item.updates || []).filter((u) => u && u.kind === 'review').length;
+  if (item.item_type === 'experiment' && reviewCount) {
+    header.appendChild(chipEl(`Peer reviewed ×${reviewCount}`, 'blue'));
+  }
   const postedBy = item.item_type === 'session' ? item.host_name : item.posted_by_name;
   if (postedBy) {
     const meta = el('span', { class: 'card-meta' }, `By ${postedBy}`);
@@ -101,6 +105,14 @@ function renderMain() {
   /* Learning chain: if this experiment was spawned from another, link back. */
   if (item.item_type === 'experiment' && item.parent_id) {
     frag.appendChild(buildParentChain(item));
+  }
+
+  /* Themes — topic tags that group related findings on the learning wall. */
+  if (item.item_type === 'experiment' && (item.themes || []).length) {
+    const wrap = el('div', { class: 'pipeline-chips', style: 'margin-bottom:var(--space-4)' });
+    wrap.appendChild(el('span', { class: 'sr-only' }, 'Themes: '));
+    for (const th of item.themes) wrap.appendChild(chipEl(th, 'purple'));
+    frag.appendChild(wrap);
   }
 
   /* Body */
@@ -142,11 +154,18 @@ function renderMain() {
     if (help) frag.appendChild(help);
   }
 
-  /* Updates thread */
-  if (item.updates && item.updates.length > 0) {
+  /* Peer review — independent challenges, kept separate from the updates thread. */
+  const reviews = (item.updates || []).filter((u) => u && u.kind === 'review');
+  if (item.item_type === 'experiment' && reviews.length) {
+    frag.appendChild(buildReviewList(reviews));
+  }
+
+  /* Updates thread (excludes peer-review entries) */
+  const plainUpdates = (item.updates || []).filter((u) => !u || u.kind !== 'review');
+  if (plainUpdates.length > 0) {
     frag.appendChild(el('h2', { text: 'Updates' }));
     const ul = el('ul', { class: 'updates-list', role: 'list' });
-    for (const u of item.updates) {
+    for (const u of plainUpdates) {
       ul.appendChild(buildUpdateEl(u));
     }
     frag.appendChild(ul);
@@ -185,6 +204,17 @@ function buildUpdateEl(u) {
   ));
   li.appendChild(el('p', { class: 'update-text', text: u.text }));
   return li;
+}
+
+/* Peer-review entries, rendered apart from the updates thread. */
+function buildReviewList(reviews) {
+  const sec = el('section', { 'aria-labelledby': 'reviews-heading', style: 'margin-top:var(--space-6)' });
+  sec.appendChild(el('h2', { id: 'reviews-heading', text: 'Peer review' }));
+  sec.appendChild(el('p', { class: 'card-meta', text: 'Independent sanity-checks of this finding. Recorded for transparency; they do not change points.' }));
+  const ul = el('ul', { class: 'updates-list', role: 'list' });
+  for (const r of reviews) ul.appendChild(buildUpdateEl(r));
+  sec.appendChild(ul);
+  return sec;
 }
 
 function buildMetaItems(item, config) {
@@ -499,9 +529,18 @@ function renderActions() {
   }
 
   /* Add update (anyone authenticated) */
-  const terminalStatuses = ['finding-shared', 'output-shared', 'closed'];
+  const terminalStatuses = ['finding-shared', 'output-shared', 'closed', 'scaled'];
   if (!terminalStatuses.includes(item.status)) {
     frag.appendChild(buildUpdateForm());
+  }
+
+  /* Peer review (TLG): an independent viewer — not the poster or a team member
+     — can sanity-check a shared finding. Recorded as a flagged update entry; it
+     never gates or changes points. */
+  const SHARED_FINDING = ['finding-shared', 'growing', 'scaled'];
+  if (item.item_type === 'experiment' && SHARED_FINDING.includes(item.status)
+      && item.finding && !isPosterOrHost() && !isTeamOrAttendee()) {
+    frag.appendChild(buildReviewForm());
   }
 
   /* Delete — poster/host/team or admin */
@@ -569,6 +608,15 @@ function buildStatusAdvance(item) {
      Growing (to update the plan). TLG scale/adopt decision. */
   if (item.item_type === 'experiment' && (item.status === 'finding-shared' || item.status === 'growing')) {
     wrap.appendChild(buildGrowForm());
+  }
+
+  /* Growing → Scaled: close the loop by confirming the scale-up actually held.
+     Only offered once the decision is to scale/adopt (not stop/rerun). */
+  if (item.item_type === 'experiment' && item.status === 'growing'
+      && (item.grow_decision === 'scale' || item.grow_decision === 'adopt')) {
+    wrap.appendChild(el('div', { style: 'margin-top: var(--space-4)' },
+      el('button', { type: 'button', class: 'btn',
+        onclick: () => doStatusAdvance('scaled', 'Scaled') }, 'Mark as scaled — it held')));
   }
 
   /* Share-output form for sessions happened */
@@ -950,6 +998,48 @@ function buildUpdateForm() {
   return wrapper;
 }
 
+/* Peer-review form — an independent challenge of a shared finding. Posts a
+   flagged update entry (kind: 'review'); never changes points. */
+function buildReviewForm() {
+  const wrapper = el('div', { class: 'board-section', 'aria-label': 'Peer review' });
+  wrapper.appendChild(el('h2', { text: 'Peer review' }));
+  wrapper.appendChild(el('p', { text: 'Independently sanity-check this finding — does the evidence support the verdict? Your review is recorded for transparency and never changes points.' }));
+
+  const errorSummary = el('div', {
+    id: 'review-errors', class: 'error-summary', role: 'alert', hidden: true,
+    'aria-labelledby': 'review-errors-title',
+  });
+  errorSummary.appendChild(el('h3', { id: 'review-errors-title', class: 'error-summary__title', text: 'There is a problem' }));
+  errorSummary.appendChild(el('ul', { class: 'error-summary__list' }));
+  wrapper.appendChild(errorSummary);
+
+  const form = el('form', { id: 'review-form', novalidate: true });
+  const group = el('div', { class: 'form-group' });
+  group.appendChild(el('label', { for: 'review-text', text: 'Your review (required)' }));
+  group.appendChild(el('span', { class: 'form-hint', text: 'Does the finding follow from the evidence? Note anything that would strengthen or challenge it.' }));
+  const textarea = el('textarea', { id: 'review-text', name: 'text', rows: '3', required: true });
+  group.appendChild(textarea);
+  form.appendChild(group);
+
+  const submitBtn = el('button', { type: 'submit', class: 'btn' }, 'Post review');
+  form.appendChild(submitBtn);
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    withSubmitting(submitBtn, async () => {
+      const errors = validate([
+        { id: 'review-text', label: 'Review', value: textarea.value, required: true, minLength: 10 },
+      ]);
+      if (errors.length) { showErrors(errors, 'review-errors'); return false; }
+      clearErrors('review-errors');
+      await doAddReview(textarea.value.trim());
+    });
+  });
+
+  wrapper.appendChild(form);
+  return wrapper;
+}
+
 /* ── Mutations ──────────────────────────────────────────────────────────── */
 
 async function doSave(updated, successMsg) {
@@ -1012,6 +1102,13 @@ async function doAddUpdate(text) {
   /* Clear the form */
   const ta = document.getElementById('update-text');
   if (ta) ta.value = '';
+}
+
+async function doAddReview(text) {
+  const now = new Date().toISOString();
+  const review = { id: nano(), author_oid: _session.oid, author_name: _session.name, text, timestamp: now, kind: 'review' };
+  const updates = [...(_item.updates || []), review];
+  await doSave({ ..._item, updates, updated_at: now }, 'Peer review posted.');
 }
 
 async function doShareFinding(finding, outcome, verdict, expected, actual, learnDecision, measuredResult) {

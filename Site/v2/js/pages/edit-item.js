@@ -1,6 +1,6 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
-import { loadItems, saveItem, loadOutcomes } from '../data.js';
+import { loadItems, saveItem, loadOutcomes, parseThemes } from '../data.js';
 import { el } from '../dom.js';
 import { validate, showErrors, clearErrors, saveDraft, loadDraft, clearDraft, autosaveDraft } from '../forms.js';
 
@@ -80,6 +80,8 @@ function renderForm(item, draft, session, draftKey) {
     form.appendChild(buildSelect('effort', 'Effort (optional)',
       ['', 'Small', 'Medium', 'Large'], values.effort));
     form.appendChild(buildDateField('deadline', 'Deadline (optional)', values.deadline));
+    form.appendChild(buildTextField('themes', 'Themes (optional)',
+      Array.isArray(values.themes) ? values.themes.join(', ') : (values.themes || ''), false, 300));
     const methodTags = buildMethodTags(_config, values.method_tags || []);
     if (methodTags) form.appendChild(methodTags);
     const outcomeSel = buildOutcomeSelect(values.outcome_id || '');
@@ -163,6 +165,7 @@ function getDefaultValues(item) {
     deadline:     item.deadline || '',
     session_date: item.session_date || '',
     method_tags:  Array.isArray(item.method_tags) ? item.method_tags : [],
+    themes:       Array.isArray(item.themes) ? item.themes : [],
     outcome_id:   item.outcome_id || '',
   };
 }
@@ -179,6 +182,7 @@ function getFormValues(form, item) {
       difficulty: v('difficulty') || null, effort: v('effort') || null,
       deadline: v('deadline') || null,
       method_tags: [...form.querySelectorAll('input[name="method_tags"]:checked')].map((c) => c.value),
+      themes: parseThemes(v('themes')),
       outcome_id: v('outcome_id'),
     });
   }

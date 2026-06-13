@@ -1,6 +1,6 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
-import { saveItem, loadOutcomes, nano } from '../data.js';
+import { saveItem, loadOutcomes, nano, parseThemes } from '../data.js';
 import { el } from '../dom.js';
 import { validate, showErrors, clearErrors, saveDraft, loadDraft, clearDraft, autosaveDraft } from '../forms.js';
 
@@ -117,6 +117,7 @@ async function init() {
         effort: values.effort || null,
         deadline: values.deadline || null,
         method_tags: values.method_tags,
+        themes: parseThemes(values.themes),
         outcome_id: values.outcome_id || '',
         status: 'designing',
         posted_by_oid: session.oid,
@@ -161,6 +162,7 @@ function getValues() {
     effort:      (document.getElementById('effort') || {}).value || '',
     deadline:    (document.getElementById('deadline') || {}).value || '',
     method_tags: [...document.querySelectorAll('input[name="method_tags"]:checked')].map((c) => c.value),
+    themes:      (document.getElementById('themes') || {}).value || '',
     outcome_id:  (document.getElementById('outcome_id') || {}).value || '',
   };
 }
@@ -178,6 +180,7 @@ function restoreForm(draft) {
   set('difficulty', draft.difficulty);
   set('effort', draft.effort);
   set('deadline', draft.deadline);
+  set('themes', draft.themes);
   set('outcome_id', draft.outcome_id);
   if (draft.method_tags) {
     for (const cb of document.querySelectorAll('input[name="method_tags"]')) {

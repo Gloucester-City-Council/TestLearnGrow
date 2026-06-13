@@ -35,6 +35,7 @@ Added to experiment blobs only (`item_type === 'experiment'`).
 | `baseline` | string | `''` | No — design-time starting value, paired with `success_metric` (the target) |
 | `measured_result` | string | `''` | No — captured at wrap-up on the share-finding form, compared against `success_metric` |
 | `test_type` | string | `''` | No — how the comparison is made (before/after, A/B, pilot, RCT, …), captured at design time. Stored as a human-readable label, like `difficulty`/`effort`. |
+| `themes` | string[] | `[]` | No — comma-separated topic tags (parsed via `parseThemes()`) that group related findings; filterable on the learning wall. Defaulted with the other array fields. |
 
 `baseline` and `measured_result` are free text (so they can hold "62%", "3.4 days", etc.). They turn a verdict from a judgment call into an evidenced one: `baseline` → `success_metric` (target) → `measured_result` (actual). No server change — both pass through `questSave` verbatim.
 
@@ -74,6 +75,12 @@ if (!item.grow_points_awarded_at) item.grow_points_awarded_at = null;
 **Pipeline status:** Add `'growing'` to the `STAGES` array and `NEXT` map in
 `pipeline.js`. Existing blobs with no `status` field default to `'designing'` via
 existing `migrateItem()` logic (no change needed).
+
+A sixth terminal status `'scaled'` closes the Grow loop: from `growing` (with a
+`scale`/`adopt` decision) the team confirms the scale-up held. It is a status
+value only — no new field, no migration — and awards no further points (the grow
+award already fired at `growing`). Treated as "done" on the board and kept on the
+learning wall.
 
 ---
 
@@ -144,6 +151,18 @@ export function migrateOutcome(raw) {
 
 ---
 
+## Peer review (non-gating)
+
+Peer review adds **no new field**. A review is recorded as an entry in the
+existing `updates` array, flagged `kind: 'review'`, and authored by the
+reviewer. This reuses the server's existing additive-update authorization
+(`authorizeItemWrite` → "updates must be authored by you"), so an independent
+viewer can review a shared finding without any auth change. Reviews are **never
+gated against points** — they record a sanity-check for transparency only.
+Render code partitions `updates` on `kind === 'review'`.
+
+---
+
 ## Summary: `migrateItem()` final state (all phases applied)
 
 ```js
@@ -157,7 +176,7 @@ export function migrateItem(raw) {
 
   // Array fields
   for (const k of ['team_oids', 'team_names', 'attendee_oids', 'attendee_names',
-                    'updates', 'response_ids', 'spawned_ids']) {
+                    'updates', 'response_ids', 'spawned_ids', 'themes']) {
     if (!Array.isArray(item[k])) item[k] = [];
   }
 

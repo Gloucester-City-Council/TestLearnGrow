@@ -10,6 +10,7 @@ import { VERDICT_ORDER, VERDICTS, verdictChip } from '../verdict.js';
 let _items = [];
 let _config = null;
 let _filter = 'all';
+let _themeFilter = 'all';
 
 async function init() {
   const session = await requireSignIn();
@@ -30,8 +31,9 @@ async function refresh() {
     /* A shared finding stays on the wall even after it moves on to Growing —
        a scaled finding is still (and especially) worth showcasing. */
     _items = items
-      .filter((i) => i.item_type === 'experiment' && (i.status === 'finding-shared' || i.status === 'growing') && i.finding)
+      .filter((i) => i.item_type === 'experiment' && (i.status === 'finding-shared' || i.status === 'growing' || i.status === 'scaled') && i.finding)
       .sort((a, b) => new Date(b.closed_at || b.updated_at || 0) - new Date(a.closed_at || a.updated_at || 0));
+    populateThemeFilter();
     render();
     if (loadingEl) loadingEl.hidden = true;
     if (wall) wall.hidden = false;
@@ -57,10 +59,27 @@ function buildFilterOptions() {
   }
 }
 
+/* Populate the theme filter from the themes present across shared findings.
+   Hidden entirely when no finding carries a theme. */
+function populateThemeFilter() {
+  const sel = document.getElementById('theme-filter');
+  const group = document.getElementById('theme-filter-group');
+  if (!sel || !group) return;
+  const themes = [...new Set(_items.flatMap((i) => i.themes || []))]
+    .sort((a, b) => a.localeCompare(b));
+  sel.replaceChildren(el('option', { value: 'all' }, 'All themes'));
+  for (const th of themes) sel.appendChild(el('option', { value: th }, th));
+  group.hidden = themes.length === 0;
+  if (_themeFilter !== 'all' && !themes.includes(_themeFilter)) _themeFilter = 'all';
+  sel.value = _themeFilter;
+}
+
 function visibleItems() {
-  if (_filter === 'all') return _items;
-  if (_filter === 'none') return _items.filter((i) => !i.verdict);
-  return _items.filter((i) => i.verdict === _filter);
+  let items = _items;
+  if (_filter === 'none') items = items.filter((i) => !i.verdict);
+  else if (_filter !== 'all') items = items.filter((i) => i.verdict === _filter);
+  if (_themeFilter !== 'all') items = items.filter((i) => (i.themes || []).includes(_themeFilter));
+  return items;
 }
 
 function render() {
@@ -90,6 +109,8 @@ function buildCard(item) {
     el('a', { href: `item.html?id=${encodeURIComponent(item.item_id)}` }, item.title || '(Untitled)')));
   const chip = verdictChip(item.verdict);
   if (chip) header.appendChild(chip);
+  const reviewCount = (item.updates || []).filter((u) => u && u.kind === 'review').length;
+  if (reviewCount) header.appendChild(chipEl(`Peer reviewed ×${reviewCount}`, 'blue'));
   card.appendChild(header);
 
   const who = item.posted_by_name;
@@ -101,6 +122,14 @@ function buildCard(item) {
   const finding = item.finding || '';
   card.appendChild(el('p', { class: 'card-body',
     text: finding.length > 200 ? `${finding.slice(0, 200)}…` : finding }));
+
+  const themes = (item.themes || []).filter(Boolean);
+  if (themes.length) {
+    const ul = el('ul', { class: 'pipeline-chips', role: 'list' });
+    ul.appendChild(el('li', null, el('span', { class: 'sr-only' }, 'Themes: ')));
+    for (const th of themes.slice(0, 4)) ul.appendChild(el('li', null, chipEl(th, 'purple')));
+    card.appendChild(ul);
+  }
 
   const methods = (item.method_tags || []).filter(Boolean);
   if (methods.length) {
@@ -119,6 +148,14 @@ function setupControls() {
       if (!radio.checked) return;
       _filter = radio.value;
       render();
+    });
+  }
+  const themeSel = document.getElementById('theme-filter');
+  if (themeSel) {
+    themeSel.addEventListener('change', () => {
+      _themeFilter = themeSel.value;
+      render();
+      announce(`Theme filter: ${_themeFilter === 'all' ? 'all themes' : _themeFilter}.`);
     });
   }
 }

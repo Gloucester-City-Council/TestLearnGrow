@@ -15,6 +15,7 @@ const STAGES = [
   { status: 'wrapping-up',    label: 'Wrapping up' },
   { status: 'finding-shared', label: 'Shared' },
   { status: 'growing',        label: 'Growing' },
+  { status: 'scaled',         label: 'Scaled' },
 ];
 
 /* Owner/team can advance a card to the next stage straight from the board.
@@ -274,6 +275,15 @@ function buildMove(item, stage) {
       class: 'btn btn-secondary pipeline-move',
       href: `item.html?id=${encodeURIComponent(item.item_id)}`,
     }, 'Move to Growing', el('span', { 'aria-hidden': 'true' }, ' →'));
+  }
+
+  /* growing → scaled is a "did it hold?" confirmation, captured on the item
+     page; only offered once the decision is to actually scale or adopt. */
+  if (stage.status === 'growing' && (item.grow_decision === 'scale' || item.grow_decision === 'adopt')) {
+    return el('a', {
+      class: 'btn btn-secondary pipeline-move',
+      href: `item.html?id=${encodeURIComponent(item.item_id)}`,
+    }, 'Mark as scaled', el('span', { 'aria-hidden': 'true' }, ' →'));
   }
 
   const tx = NEXT[stage.status];
