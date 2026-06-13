@@ -58,6 +58,12 @@ export function migrateItem(raw) {
   /* Ensure timestamps */
   if (!item.points_awarded_at) item.points_awarded_at = null;
 
+  /* Learning snapshot fields (added with the fail-fast verdict). Older records
+     have none — default them so the snapshot renders consistently. */
+  if (item.verdict === undefined) item.verdict = null;
+  if (typeof item.learning_expected !== 'string') item.learning_expected = '';
+  if (typeof item.learning_actual !== 'string') item.learning_actual = '';
+
   return item;
 }
 

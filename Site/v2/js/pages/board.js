@@ -4,6 +4,8 @@ import { loadConfig, t } from '../config-loader.js';
 import { loadItems, loadLeaderboard, loadMembers, rankFor, timeAgo, fullDate } from '../data.js';
 import { el, announce, chipEl, statusVariant } from '../dom.js';
 import { isCardBlank } from '../profile-card.js';
+import { experimentsWantingMe } from '../skills-match.js';
+import { verdictChip } from '../verdict.js';
 
 const SECTIONS = [
   { type: 'experiment', termKey: 'items.experiment', newHref: 'new-experiment.html' },
@@ -176,6 +178,18 @@ function buildNudges() {
     }
   }
 
+  /* Skills wanted: active experiments that match a strength or mentor skill
+     on your own profile — the community-empowerment hook. */
+  if (_myMember) {
+    for (const { item, methods } of experimentsWantingMe(_myMember, _items, oid).slice(0, 2)) {
+      nudges.push({
+        href: `item.html?id=${encodeURIComponent(item.item_id)}`,
+        link: `Lend a hand on “${item.title || '(Untitled)'}”`,
+        context: `Wants your ${methods.slice(0, 2).join(', ')}.`,
+      });
+    }
+  }
+
   return nudges.slice(0, 6);
 }
 
@@ -251,18 +265,23 @@ function renderLearning() {
     const snippet = text.length > 160 ? `${text.slice(0, 160)}…` : text;
     const who = item.item_type === 'session' ? item.host_name : item.posted_by_name;
     const when = item.closed_at || item.updated_at;
+    const chip = isFinding ? verdictChip(item.verdict) : null;
 
-    ul.appendChild(el('li', { class: 'learning-item' },
+    const li = el('li', { class: 'learning-item' },
       el('a', { href: `item.html?id=${encodeURIComponent(item.item_id)}` },
         `${isFinding ? 'Finding' : 'Output'} from “${item.title || '(Untitled)'}”`),
-      el('p', { class: 'learning-snippet', text: snippet }),
-      el('p', { class: 'card-meta' },
-        who ? `Shared by ${who}` : 'Shared',
-        when ? el('time', { datetime: when }, ` · ${timeAgo(when)}`) : '',
-      ),
+    );
+    if (chip) li.appendChild(chip);
+    li.appendChild(el('p', { class: 'learning-snippet', text: snippet }));
+    li.appendChild(el('p', { class: 'card-meta' },
+      who ? `Shared by ${who}` : 'Shared',
+      when ? el('time', { datetime: when }, ` · ${timeAgo(when)}`) : '',
     ));
+    ul.appendChild(li);
   }
   box.replaceChildren(ul);
+  box.appendChild(el('p', { class: 'learning-more' },
+    el('a', { href: 'learning.html' }, 'See the full learning wall')));
 }
 
 /* ── Board sections with filters ─────────────────────────────────────────── */

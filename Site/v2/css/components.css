@@ -1045,3 +1045,142 @@
   padding: var(--space-2) var(--space-4);
   font-size: var(--font-size-sm);
 }
+
+/* ── Verdict options (fail-fast share-finding form) ───────────────────────── */
+
+.verdict-fieldset {
+  margin-bottom: var(--space-6);
+}
+
+.verdict-option {
+  align-items: flex-start;
+  padding: var(--space-2) 0;
+}
+
+.verdict-option-label {
+  display: block;
+  font-weight: 600;
+}
+
+.verdict-option-hint {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* ── Learning snapshot (item page) ────────────────────────────────────────── */
+
+.learning-snapshot {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.snapshot-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.snapshot-head h2 {
+  margin: 0;
+}
+
+.snapshot-hint {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.learning-snapshot h3 {
+  font-size: var(--font-size-md);
+  margin-bottom: var(--space-2);
+}
+
+.snapshot-grid {
+  display: grid;
+  gap: var(--space-2) var(--space-5);
+  margin: 0 0 var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .snapshot-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.snapshot-grid dt {
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.snapshot-grid dd {
+  margin: 0 0 var(--space-3);
+}
+
+/* ── Who can help (skill ↔ people matching) ───────────────────────────────── */
+
+.who-can-help {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.who-can-help h2 {
+  margin-bottom: var(--space-2);
+}
+
+.help-band {
+  margin-top: var(--space-5);
+}
+
+.help-band-label {
+  font-size: var(--font-size-md);
+  margin-bottom: var(--space-3);
+}
+
+.help-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.helper-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+}
+
+.helper-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.helper-name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.helper-methods,
+.helper-contact {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── Learning wall extras ─────────────────────────────────────────────────── */
+
+.learning-more {
+  margin-top: var(--space-4);
+}

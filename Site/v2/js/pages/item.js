@@ -1,12 +1,18 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
-import { loadItems, saveItem, deleteItem, timeAgo, fullDate, nano } from '../data.js';
+import { loadItems, loadMembers, saveItem, deleteItem, timeAgo, fullDate, nano } from '../data.js';
 import { el, chipEl, statusVariant, moveFocus, announce } from '../dom.js';
 import { validate, showErrors, clearErrors } from '../forms.js';
+import { initials } from '../profile-card.js';
+import { whoCanHelp, hasHelpers, HELP_BANDS } from '../skills-match.js';
+import { VERDICTS, verdictChip, buildVerdictFieldset, selectedVerdict } from '../verdict.js';
+
+const ACTIVE_EXPERIMENT = ['designing', 'running', 'wrapping-up'];
 
 let _item = null;
 let _config = null;
 let _session = null;
+let _members = [];
 
 async function init() {
   _session = await requireSignIn();
@@ -28,6 +34,11 @@ async function init() {
   }
 
   if (!_item) { renderNotFound(); return; }
+
+  /* Experiments match their methods against member profiles (who can help). */
+  if (_item.item_type === 'experiment') {
+    _members = await loadMembers().catch(() => []);
+  }
 
   updateMeta(_item, _config);
   renderAll();
@@ -72,14 +83,23 @@ function renderMain() {
   const bodyText = item.description || item.question || item.topic;
   if (bodyText) frag.appendChild(el('p', { text: bodyText }));
 
-  /* Finding / output */
-  if (item.finding) {
+  /* Finding / output. Experiments with a shared finding render as a full
+     learning snapshot (verdict, expected vs actual, methods, contributors). */
+  if (item.item_type === 'experiment' && (item.finding || item.verdict)) {
+    frag.appendChild(buildLearningSnapshot(item));
+  } else if (item.finding) {
     frag.appendChild(el('h2', { text: 'Finding' }));
     frag.appendChild(el('p', { text: item.finding }));
   }
   if (item.output) {
     frag.appendChild(el('h2', { text: 'Output' }));
     frag.appendChild(el('p', { text: item.output }));
+  }
+
+  /* Who can help — match active experiments to people by method. */
+  if (item.item_type === 'experiment' && ACTIVE_EXPERIMENT.includes(item.status)) {
+    const help = buildWhoCanHelp(item);
+    if (help) frag.appendChild(help);
   }
 
   /* Updates thread */
@@ -143,6 +163,114 @@ function buildMetaItems(item, config) {
     rows.push([name.charAt(0).toUpperCase() + name.slice(1), String(item.xp_reward)]);
   }
   return rows;
+}
+
+/* ── Learning snapshot (fail-fast showcase) ──────────────────────────────── */
+
+function buildLearningSnapshot(item) {
+  const sec = el('section', { class: 'learning-snapshot', 'aria-labelledby': 'snapshot-heading' });
+
+  const head = el('div', { class: 'snapshot-head' });
+  head.appendChild(el('h2', { id: 'snapshot-heading', text: 'Learning snapshot' }));
+  const chip = verdictChip(item.verdict);
+  if (chip) head.appendChild(chip);
+  sec.appendChild(head);
+
+  if (item.verdict && VERDICTS[item.verdict]) {
+    sec.appendChild(el('p', { class: 'snapshot-hint', text: VERDICTS[item.verdict].hint }));
+  }
+
+  if (item.question) {
+    sec.appendChild(el('h3', { text: 'The question' }));
+    sec.appendChild(el('p', { text: item.question }));
+  }
+  if (item.finding) {
+    sec.appendChild(el('h3', { text: 'What we found' }));
+    sec.appendChild(el('p', { text: item.finding }));
+  }
+
+  if (item.learning_expected || item.learning_actual) {
+    const dl = el('dl', { class: 'snapshot-grid' });
+    if (item.learning_expected) {
+      dl.appendChild(el('dt', { text: 'What we expected' }));
+      dl.appendChild(el('dd', { text: item.learning_expected }));
+    }
+    if (item.learning_actual) {
+      dl.appendChild(el('dt', { text: 'What actually happened' }));
+      dl.appendChild(el('dd', { text: item.learning_actual }));
+    }
+    sec.appendChild(dl);
+  }
+
+  if (item.outcome) {
+    sec.appendChild(el('h3', { text: 'What we’d do differently' }));
+    sec.appendChild(el('p', { text: item.outcome }));
+  }
+
+  const methods = (item.method_tags || []).filter(Boolean);
+  if (methods.length) {
+    sec.appendChild(el('h3', { text: 'Methods used' }));
+    const ul = el('ul', { class: 'pipeline-chips', role: 'list' });
+    for (const m of methods) ul.appendChild(el('li', null, chipEl(m, 'neutral')));
+    sec.appendChild(ul);
+  }
+
+  const names = (item.team_names && item.team_names.length)
+    ? item.team_names
+    : (item.posted_by_name ? [item.posted_by_name] : []);
+  if (names.length) {
+    sec.appendChild(el('h3', { text: 'Who ran it' }));
+    const row = el('div', { class: 'pipeline-avatars' });
+    for (const n of names.slice(0, 6)) {
+      row.appendChild(el('span', { class: 'member-avatar member-avatar--sm', 'aria-hidden': 'true' }, initials(n)));
+    }
+    row.appendChild(el('span', { class: 'sr-only' }, names.join(', ')));
+    row.appendChild(el('span', { class: 'card-meta', text: names.join(', ') }));
+    sec.appendChild(row);
+  }
+
+  return sec;
+}
+
+/* ── Who can help (skill ↔ people matching) ──────────────────────────────── */
+
+function buildWhoCanHelp(item) {
+  const groups = whoCanHelp(item, _members, item.team_oids || []);
+  if (!hasHelpers(groups)) return null;
+
+  const sec = el('section', { class: 'who-can-help', 'aria-labelledby': 'who-help-heading' });
+  sec.appendChild(el('h2', { id: 'who-help-heading', text: 'Who can help' }));
+  sec.appendChild(el('p', { class: 'card-meta',
+    text: 'Matched from member profiles by the methods this experiment uses. Reach out to invite them.' }));
+
+  for (const [band, label] of HELP_BANDS) {
+    const list = groups[band];
+    if (!list.length) continue;
+    const bandEl = el('div', { class: `help-band help-band--${band}` });
+    bandEl.appendChild(el('h3', { class: 'help-band-label', text: label }));
+    const ul = el('ul', { class: 'help-list', role: 'list' });
+    for (const { member, methods } of list) ul.appendChild(buildHelperRow(member, methods));
+    bandEl.appendChild(ul);
+    sec.appendChild(bandEl);
+  }
+  return sec;
+}
+
+function buildHelperRow(member, methods) {
+  const li = el('li', { class: 'helper-row' });
+  li.appendChild(el('span', { class: 'member-avatar member-avatar--sm', 'aria-hidden': 'true' }, initials(member.name)));
+  const body = el('div', { class: 'helper-body' });
+  body.appendChild(el('p', { class: 'helper-name' },
+    el('a', { href: `member.html?id=${encodeURIComponent(member.oid)}` }, member.name || 'Member')));
+  body.appendChild(el('p', { class: 'helper-methods', text: `For: ${methods.join(', ')}` }));
+  const contact = (member.preferred_contact || '').trim();
+  if (contact) {
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
+    body.appendChild(el('p', { class: 'helper-contact' }, 'Contact: ',
+      isEmail ? el('a', { href: `mailto:${contact}` }, contact) : contact));
+  }
+  li.appendChild(body);
+  return li;
 }
 
 /* ── Actions ────────────────────────────────────────────────────────────── */
@@ -316,7 +444,7 @@ function buildShareFindingForm() {
   const ptsName = (_config.terminology || {}).points_name || 'points';
   const reward = _item.xp_reward || (pts && pts.values ? pts.values.experiment_complete : 100);
   const teamCount = (_item.team_oids || []).length;
-  const summary = `This will mark the finding as shared${pts && pts.enabled ? ` and award ${reward} ${ptsName} to each of ${teamCount} team member${teamCount !== 1 ? 's' : ''}` : ''}.`;
+  const summary = `Sharing the finding marks this experiment complete${pts && pts.enabled ? ` and awards ${reward} ${ptsName} to each of ${teamCount} team member${teamCount !== 1 ? 's' : ''}` : ''} — whatever the verdict.`;
 
   const wrapper = el('div', { class: 'board-section', 'aria-label': 'Share finding' });
   wrapper.appendChild(el('h2', { text: 'Share finding' }));
@@ -334,15 +462,30 @@ function buildShareFindingForm() {
   wrapper.appendChild(errorSummary);
 
   const form = el('form', { id: 'share-finding-form', novalidate: true });
+
+  form.appendChild(buildVerdictFieldset());
+
   const findingGroup = el('div', { class: 'form-group' });
   findingGroup.appendChild(el('label', { for: 'finding-text', text: 'Finding (required)' }));
   findingGroup.appendChild(el('span', { class: 'form-hint', text: 'What did you learn or discover?' }));
   findingGroup.appendChild(el('textarea', { id: 'finding-text', name: 'finding', rows: '4', required: true }));
   form.appendChild(findingGroup);
 
+  const expectedGroup = el('div', { class: 'form-group' });
+  expectedGroup.appendChild(el('label', { for: 'expected-text', text: 'What we expected (optional)' }));
+  expectedGroup.appendChild(el('span', { class: 'form-hint', text: 'The hypothesis going in.' }));
+  expectedGroup.appendChild(el('textarea', { id: 'expected-text', name: 'expected', rows: '2' }));
+  form.appendChild(expectedGroup);
+
+  const actualGroup = el('div', { class: 'form-group' });
+  actualGroup.appendChild(el('label', { for: 'actual-text', text: 'What actually happened (optional)' }));
+  actualGroup.appendChild(el('span', { class: 'form-hint', text: 'Warts and all — the real result.' }));
+  actualGroup.appendChild(el('textarea', { id: 'actual-text', name: 'actual', rows: '2' }));
+  form.appendChild(actualGroup);
+
   const outcomeGroup = el('div', { class: 'form-group' });
-  outcomeGroup.appendChild(el('label', { for: 'outcome-text', text: 'Outcome (optional)' }));
-  outcomeGroup.appendChild(el('span', { class: 'form-hint', text: 'What will you do differently as a result?' }));
+  outcomeGroup.appendChild(el('label', { for: 'outcome-text', text: 'What we’d do differently (optional)' }));
+  outcomeGroup.appendChild(el('span', { class: 'form-hint', text: 'The next step this points to.' }));
   outcomeGroup.appendChild(el('textarea', { id: 'outcome-text', name: 'outcome', rows: '3' }));
   form.appendChild(outcomeGroup);
 
@@ -352,12 +495,17 @@ function buildShareFindingForm() {
     async () => {
       const findingEl = form.querySelector('#finding-text');
       const outcomeEl = form.querySelector('#outcome-text');
+      const expectedEl = form.querySelector('#expected-text');
+      const actualEl = form.querySelector('#actual-text');
+      const verdict = selectedVerdict(form);
       const errors = validate([
         { id: 'finding-text', label: 'Finding', value: findingEl.value, required: true, minLength: 10 },
       ]);
+      if (!verdict) errors.push({ field: 'verdict-group', message: 'Choose a verdict' });
       if (errors.length) { showErrors(errors, 'share-finding-errors'); return false; }
       clearErrors('share-finding-errors');
-      await doShareFinding(findingEl.value.trim(), outcomeEl.value.trim());
+      await doShareFinding(findingEl.value.trim(), outcomeEl.value.trim(),
+        verdict, expectedEl.value.trim(), actualEl.value.trim());
       return true;
     },
   );
@@ -533,13 +681,16 @@ async function doAddUpdate(text) {
   if (ta) ta.value = '';
 }
 
-async function doShareFinding(finding, outcome) {
+async function doShareFinding(finding, outcome, verdict, expected, actual) {
   const now = new Date().toISOString();
   await doSave({
     ..._item,
     status: 'finding-shared',
     finding,
     outcome: outcome || _item.outcome || '',
+    verdict: verdict || null,
+    learning_expected: expected || '',
+    learning_actual: actual || '',
     updated_at: now,
     closed_at: now,
   }, 'Finding shared successfully.');

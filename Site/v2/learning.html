@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin — Activity Board</title>
+  <title>Learning wall — Activity Board</title>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
@@ -34,29 +34,36 @@
   <!-- shell:end -->
 
   <main id="main" class="site-main">
-    <nav aria-label="Breadcrumb" class="breadcrumb">
-      <ol>
-        <li><a href="index.html">Board</a></li>
-        <li aria-current="page">Admin</li>
-      </ol>
-    </nav>
-
-    <h1>Admin</h1>
-
-    <div id="admin-content">
-      <p class="loading">Loading admin panel…</p>
+    <div class="section-toolbar">
+      <h1 id="page-title">Learning wall</h1>
     </div>
+
+    <p id="learning-intro" class="home-greeting">What experiments taught us — warts and all. A disproved hypothesis is a real result.</p>
+
+    <fieldset class="filter-bar">
+      <legend>Filter by verdict</legend>
+      <div class="filter-options" id="verdict-filter">
+        <label class="label-inline">
+          <input type="radio" name="verdict-filter" value="all" checked>
+          All
+        </label>
+      </div>
+    </fieldset>
+
+    <p id="wall-loading" class="loading">Loading learning…</p>
+
+    <div id="wall" hidden></div>
   </main>
 
   <div role="status" aria-live="polite" id="live-region" class="sr-only"></div>
 
   <noscript>
     <div class="noscript-notice">
-      <p>JavaScript is required to use the admin panel.</p>
+      <p>JavaScript is required to load the learning wall. Navigation and headings work without it, but the wall itself requires JS.</p>
     </div>
   </noscript>
 
   <script type="module" src="js/shell.js"></script>
-  <script type="module" src="js/pages/admin.js"></script>
+  <script type="module" src="js/pages/learning.js"></script>
 </body>
 </html>
