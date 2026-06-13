@@ -142,6 +142,7 @@ function isSelfDelta(curOids, curNames, newOids, newNames, principal) {
   // added self at the end
   if (no.length === co.length + 1 &&
       no[no.length - 1] === principal.oid &&
+      nn[nn.length - 1] === principal.name &&
       eq(co, no.slice(0, -1)) && eq(cn, nn.slice(0, -1))) return true;
   // removed self
   const i = co.indexOf(principal.oid);
@@ -209,7 +210,7 @@ function authorizeItemWrite(current, incoming, principal, admin) {
   const newUpdates = appendedTail(current.updates, incoming.updates);
   if (newUpdates === null) return { ok: false, status: 403, reason: 'Existing updates cannot be changed' };
   for (const u of newUpdates) {
-    if (!u || u.author_oid !== principal.oid) {
+    if (!u || u.author_oid !== principal.oid || u.author_name !== principal.name) {
       return { ok: false, status: 403, reason: 'Updates must be authored by you' };
     }
   }
