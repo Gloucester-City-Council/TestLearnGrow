@@ -32,12 +32,26 @@
 }
 
 .site-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--font-size-xl);
   font-weight: 800;
   letter-spacing: -0.01em;
   text-decoration: none;
   color: var(--color-text);
   margin-right: auto; /* pushes the utility controls to the far right */
+  min-width: 0; /* allow a long board name to shrink, not force overflow */
+}
+
+/* Decorative brand mark — a small accent disc, purely visual (not announced). */
+.site-name::before {
+  content: "";
+  width: 0.85em;
+  height: 0.85em;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
 .site-name:visited {
@@ -63,10 +77,10 @@
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-4);
   color: var(--color-text);
   text-decoration: none;
-  border-radius: 4px;
+  border-radius: var(--radius-pill);
   transition: background-color var(--transition);
 }
 
@@ -75,6 +89,9 @@
   text-decoration: underline;
 }
 
+/* Active page reads as a filled accent pill (Monday style). The bold weight and
+   underline carry the state too, so it never rests on the pill colour alone
+   (1.4.1) — and aria-current marks it for assistive tech. */
 .site-header nav a[aria-current="page"] {
   font-weight: 700;
   background: var(--accent-soft);
@@ -94,48 +111,102 @@
 .shell-actions {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
-/* Thin rule separating the theme control from the user-identity group, so the
-   two read as distinct clusters rather than one row of look-alike buttons. */
-.shell-divider {
-  width: 1px;
-  height: 1.75rem;
-  background: var(--color-border);
+/* Theme toggle — a compact pill carrying a half-filled dot that reads as a
+   light/dark switch. The text label stays visible so the control never relies on
+   the glyph or on colour alone (1.1.1 / 1.4.1). */
+.theme-toggle {
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--space-1) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-link);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  box-shadow: none;
+}
+
+.theme-toggle:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-text-secondary);
+}
+
+.theme-toggle-glyph {
+  width: 1rem;
+  height: 1rem;
   flex-shrink: 0;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  /* Half-filled disc — a tidy "contrast" mark, purely decorative. */
+  background: linear-gradient(90deg, currentColor 0 50%, transparent 50% 100%);
 }
 
+/* Identity grouped as one rounded chip (Monday-style): avatar + name + sign-out
+   read as a single cluster rather than three look-alike controls in a row. */
 .shell-user {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  padding: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  max-width: 100%;
+}
+
+.shell-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  line-height: 1;
 }
 
 /* Username is metadata, not a control — keep it quiet and clip if very long. */
 .user-name {
   font-weight: 600;
-  color: var(--color-text-secondary);
+  color: var(--color-text);
   font-size: var(--font-size-sm);
-  max-width: 18ch;
+  min-width: 0;
+  max-width: 14ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Small buttons in the shell */
-.shell-actions button {
+/* Sign-out sits inside the identity chip, so it blends in (transparent fill)
+   rather than reading as a second pill. Still a full 44px target with a clear
+   focus ring and hover affordance. */
+.shell-signout {
   min-height: 44px;
+  min-width: 44px;
   padding: var(--space-1) var(--space-3);
   font-size: var(--font-size-sm);
-  background: var(--color-bg);
+  font-weight: 600;
   color: var(--color-link);
-  border-color: var(--color-link);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  box-shadow: none;
 }
 
-.shell-actions button:hover {
-  background: var(--color-surface);
+.shell-signout:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-color: var(--color-border);
+  text-decoration: underline;
 }
 
 /* ── Collapsible navigation toggle (mobile) ──────────────────────────────── */
@@ -980,6 +1051,26 @@
   margin-top: var(--space-6);
 }
 
+/* ── Reflow safeguards (1.4.10) ──────────────────────────────────────────── */
+
+/* Flex and grid items default to min-width/min-height: auto, which refuses to
+   shrink below their content and is the usual cause of horizontal scroll on
+   phones. Letting these text-bearing containers shrink to zero lets their
+   content wrap (with overflow-wrap from base.css) instead of pushing the page
+   wider than the viewport. */
+.card,
+.card-title,
+.pipeline-card,
+.pipeline-card-title,
+.member-info,
+.helper-body,
+.profile-card-head-text,
+.section-toolbar h1,
+.section-toolbar h2,
+.snapshot-head h2 {
+  min-width: 0;
+}
+
 /* ── Mobile adjustments ──────────────────────────────────────────────────── */
 
 /* Below this width the nav collapses behind the hamburger. JS adds .js-nav so
@@ -1002,6 +1093,14 @@
   .site-header.js-nav #main-nav ul {
     flex-direction: column;
     gap: var(--space-1);
+  }
+
+  /* Identity + theme controls drop to their own row, right-aligned, so the top
+     bar reads as two tidy lines (brand + menu, then controls) instead of a
+     ragged wrap of mismatched buttons. */
+  .shell-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 

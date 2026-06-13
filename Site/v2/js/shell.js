@@ -1,5 +1,6 @@
 import { getSession, clearSession } from './auth.js';
 import { loadConfig, applyTheme } from './config-loader.js';
+import { initials } from './profile-card.js';
 
 /* Mark the current nav link as the active page (2.4.1 / 3.2.3) */
 function markCurrentPage() {
@@ -71,7 +72,10 @@ function initTheme() {
     document.documentElement.setAttribute('data-theme', scheme);
     const isDark = scheme === 'dark';
     btn.setAttribute('aria-pressed', String(isDark));
-    btn.textContent = isDark ? 'Light mode' : 'Dark mode';
+    /* Update only the label span so the decorative glyph node survives. The
+       label text is the button's accessible name; aria-pressed carries state. */
+    const label = btn.querySelector('.theme-toggle-label') || btn;
+    label.textContent = isDark ? 'Light mode' : 'Dark mode';
   }
 }
 
@@ -94,11 +98,17 @@ function initSignOut() {
 /* Populate user info from session */
 async function initUser() {
   const nameEl = document.getElementById('user-name');
+  const avatarEl = document.getElementById('user-avatar');
+  const userWrap = document.getElementById('shell-user');
   const signOutBtn = document.getElementById('sign-out');
   const adminLink = document.getElementById('nav-admin');
   const session = await getSession();
   if (session && session.authenticated) {
     if (nameEl) nameEl.textContent = session.name;
+    /* Avatar initials are decorative (aria-hidden) — the name beside them is the
+       accessible label, so this never reads as duplicate text to a screen reader. */
+    if (avatarEl) avatarEl.textContent = initials(session.name);
+    if (userWrap) userWrap.hidden = false;
     if (signOutBtn) signOutBtn.hidden = false;
     if (adminLink && session.isAdmin) adminLink.hidden = false;
   }

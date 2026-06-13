@@ -21,12 +21,15 @@
         Menu
       </button>
       <div class="shell-actions">
-        <button type="button" id="theme-toggle" class="btn-secondary" aria-pressed="false">Dark mode</button>
-        <span class="shell-divider" aria-hidden="true"></span>
-        <span class="shell-user">
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false">
+          <span class="theme-toggle-glyph" aria-hidden="true"></span>
+          <span class="theme-toggle-label">Dark mode</span>
+        </button>
+        <div class="shell-user" id="shell-user" hidden>
+          <span class="shell-avatar" id="user-avatar" aria-hidden="true"></span>
           <span class="user-name" id="user-name"></span>
-          <button type="button" id="sign-out" class="btn-secondary" hidden>Sign out</button>
-        </span>
+          <button type="button" id="sign-out" class="shell-signout" hidden>Sign out</button>
+        </div>
       </div>
     </div>
     <nav aria-label="Main navigation" id="main-nav">

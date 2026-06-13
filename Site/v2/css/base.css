@@ -27,6 +27,10 @@ body {
   line-height: var(--line-height);
   text-align: left; /* no justified text — 1.4.8 */
   min-height: 100vh;
+  /* Long words, emails and URLs wrap instead of forcing a horizontal scroll on
+     narrow screens. overflow-wrap inherits, so this covers every descendant and
+     is the primary guard for 1.4.10 reflow (no 2-D scroll at 320px). */
+  overflow-wrap: break-word;
 }
 
 /* ── Typography ───────────────────────────────────────────────────────────── */
