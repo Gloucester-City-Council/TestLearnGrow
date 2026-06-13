@@ -333,6 +333,9 @@
 .chip-purple  { background: var(--chip-purple-bg);  color: var(--chip-purple-text); }
 .chip-amber   { background: var(--chip-amber-bg);   color: var(--chip-amber-text); }
 .chip-green   { background: var(--chip-green-bg);   color: var(--chip-green-text); }
+/* Error chip — hardcoded like #B10000 in base.css: must always pass on both
+   light and dark surfaces regardless of config-driven palette overrides. */
+.chip-error   { background: #FFF0F0;  color: #B10000; }
 
 /* ── Cards ────────────────────────────────────────────────────────────────── */
 

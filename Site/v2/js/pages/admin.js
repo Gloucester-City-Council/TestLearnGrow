@@ -154,7 +154,7 @@ function ranksEditor(initial) {
       const labelInput = el('input', { type: 'text', 'aria-label': `Label for rank ${idx + 1}`, maxlength: '40' });
       labelInput.value = row.label;
       labelInput.addEventListener('input', () => { rows[idx].label = labelInput.value; });
-      const removeBtn = el('button', { type: 'button', class: 'btn-secondary', style: 'min-height:auto;padding:0.25rem 0.75rem;font-size:0.875rem' }, 'Remove');
+      const removeBtn = el('button', { type: 'button', class: 'btn-secondary', style: 'padding:0 0.75rem;font-size:0.875rem' }, 'Remove');
       removeBtn.setAttribute('aria-label', `Remove rank ${row.label}`);
       removeBtn.addEventListener('click', () => { rows.splice(idx, 1); refresh(); });
       tr.appendChild(el('td', null, minInput));
@@ -370,10 +370,9 @@ function updateContrastResults() {
     tr.appendChild(el('td', { text: r.required }));
     const statusCell = el('td');
     const chip = el('span', {
-      class: `chip chip-${r.pass ? 'green' : 'neutral'}`,
+      class: `chip chip-${r.pass ? 'green' : 'error'}`,
       text: r.pass ? 'Pass' : 'Fail',
     });
-    if (!r.pass) chip.style.background = '#FFF0F0';
     statusCell.appendChild(chip);
     tr.appendChild(statusCell);
     tbody.appendChild(tr);
