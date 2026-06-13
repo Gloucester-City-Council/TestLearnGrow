@@ -92,3 +92,27 @@ export function statusVariant(status) {
   };
   return map[status] || 'neutral';
 }
+
+/* Human-readable label for an item status. The stored status is a machine
+   value (e.g. 'finding-shared'); never show that to a user. Unknown values are
+   prettified (hyphens → spaces, first letter capitalised) so a new status can
+   never leak as raw machine casing. */
+export function statusLabel(status) {
+  const map = {
+    open: 'Open',
+    running: 'Running',
+    scheduled: 'Scheduled',
+    designing: 'Designing',
+    'wrapping-up': 'Wrapping up',
+    happened: 'Held',
+    parked: 'Parked',
+    'finding-shared': 'Finding shared',
+    'output-shared': 'Output shared',
+    growing: 'Growing',
+    closed: 'Closed',
+  };
+  if (map[status]) return map[status];
+  if (!status) return 'Unknown';
+  const words = String(status).replace(/[-_]+/g, ' ').trim();
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : 'Unknown';
+}
