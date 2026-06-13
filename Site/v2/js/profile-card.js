@@ -1,6 +1,6 @@
 import { el } from './dom.js';
 
-/* Guild card — the v1 "Top Trumps" member card, rebuilt on v2 tokens.
+/* Member profile card.
    Skills live in member.skills as { tool: 'strength' | 'mentor' | 'stretch' }.
    Band colours reuse the AAA-verified chip token pairs, and every band
    carries a text label so meaning never rests on colour alone. */
@@ -35,7 +35,7 @@ const BANDS = [
   ['stretch',  'Stretch goals'],
 ];
 
-/* Build a guild card element.
+/* Build a profile element.
    opts:
      compact      — grid variant: name heading + skill bands only
      nameNode     — heading/link node for the card header (compact);
@@ -44,21 +44,21 @@ const BANDS = [
      isMe         — viewing own card
      headingTag   — band label tag ('h2' on a profile page, 'h3' in a grid)
      completeHref — where "Complete my card" links when own card is blank */
-export function buildGuildCard(member, opts = {}) {
+export function buildProfileCard(member, opts = {}) {
   const { compact = false, nameNode = null, rankLine = '', isMe = false,
           headingTag = 'h2', completeHref = 'member-edit.html' } = opts;
 
-  const card = el('article', { class: `guild-card${compact ? '' : ' guild-card--full'}` });
+  const card = el('article', { class: `profile-card${compact ? '' : ' profile-card--full'}` });
 
   /* Header */
-  const header = el('div', { class: 'guild-card-header' });
+  const header = el('div', { class: 'profile-card-header' });
   header.appendChild(el('span', { class: 'member-avatar', 'aria-hidden': 'true' }, initials(member.name)));
-  const head = el('div', { class: 'guild-card-head-text' });
+  const head = el('div', { class: 'profile-card-head-text' });
   if (nameNode) head.appendChild(nameNode);
   if ((member.role_team || '').trim()) {
-    head.appendChild(el('p', { class: 'guild-card-role', text: member.role_team.trim() }));
+    head.appendChild(el('p', { class: 'profile-card-role', text: member.role_team.trim() }));
   }
-  if (rankLine) head.appendChild(el('p', { class: 'guild-card-rank', text: rankLine }));
+  if (rankLine) head.appendChild(el('p', { class: 'profile-card-rank', text: rankLine }));
   header.appendChild(head);
   card.appendChild(header);
 
@@ -66,10 +66,10 @@ export function buildGuildCard(member, opts = {}) {
   const by = skillsByKind(member);
   for (const [kind, label] of BANDS) {
     if (!by[kind].length) continue;
-    const band = el('div', { class: `guild-band guild-band--${kind}` });
-    band.appendChild(el(headingTag, { class: 'guild-band-label', text: label }));
-    const ul = el('ul', { class: 'guild-tags', role: 'list' });
-    for (const tool of by[kind]) ul.appendChild(el('li', { class: 'guild-tag', text: tool }));
+    const band = el('div', { class: `profile-band profile-band--${kind}` });
+    band.appendChild(el(headingTag, { class: 'profile-band-label', text: label }));
+    const ul = el('ul', { class: 'profile-tags', role: 'list' });
+    for (const tool of by[kind]) ul.appendChild(el('li', { class: 'profile-tag', text: tool }));
     band.appendChild(ul);
     card.appendChild(band);
   }
@@ -83,9 +83,9 @@ export function buildGuildCard(member, opts = {}) {
       ['To get the best from me', t(member.how_to_get_best)],
     ].filter(([, v]) => v);
     if (aboutRows.length) {
-      const band = el('div', { class: 'guild-band guild-band--about' });
-      band.appendChild(el(headingTag, { class: 'guild-band-label', text: 'Working with me' }));
-      const dl = el('dl', { class: 'guild-about' });
+      const band = el('div', { class: 'profile-band profile-band--about' });
+      band.appendChild(el(headingTag, { class: 'profile-band-label', text: 'Working with me' }));
+      const dl = el('dl', { class: 'profile-about' });
       for (const [label, value] of aboutRows) {
         dl.appendChild(el('dt', { text: label }));
         dl.appendChild(el('dd', { text: value }));
@@ -97,9 +97,9 @@ export function buildGuildCard(member, opts = {}) {
     /* Fun facts */
     const facts = (member.fun_facts || []).map((f) => (typeof f === 'string' ? f.trim() : '')).filter(Boolean);
     if (facts.length) {
-      const band = el('div', { class: 'guild-band guild-band--about' });
-      band.appendChild(el(headingTag, { class: 'guild-band-label', text: 'Fun facts' }));
-      const ul = el('ul', { class: 'guild-fun-list' });
+      const band = el('div', { class: 'profile-band profile-band--about' });
+      band.appendChild(el(headingTag, { class: 'profile-band-label', text: 'Fun facts' }));
+      const ul = el('ul', { class: 'profile-fun-list' });
       for (const f of facts) ul.appendChild(el('li', { text: f }));
       band.appendChild(ul);
       card.appendChild(band);
@@ -108,15 +108,15 @@ export function buildGuildCard(member, opts = {}) {
 
   /* Blank card */
   if (isCardBlank(member)) {
-    const empty = el('div', { class: 'guild-empty' });
+    const empty = el('div', { class: 'profile-empty' });
     if (isMe) {
-      empty.appendChild(el('p', { text: 'Your guild card is blank.' }));
+      empty.appendChild(el('p', { text: 'Your profile is blank.' }));
       if (!compact) {
         empty.appendChild(el('p', null,
-          el('a', { href: completeHref, class: 'btn' }, 'Complete my guild card')));
+          el('a', { href: completeHref, class: 'btn' }, 'Complete my profile')));
       }
     } else {
-      empty.appendChild(el('p', { text: `${member.name || 'This member'} hasn't filled in their guild card yet.` }));
+      empty.appendChild(el('p', { text: `${member.name || 'This member'} hasn't filled in their profile yet.` }));
     }
     card.appendChild(empty);
   }
@@ -126,7 +126,7 @@ export function buildGuildCard(member, opts = {}) {
     const contact = (member.preferred_contact || '').trim();
     const avail = (member.availability || '').trim();
     if (contact || avail) {
-      const footer = el('div', { class: 'guild-card-footer' });
+      const footer = el('div', { class: 'profile-card-footer' });
       if (contact) {
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
         footer.appendChild(el('p', null, 'Contact: ',

@@ -1,6 +1,6 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
-import { loadItems, saveItem, timeAgo, fullDate, nano } from '../data.js';
+import { loadItems, saveItem, deleteItem, timeAgo, fullDate, nano } from '../data.js';
 import { el, chipEl, statusVariant, moveFocus, announce } from '../dom.js';
 import { validate, showErrors, clearErrors } from '../forms.js';
 
@@ -212,7 +212,27 @@ function renderActions() {
     frag.appendChild(buildUpdateForm());
   }
 
+  /* Delete — poster/host/team or admin */
+  if (_session.isAdmin || isPosterOrHost() || isTeamOrAttendee()) {
+    const typeLabel = t(_config, `items.${item.item_type}.singular`).toLowerCase();
+    frag.appendChild(buildConfirmButton(
+      `Delete ${typeLabel}`,
+      `This permanently removes this ${typeLabel}. This cannot be undone.`,
+      async () => { await doDelete(); },
+    ));
+  }
+
   section.replaceChildren(frag);
+}
+
+async function doDelete() {
+  try {
+    await deleteItem(_item.item_id);
+    location.href = 'index.html';
+  } catch (err) {
+    const msg = err.status === 403 ? 'You do not have permission to delete this.' : err.message;
+    announce(`Could not delete: ${msg}`);
+  }
 }
 
 function buildStatusAdvance(item) {

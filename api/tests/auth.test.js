@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parsePrincipal, isAdmin, authorizeItemWrite } = require('../auth');
+const { parsePrincipal, isAdmin, isItemOwner, authorizeItemWrite } = require('../auth');
 
 function swaRequest(principal) {
   const encoded = Buffer.from(JSON.stringify(principal)).toString('base64');
@@ -49,7 +49,52 @@ test('parsePrincipal maps the oid claim with userId fallback', () => {
     userId: 'swa-user-id', userDetails: 'alice@example.org', userRoles: ['authenticated'],
   }));
   assert.equal(withoutClaim.oid, 'swa-user-id');
-  assert.equal(withoutClaim.name, 'alice@example.org');
+  // No name claim: derive a human name from the email, never the raw address.
+  assert.equal(withoutClaim.name, 'Alice');
+});
+
+test('parsePrincipal resolves name from given+family and email from claims', () => {
+  const p = parsePrincipal(swaRequest({
+    userId: 'swa-id', userDetails: 'ada',
+    claims: [
+      { typ: 'http://schemas.microsoft.com/identity/claims/objectidentifier', val: 'oid-ada' },
+      { typ: 'given_name', val: 'Ada' },
+      { typ: 'family_name', val: 'Lovelace' },
+      { typ: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress', val: 'Ada.Lovelace@Example.org' },
+    ],
+  }));
+  assert.equal(p.oid, 'oid-ada');
+  assert.equal(p.name, 'Ada Lovelace');
+  assert.equal(p.email, 'ada.lovelace@example.org'); // lower-cased for matching
+});
+
+test('parsePrincipal name is never an email even when userDetails is the address', () => {
+  const p = parsePrincipal(swaRequest({
+    userId: 'swa-id', userDetails: 'grace.hopper@navy.mil',
+    claims: [{ typ: 'preferred_username', val: 'grace.hopper@navy.mil' }],
+  }));
+  assert.equal(p.email, 'grace.hopper@navy.mil');
+  assert.equal(p.name, 'Grace Hopper');
+});
+
+test('admin email match works against the Entra-derived email claim', () => {
+  process.env.ADMIN_EMAILS = 'grace.hopper@navy.mil';
+  const p = parsePrincipal(swaRequest({
+    userId: 'swa-id', userDetails: 'GRACE.HOPPER@navy.mil',
+    claims: [{ typ: 'name', val: 'Grace Hopper' }],
+  }));
+  assert.equal(isAdmin(p, null), true);
+  process.env.ADMIN_EMAILS = '';
+});
+
+test('item delete is allowed for owner/team/admin, denied otherwise', () => {
+  const item = experiment(); // posted_by_oid + team: oid-alice
+  // Authorization the DELETE route applies: admin OR isItemOwner.
+  assert.equal(isItemOwner(item, 'oid-alice'), true);  // poster/team
+  assert.equal(isItemOwner(item, 'oid-bob'), false);   // unrelated
+  assert.equal(isAdmin(bob, { admins: ['oid-bob'] }), true); // admin override
+  const hostItem = session({ host_oid: 'oid-alice' });
+  assert.equal(isItemOwner(hostItem, 'oid-alice'), true); // host
 });
 
 test('parsePrincipal returns null when unauthenticated', () => {

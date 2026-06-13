@@ -24,3 +24,12 @@ export async function apiPost(path, body) {
   }
   return res.json();
 }
+
+export async function apiDelete(path) {
+  const res = await fetch(`${apiBase()}/${path}`, { method: 'DELETE', credentials: 'include' });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw Object.assign(new Error(data.error || res.statusText), { status: res.status, data });
+  }
+  return res.json();
+}

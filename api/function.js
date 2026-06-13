@@ -1,19 +1,27 @@
 const { app } = require('@azure/functions');
 const { BlobServiceClient } = require('@azure/storage-blob');
-const { parsePrincipal, isAdmin, authorizeItemWrite } = require('./auth');
+const { parsePrincipal, isAdmin, isItemOwner, authorizeItemWrite } = require('./auth');
 const { awardPointsForTransition } = require('./points');
 const { effectiveConfig, redactConfig, validateConfig } = require('./config-store');
 
 const CONTAINER = process.env.AZURE_STORAGE_CONTAINER || 'sw-sidequests';
 const CONN_STR = process.env.AZURE_STORAGE_CONNECTION_STRING;
 
+/* Dataset namespace. Every blob lives under this prefix, so pointing the app
+   at a different prefix (or a different AZURE_STORAGE_CONTAINER) loads a fresh,
+   independent set of blobs — an instant, reversible way to start a clean board
+   without deleting the previous data. */
+const DATA_PREFIX = String(process.env.AZURE_STORAGE_PREFIX || '').replace(/^\/+|\/+$/g, '');
+function key(name) { return DATA_PREFIX ? `${DATA_PREFIX}/${name}` : name; }
+
 function containerClient() {
   return BlobServiceClient.fromConnectionString(CONN_STR).getContainerClient(CONTAINER);
 }
 
-async function readBlob(blobName) {
+/* Read by physical blob name (as returned from a listing). */
+async function readJson(physicalName) {
   try {
-    const download = await containerClient().getBlockBlobClient(blobName).download();
+    const download = await containerClient().getBlockBlobClient(physicalName).download();
     const chunks = [];
     for await (const chunk of download.readableStreamBody) chunks.push(chunk);
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
@@ -23,12 +31,37 @@ async function readBlob(blobName) {
   }
 }
 
-async function writeBlob(blobName, data) {
+/* Logical helpers — name is namespace-relative, e.g. 'quests/x1.json'. */
+async function readBlob(name) {
+  return readJson(key(name));
+}
+
+async function writeBlob(name, data) {
   const body = JSON.stringify(data);
-  await containerClient().getBlockBlobClient(blobName).upload(body, Buffer.byteLength(body), {
+  const client = containerClient();
+  await client.createIfNotExists();
+  await client.getBlockBlobClient(key(name)).upload(body, Buffer.byteLength(body), {
     blobHTTPHeaders: { blobContentType: 'application/json' },
     overwrite: true,
   });
+}
+
+async function deleteBlob(name) {
+  await containerClient().getBlockBlobClient(key(name)).deleteIfExists();
+}
+
+/* List physical blob names under a namespace-relative prefix. */
+async function listBlobNames(logicalPrefix) {
+  const names = [];
+  try {
+    for await (const blob of containerClient().listBlobsFlat({ prefix: key(logicalPrefix) })) {
+      names.push(blob.name);
+    }
+  } catch (e) {
+    if (e.statusCode === 404) return [];
+    throw e;
+  }
+  return names;
 }
 
 /* Same-origin under Static Web Apps needs no CORS. Cross-origin callers
@@ -40,7 +73,7 @@ function corsHeaders(request) {
   if (!origin || !allowed.includes(origin)) return {};
   return {
     'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Vary': 'Origin',
   };
@@ -154,11 +187,8 @@ app.http('questsList', {
     if (guard) return guard;
     try {
       if (!parsePrincipal(request)) return err(request, 401, 'Sign in required');
-      const names = [];
-      for await (const blob of containerClient().listBlobsFlat({ prefix: 'quests/' })) {
-        names.push(blob.name);
-      }
-      const items = await Promise.all(names.map((n) => readBlob(n)));
+      const names = await listBlobNames('quests/');
+      const items = await Promise.all(names.map((n) => readJson(n)));
       return ok(request, items.filter(Boolean));
     } catch (e) {
       context.error('questsList failed:', e.message);
@@ -219,6 +249,33 @@ app.http('questSave', {
   },
 });
 
+/* DELETE /api/quests/{id} — poster, host, team member, or admin may delete. */
+app.http('questDelete', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'quests/{id}',
+  handler: async (request, context) => {
+    const guard = guardStorage(request);
+    if (guard) return guard;
+    try {
+      const principal = parsePrincipal(request);
+      if (!principal) return err(request, 401, 'Sign in required');
+      const { id } = request.params;
+      const current = await readBlob(`quests/${id}.json`);
+      if (!current) return err(request, 404, 'Not found');
+      const admin = isAdmin(principal, await loadConfig());
+      if (!admin && !isItemOwner(current, principal.oid)) {
+        return err(request, 403, 'Only the poster, host, team, or an admin can delete this');
+      }
+      await deleteBlob(`quests/${id}.json`);
+      return ok(request, { ok: true });
+    } catch (e) {
+      context.error('questDelete failed:', e.message);
+      return err(request, 500, e.message);
+    }
+  },
+});
+
 /* GET /api/leaderboard — fetch leaderboard.json */
 app.http('leaderboardGet', {
   methods: ['GET'],
@@ -271,11 +328,8 @@ app.http('membersList', {
     if (guard) return guard;
     try {
       if (!parsePrincipal(request)) return err(request, 401, 'Sign in required');
-      const names = [];
-      for await (const blob of containerClient().listBlobsFlat({ prefix: 'members/' })) {
-        names.push(blob.name);
-      }
-      const members = await Promise.all(names.map((n) => readBlob(n)));
+      const names = await listBlobNames('members/');
+      const members = await Promise.all(names.map((n) => readJson(n)));
       return ok(request, members.filter(Boolean));
     } catch (e) {
       context.error('membersList failed:', e.message);
@@ -305,6 +359,30 @@ app.http('memberSave', {
       return ok(request, { ok: true });
     } catch (e) {
       context.error('memberSave failed:', e.message);
+      return err(request, 500, e.message);
+    }
+  },
+});
+
+/* DELETE /api/members/{oid} — own profile only (or admin). */
+app.http('memberDelete', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'members/{oid}',
+  handler: async (request, context) => {
+    const guard = guardStorage(request);
+    if (guard) return guard;
+    try {
+      const principal = parsePrincipal(request);
+      if (!principal) return err(request, 401, 'Sign in required');
+      const { oid } = request.params;
+      if (oid !== principal.oid && !isAdmin(principal, await loadConfig())) {
+        return err(request, 403, 'You can only delete your own profile');
+      }
+      await deleteBlob(`members/${oid}.json`);
+      return ok(request, { ok: true });
+    } catch (e) {
+      context.error('memberDelete failed:', e.message);
       return err(request, 500, e.message);
     }
   },

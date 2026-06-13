@@ -2,7 +2,7 @@ import { requireSignIn } from '../auth.js';
 import { loadConfig } from '../config-loader.js';
 import { loadMembers, loadLeaderboard, rankFor } from '../data.js';
 import { el, announce } from '../dom.js';
-import { buildGuildCard } from '../guild-card.js';
+import { buildProfileCard } from '../profile-card.js';
 
 let _members = [];
 let _leaderboard = {};
@@ -46,7 +46,7 @@ function renderMembers(members) {
     return;
   }
 
-  const ul = el('ul', { class: 'card-grid guild-grid', role: 'list' });
+  const ul = el('ul', { class: 'card-grid profile-grid', role: 'list' });
   for (const m of members) {
     ul.appendChild(buildMemberCard(m));
   }
@@ -56,12 +56,12 @@ function renderMembers(members) {
 function buildMemberCard(m) {
   const isMe = _session && m.oid === _session.oid;
 
-  const nameNode = el('h2', { class: 'guild-card-name' },
+  const nameNode = el('h2', { class: 'profile-card-name' },
     el('a', { href: `member.html?id=${encodeURIComponent(m.oid)}` },
-      el('span', { class: 'sr-only' }, 'View guild card: '),
+      el('span', { class: 'sr-only' }, 'View profile: '),
       m.name || 'Unknown',
     ),
-    isMe ? el('span', { class: 'guild-card-you' }, ' (you)') : null,
+    isMe ? el('span', { class: 'profile-card-you' }, ' (you)') : null,
   );
 
   let rankLine = '';
@@ -74,7 +74,7 @@ function buildMemberCard(m) {
     rankLine = `${rank ? `${rank} · ` : ''}${xp} ${ptsName}`;
   }
 
-  return el('li', null, buildGuildCard(m, {
+  return el('li', null, buildProfileCard(m, {
     compact: true,
     nameNode,
     rankLine,

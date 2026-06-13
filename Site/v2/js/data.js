@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from './api.js';
+import { apiGet, apiPost, apiDelete } from './api.js';
 
 /* ── Utilities ────────────────────────────────────────────────────────────── */
 
@@ -61,7 +61,7 @@ export function migrateItem(raw) {
   return item;
 }
 
-/* Normalise a member record to the guild-card schema: skills is a
+/* Normalise a member record to the profile-card schema: skills is a
    { tool: 'strength' | 'mentor' | 'stretch' } map and fun_facts an array.
    Interim v2 records used flat arrays — fold those into skills. */
 export function migrateMember(raw) {
@@ -92,6 +92,11 @@ export async function saveItem(item) {
   return apiPost(`quests/${id}`, item);
 }
 
+export async function deleteItem(id) {
+  if (!id) throw new Error('item_id required');
+  return apiDelete(`quests/${id}`);
+}
+
 export async function loadMembers() {
   const members = await apiGet('members');
   return (Array.isArray(members) ? members : []).map(migrateMember).filter(Boolean);
@@ -101,6 +106,11 @@ export async function saveMember(member) {
   const { oid } = member;
   if (!oid) throw new Error('oid required');
   return apiPost(`members/${oid}`, member);
+}
+
+export async function deleteMember(oid) {
+  if (!oid) throw new Error('oid required');
+  return apiDelete(`members/${oid}`);
 }
 
 export async function loadLeaderboard() {

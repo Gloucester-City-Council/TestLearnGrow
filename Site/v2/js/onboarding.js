@@ -2,7 +2,7 @@
    signed-in account with no member record is redirected once per
    session to the card editor, where no record exists until they
    deliberately submit. After that one prompt, the board's
-   "create your guild card" next step takes over. */
+   "create your profile" next step takes over. */
 
 const FLAG_PREFIX = 'sw::card-prompted::';
 

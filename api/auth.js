@@ -7,25 +7,64 @@
 
 const OID_CLAIM = 'http://schemas.microsoft.com/identity/claims/objectidentifier';
 
-/* Returns { oid, name, email, roles } or null when unauthenticated. */
+/* Entra/AAD presents the same fact under several claim names depending on the
+   token version. Try each, matching the exact type or any `…/type` URI. */
+const NAME_CLAIMS   = ['name', 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'];
+const GIVEN_CLAIMS  = ['given_name', 'givenname', 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'];
+const FAMILY_CLAIMS = ['family_name', 'surname', 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname'];
+const EMAIL_CLAIMS  = [
+  'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress',
+  'email', 'emails', 'preferred_username', 'upn',
+  'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn',
+];
+
+function looksLikeEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || ''));
+}
+
+/* Best-effort display name from an email local part, so we never surface a raw
+   address as someone's name (e.g. "ada.lovelace@org" → "Ada Lovelace"). */
+function humanizeEmail(email) {
+  const local = String(email).split('@')[0];
+  const words = local.split(/[._-]+/).filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1));
+  return words.join(' ') || String(email);
+}
+
+/* Returns { oid, name, email, roles } or null when unauthenticated.
+   name is always a human display name (never an email); email is the verified
+   address used for contact details and ADMIN_EMAILS matching. */
 function parsePrincipal(request) {
   const header = request.headers.get('x-ms-client-principal');
   if (header) {
     try {
       const p = JSON.parse(Buffer.from(header, 'base64').toString('utf8'));
       const claims = Array.isArray(p.claims) ? p.claims : [];
-      const claim = (typ) => {
-        const c = claims.find((c) => c.typ === typ || String(c.typ).endsWith('/' + typ));
-        return c ? c.val : null;
+      const claim = (names) => {
+        for (const c of claims) {
+          for (const n of names) {
+            if (c.typ === n || String(c.typ).endsWith('/' + n)) return c.val;
+          }
+        }
+        return null;
       };
-      const oid = claim(OID_CLAIM) || p.userId;
+      const oid = claim([OID_CLAIM]) || p.userId;
       if (!oid) return null;
-      return {
-        oid,
-        name: claim('name') || p.userDetails || oid,
-        email: String(p.userDetails || '').toLowerCase(),
-        roles: p.userRoles || [],
-      };
+
+      let email = '';
+      for (const n of EMAIL_CLAIMS) {
+        const v = claim([n]);
+        if (looksLikeEmail(v)) { email = String(v).toLowerCase(); break; }
+      }
+      if (!email && looksLikeEmail(p.userDetails)) email = String(p.userDetails).toLowerCase();
+
+      const composed = [claim(GIVEN_CLAIMS), claim(FAMILY_CLAIMS)].filter(Boolean).join(' ').trim();
+      let name = claim(NAME_CLAIMS) || composed;
+      if (!name && p.userDetails && !looksLikeEmail(p.userDetails)) name = p.userDetails;
+      if (!name && email) name = humanizeEmail(email);
+      if (!name) name = oid;
+
+      return { oid, name, email, roles: p.userRoles || [] };
     } catch (e) {
       return null;
     }
@@ -37,7 +76,12 @@ function parsePrincipal(request) {
     if (mock) {
       try {
         const m = JSON.parse(mock);
-        if (m.oid) return { oid: m.oid, name: m.name || m.oid, email: String(m.email || m.username || '').toLowerCase(), roles: [] };
+        if (m.oid) {
+          const email = looksLikeEmail(m.email) ? String(m.email).toLowerCase()
+            : (looksLikeEmail(m.username) ? String(m.username).toLowerCase() : '');
+          const name = m.name || (email ? humanizeEmail(email) : m.oid);
+          return { oid: m.oid, name, email, roles: [] };
+        }
       } catch (e) { /* fall through */ }
     }
   }

@@ -1,6 +1,6 @@
 import { el, announce } from './dom.js';
 
-/* Skills & Tools toolkit — the v1 guild-card picker, rebuilt for v2.
+/* Skills & Tools toolkit — the v1 profile-card picker, rebuilt for v2.
 
    The catalogue (config.skills: [{ category, tools }]) is rendered as
    grouped rows. Each tool has a three-way toggle: S strength, M happy to

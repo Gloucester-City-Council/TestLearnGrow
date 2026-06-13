@@ -2,7 +2,7 @@ import { requireSignIn } from '../auth.js';
 import { loadConfig } from '../config-loader.js';
 import { loadMembers, loadLeaderboard, rankFor } from '../data.js';
 import { el, moveFocus } from '../dom.js';
-import { buildGuildCard, isCardBlank } from '../guild-card.js';
+import { buildProfileCard, isCardBlank } from '../profile-card.js';
 
 async function init() {
   const session = await requireSignIn();
@@ -58,7 +58,7 @@ function renderMember(member, lb, config, session) {
   if ((isMe || session.isAdmin) && !(isMe && isCardBlank(member))) {
     frag.appendChild(el('p', null,
       el('a', { href: `member-edit.html?id=${encodeURIComponent(member.oid)}`, class: 'btn btn-secondary' },
-        isMe ? 'Edit my guild card' : `Edit guild card for ${member.name}`),
+        isMe ? 'Edit my profile' : `Edit profile for ${member.name}`),
     ));
   }
 
@@ -72,7 +72,7 @@ function renderMember(member, lb, config, session) {
     rankLine = `${rank ? `${rank} · ` : ''}${xp} ${ptsName}`;
   }
 
-  frag.appendChild(buildGuildCard(member, {
+  frag.appendChild(buildProfileCard(member, {
     rankLine,
     isMe,
     headingTag: 'h2',

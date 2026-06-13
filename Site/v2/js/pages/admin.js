@@ -92,9 +92,9 @@ function terminologySection() {
         textField(`term-${type}-plural`,   `${d.plural} — plural label`,     v.plural   || d.plural),
       ];
     }),
-    textField('term-points',  'Points name (e.g. points, XP, stars)', t.points_name  || DEFAULT_CONFIG.terminology.points_name),
-    textField('term-members', 'Members name (e.g. Members, Guild)',   t.members_name || DEFAULT_CONFIG.terminology.members_name),
-    textField('term-board',   'Board name (e.g. Board, Quests)',      t.board_name   || DEFAULT_CONFIG.terminology.board_name),
+    textField('term-points',  'Points name (e.g. points, credits, stars)', t.points_name  || DEFAULT_CONFIG.terminology.points_name),
+    textField('term-members', 'Members name (e.g. Members, People, Team)', t.members_name || DEFAULT_CONFIG.terminology.members_name),
+    textField('term-board',   'Board name (e.g. Board, Activities)',        t.board_name   || DEFAULT_CONFIG.terminology.board_name),
   );
 }
 

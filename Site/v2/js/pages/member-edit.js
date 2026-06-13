@@ -21,7 +21,7 @@ async function init() {
   const oid = params.get('id') || session.oid;
 
   if (oid !== session.oid && !session.isAdmin) {
-    renderError('You can only edit your own guild card.');
+    renderError('You can only edit your own profile.');
     return;
   }
 
@@ -31,7 +31,7 @@ async function init() {
   try {
     members = await loadMembers();
   } catch (err) {
-    renderError(`Failed to load guild card: ${err.message}`);
+    renderError(`Failed to load profile: ${err.message}`);
     return;
   }
 
@@ -45,14 +45,14 @@ async function init() {
   const h1 = document.getElementById('page-title');
   if (h1) {
     h1.textContent = isNew
-      ? (isMe ? 'Create your guild card' : `Create guild card: ${existing.name || oid}`)
-      : (isMe ? 'Your guild card' : `Guild card: ${existing.name}`);
+      ? (isMe ? 'Create your profile' : `Create profile: ${existing.name || oid}`)
+      : (isMe ? 'Your profile' : `Profile: ${existing.name}`);
   }
-  document.title = `${isNew ? 'Create' : 'Edit'} guild card — ${orgName}`;
+  document.title = `${isNew ? 'Create' : 'Edit'} profile — ${orgName}`;
 
   const bcMember = document.getElementById('breadcrumb-member');
   if (bcMember) {
-    bcMember.textContent = existing.name || 'Guild card';
+    bcMember.textContent = existing.name || 'Profile';
     bcMember.href = `member.html?id=${encodeURIComponent(oid)}`;
   }
 
@@ -74,7 +74,9 @@ function renderForm(member, config, draft, draftKey, isNew) {
     how_i_work_best: member.how_i_work_best || '',
     how_to_get_best: member.how_to_get_best || '',
     fun_facts: member.fun_facts || [],
-    preferred_contact: member.preferred_contact || '',
+    /* On a new card, seed contact with the signed-in email so it lands in
+       contact details by default; the name comes from the display-name claim. */
+    preferred_contact: member.preferred_contact || (isNew ? (member.email || '') : ''),
     availability: member.availability || '',
     ...(draft || {}),
   };
@@ -177,6 +179,8 @@ function renderForm(member, config, draft, draftKey, isNew) {
     const out = {
       ...member,
       ...(isNew ? { joined_at: new Date().toISOString() } : {}),
+      oid: member.oid,           // profile is keyed to the identity id
+      email: member.email || '', // keep the verified email on record
       name: v.name,
       role_team: v.role_team,
       skills: v.skills,

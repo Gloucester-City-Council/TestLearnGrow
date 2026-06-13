@@ -3,7 +3,7 @@ import { promptCardCreation } from '../onboarding.js';
 import { loadConfig, t } from '../config-loader.js';
 import { loadItems, loadLeaderboard, loadMembers, rankFor, timeAgo, fullDate } from '../data.js';
 import { el, announce, chipEl, statusVariant } from '../dom.js';
-import { isCardBlank } from '../guild-card.js';
+import { isCardBlank } from '../profile-card.js';
 
 const SECTIONS = [
   { type: 'experiment', termKey: 'items.experiment', newHref: 'new-experiment.html' },
@@ -133,9 +133,9 @@ function buildNudges() {
   const nudges = [];
 
   if (_membersLoaded && !_myMember) {
-    nudges.push({ href: 'member-edit.html', link: 'Create your guild card', context: '' });
+    nudges.push({ href: 'member-edit.html', link: 'Create your profile', context: '' });
   } else if (_myMember && isCardBlank(_myMember)) {
-    nudges.push({ href: 'member-edit.html', link: 'Complete your guild card',
+    nudges.push({ href: 'member-edit.html', link: 'Complete your profile',
       context: 'It’s blank right now.' });
   }
 

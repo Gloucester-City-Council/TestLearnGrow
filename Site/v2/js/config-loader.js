@@ -48,7 +48,7 @@ export const DEFAULT_CONFIG = {
     challenges: true,
     sessions: true,
   },
-  /* Skills & Tools catalogue for the guild-card toolkit. Each tool can be
+  /* Skills & Tools catalogue for the profile-card toolkit. Each tool can be
      marked on a member's card as a strength, something they'll mentor, or a
      stretch goal. White-label: override `skills` in server/window config. */
   skills: [

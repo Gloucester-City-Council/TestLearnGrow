@@ -17,13 +17,15 @@
   flex-wrap: wrap;
   gap: var(--space-4);
   padding: var(--space-4) var(--space-6);
-  background: var(--color-surface);
+  background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .site-name {
   font-size: var(--font-size-xl);
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   text-decoration: none;
   color: var(--color-text);
   flex-shrink: 0;
@@ -64,12 +66,14 @@
 }
 
 .site-header nav a:hover {
-  background: var(--color-bg);
+  background: var(--color-surface);
   text-decoration: underline;
 }
 
 .site-header nav a[aria-current="page"] {
   font-weight: 700;
+  background: var(--accent-soft);
+  color: var(--color-text);
   text-decoration: underline;
   text-underline-offset: 0.15em;
   text-decoration-thickness: 2px;
@@ -107,8 +111,8 @@
 
 .site-main {
   flex: 1;
-  padding: var(--space-8) var(--space-6);
-  max-width: 1200px;
+  padding: var(--space-10) var(--space-6) var(--space-12);
+  max-width: var(--container);
   margin: 0 auto;
   width: 100%;
 }
@@ -186,8 +190,8 @@
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: var(--space-5);
   list-style: none;
   padding: 0;
   margin: 0 0 var(--space-8);
@@ -196,11 +200,24 @@
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: var(--space-5);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-text-secondary);
 }
 
 .card-header {
@@ -450,6 +467,16 @@
   border-bottom: 2px solid var(--color-border);
 }
 
+.board-section-heading::before {
+  content: "";
+  width: 5px;
+  align-self: stretch;
+  min-height: 1.4em;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
 .board-section-count {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
@@ -480,16 +507,23 @@
 .signin-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: var(--space-8);
+  box-shadow: var(--shadow-md);
 }
 
 /* ── Home dashboard ──────────────────────────────────────────────────────── */
 
 .home-greeting {
   font-size: var(--font-size-lg);
-  max-width: var(--measure);
+  line-height: 1.5;
   margin: 0 0 var(--space-8);
+  padding: var(--space-6) var(--space-8);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 6px solid var(--accent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .home-grid {
@@ -523,10 +557,23 @@
 .learning-item {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-link);
-  border-radius: 4px;
-  padding: var(--space-3) var(--space-4);
-  max-width: var(--measure);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .nudge-item:hover,
+  .learning-item:hover {
+    transform: translateX(2px);
+  }
+}
+
+.nudge-item:hover,
+.learning-item:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .nudge-context {
@@ -543,12 +590,12 @@
 /* ── Board filter bar ────────────────────────────────────────────────────── */
 
 .filter-bar {
-  border: none;
+  border: 1px solid var(--color-border);
   background: var(--color-surface);
-  border-radius: 6px;
-  padding: var(--space-2) var(--space-4) var(--space-3);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-5) var(--space-4);
   margin: 0 0 var(--space-6);
-  max-width: var(--measure);
+  box-shadow: var(--shadow-sm);
 }
 
 .filter-bar legend {
@@ -572,7 +619,7 @@
 
 /* ── Editable tag fields ─────────────────────────────────────────────────── */
 
-/* ── Skills & tools toolkit (guild-card editor) ──────────────────────────── */
+/* ── Skills & tools toolkit (profile-card editor) ──────────────────────────── */
 
 .skill-toolkit {
   border: 1px solid var(--color-border);
@@ -660,81 +707,109 @@
 .skill-tog--mentor.on   { background: var(--chip-blue-bg);  color: var(--chip-blue-text); }
 .skill-tog--stretch.on  { background: var(--chip-amber-bg); color: var(--chip-amber-text); }
 
-/* ── Guild cards (member profiles) ───────────────────────────────────────── */
+/* ── Profiles (member profiles) ───────────────────────────────────────── */
 
-.guild-grid {
+.profile-grid {
   align-items: stretch;
 }
 
-.guild-card {
+.profile-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   height: 100%;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition), transform var(--transition);
 }
 
-.guild-card--full {
+@media (prefers-reduced-motion: no-preference) {
+  .profile-grid .profile-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.profile-grid .profile-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.profile-card--full {
   max-width: 42rem;
 }
 
-.guild-card-header {
+.profile-card-header {
   display: flex;
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-5);
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.guild-card-head-text {
+.profile-card-header .member-avatar {
+  width: 3.5rem;
+  height: 3.5rem;
+  background: var(--color-bg);
+  color: var(--accent);
+  border: 2px solid var(--accent);
+}
+
+.profile-card-head-text {
   display: grid;
   gap: var(--space-1);
 }
 
-.guild-card-name {
+.profile-card-name {
   margin: 0;
   font-size: var(--font-size-xl);
   line-height: 1.3;
 }
 
-.guild-card-name a {
+.profile-card-name a {
   color: var(--color-text);
   text-decoration: none;
 }
 
-.guild-card-name a:hover {
+.profile-card-name a:hover {
   color: var(--color-link);
   text-decoration: underline;
 }
 
-.guild-card-you {
+.profile-card-you {
   font-size: var(--font-size-sm);
   font-weight: normal;
   color: var(--color-text-secondary);
 }
 
-.guild-card-role {
+.profile-card-role {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
 
-.guild-card-rank {
+/* On the tinted header, use full-strength text so contrast stays AAA. */
+.profile-card-header .profile-card-role,
+.profile-card-header .profile-card-you {
+  color: var(--color-text);
+}
+
+.profile-card-rank {
   margin: 0;
   font-weight: 600;
   font-size: var(--font-size-sm);
 }
 
-.guild-band {
+.profile-band {
   padding: var(--space-3) var(--space-5);
 }
 
-.guild-band--strength { background: var(--chip-green-bg); color: var(--chip-green-text); }
-.guild-band--mentor   { background: var(--chip-blue-bg);  color: var(--chip-blue-text); }
-.guild-band--stretch  { background: var(--chip-amber-bg); color: var(--chip-amber-text); }
+.profile-band--strength { background: var(--chip-green-bg); color: var(--chip-green-text); }
+.profile-band--mentor   { background: var(--chip-blue-bg);  color: var(--chip-blue-text); }
+.profile-band--stretch  { background: var(--chip-amber-bg); color: var(--chip-amber-text); }
 
-.guild-band-label {
+.profile-band-label {
   margin: 0 0 var(--space-2);
   font-size: var(--font-size-sm);
   font-weight: 700;
@@ -742,7 +817,7 @@
   letter-spacing: 0.05em;
 }
 
-.guild-tags {
+.profile-tags {
   list-style: none;
   display: flex;
   flex-wrap: wrap;
@@ -751,7 +826,7 @@
   margin: 0;
 }
 
-.guild-tag {
+.profile-tag {
   border: 1px solid currentColor;
   border-radius: 1em;
   padding: 0.15em 0.6em;
@@ -759,41 +834,41 @@
   font-weight: 600;
 }
 
-.guild-about {
+.profile-about {
   margin: 0;
   display: grid;
   gap: var(--space-1);
 }
 
-.guild-about dt {
+.profile-about dt {
   font-weight: 700;
   font-size: var(--font-size-sm);
 }
 
-.guild-about dd {
+.profile-about dd {
   margin: 0 0 var(--space-2);
   max-width: var(--measure);
 }
 
-.guild-fun-list {
+.profile-fun-list {
   margin: 0;
   padding-left: var(--space-5);
   display: grid;
   gap: var(--space-1);
 }
 
-.guild-empty {
+.profile-empty {
   padding: var(--space-4) var(--space-5);
   color: var(--color-text-secondary);
   display: grid;
   gap: var(--space-3);
 }
 
-.guild-empty p {
+.profile-empty p {
   margin: 0;
 }
 
-.guild-card-footer {
+.profile-card-footer {
   padding: var(--space-3) var(--space-5);
   border-top: 1px solid var(--color-border);
   font-size: var(--font-size-sm);
@@ -804,7 +879,7 @@
   margin-top: auto;
 }
 
-.guild-card-footer p {
+.profile-card-footer p {
   margin: 0;
 }
 
