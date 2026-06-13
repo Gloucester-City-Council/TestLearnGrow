@@ -13,7 +13,7 @@ const bob = { oid: 'oid-bob', name: 'Bob', email: 'bob@example.org', roles: [] }
 function experiment(overrides) {
   return {
     item_id: 'x1', item_type: 'experiment', title: 'T', question: 'Q', description: '',
-    method_tags: [], difficulty: null, effort: null, reward: null, deadline: null,
+    method_tags: [], themes: [], difficulty: null, effort: null, reward: null, deadline: null,
     status: 'running', posted_by_oid: 'oid-alice', posted_by_name: 'Alice',
     team_oids: ['oid-alice'], team_names: ['Alice'], finding: '', outcome: '',
     hypothesis: '', predicted_outcome: '', success_metric: '', baseline: '', measured_result: '', test_type: '',

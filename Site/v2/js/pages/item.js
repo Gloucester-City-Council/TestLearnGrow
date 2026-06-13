@@ -103,6 +103,14 @@ function renderMain() {
     frag.appendChild(buildParentChain(item));
   }
 
+  /* Themes — topic tags that group related findings on the learning wall. */
+  if (item.item_type === 'experiment' && (item.themes || []).length) {
+    const wrap = el('div', { class: 'pipeline-chips', style: 'margin-bottom:var(--space-4)' });
+    wrap.appendChild(el('span', { class: 'sr-only' }, 'Themes: '));
+    for (const th of item.themes) wrap.appendChild(chipEl(th, 'purple'));
+    frag.appendChild(wrap);
+  }
+
   /* Body */
   const bodyText = item.description || item.question || item.topic;
   if (bodyText) frag.appendChild(el('p', { text: bodyText }));

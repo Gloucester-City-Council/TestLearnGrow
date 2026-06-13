@@ -35,6 +35,7 @@ Added to experiment blobs only (`item_type === 'experiment'`).
 | `baseline` | string | `''` | No — design-time starting value, paired with `success_metric` (the target) |
 | `measured_result` | string | `''` | No — captured at wrap-up on the share-finding form, compared against `success_metric` |
 | `test_type` | string | `''` | No — how the comparison is made (before/after, A/B, pilot, RCT, …), captured at design time. Stored as a human-readable label, like `difficulty`/`effort`. |
+| `themes` | string[] | `[]` | No — comma-separated topic tags (parsed via `parseThemes()`) that group related findings; filterable on the learning wall. Defaulted with the other array fields. |
 
 `baseline` and `measured_result` are free text (so they can hold "62%", "3.4 days", etc.). They turn a verdict from a judgment call into an evidenced one: `baseline` → `success_metric` (target) → `measured_result` (actual). No server change — both pass through `questSave` verbatim.
 
@@ -163,7 +164,7 @@ export function migrateItem(raw) {
 
   // Array fields
   for (const k of ['team_oids', 'team_names', 'attendee_oids', 'attendee_names',
-                    'updates', 'response_ids', 'spawned_ids']) {
+                    'updates', 'response_ids', 'spawned_ids', 'themes']) {
     if (!Array.isArray(item[k])) item[k] = [];
   }
 

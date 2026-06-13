@@ -39,6 +39,19 @@ export function daysBetween(aIso, bIso) {
   return Math.max(0, Math.round((b - a) / 86_400_000));
 }
 
+/* Parse a comma-separated themes input into a clean, de-duplicated array.
+   Accepts a string (from a text field) or an existing array. */
+export function parseThemes(input) {
+  const list = Array.isArray(input) ? input : String(input || '').split(',');
+  const seen = new Set();
+  const out = [];
+  for (const raw of list) {
+    const t = String(raw).trim();
+    if (t && !seen.has(t.toLowerCase())) { seen.add(t.toLowerCase()); out.push(t); }
+  }
+  return out;
+}
+
 export function rankFor(xp, ranks) {
   if (!ranks || !ranks.length) return '';
   const sorted = [...ranks].sort((a, b) => b.min - a.min);
@@ -61,7 +74,7 @@ export function migrateItem(raw) {
   if (!item.item_type) item.item_type = 'experiment';
 
   /* Ensure array fields exist */
-  for (const k of ['team_oids', 'team_names', 'attendee_oids', 'attendee_names', 'updates', 'response_ids', 'spawned_ids']) {
+  for (const k of ['team_oids', 'team_names', 'attendee_oids', 'attendee_names', 'updates', 'response_ids', 'spawned_ids', 'themes']) {
     if (!Array.isArray(item[k])) item[k] = [];
   }
 
