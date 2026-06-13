@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Edit profile — Activity Board</title>
+  <title>Evidence card — Activity Board</title>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
@@ -47,37 +47,31 @@
   <!-- shell:end -->
 
   <main id="main" class="site-main" tabindex="-1">
-    <nav aria-label="Breadcrumb" class="breadcrumb">
+    <nav aria-label="Breadcrumb" class="breadcrumb report-controls">
       <ol>
         <li><a href="index.html">Board</a></li>
-        <li><a href="members.html">Members</a></li>
-        <li><a href="" id="breadcrumb-member">Profile</a></li>
-        <li aria-current="page">Edit</li>
+        <li aria-current="page">Evidence card</li>
       </ol>
     </nav>
 
-    <h1 id="page-title">Edit profile</h1>
-
-    <div id="form-errors" class="error-summary" role="alert" hidden
-         aria-labelledby="form-errors-title">
-      <h2 id="form-errors-title" class="error-summary__title">There is a problem</h2>
-      <ul class="error-summary__list"></ul>
+    <div class="report-controls" style="margin-bottom:var(--space-6)">
+      <button type="button" id="print-report" class="btn">Print / Save as PDF</button>
     </div>
 
-    <div id="edit-form-container">
-      <p class="loading">Loading…</p>
-    </div>
+    <article id="report-content" class="evidence-card">
+      <p class="loading">Loading evidence card…</p>
+    </article>
   </main>
 
   <div role="status" aria-live="polite" id="live-region" class="sr-only"></div>
 
   <noscript>
     <div class="noscript-notice">
-      <p>JavaScript is required to edit your profile.</p>
+      <p>JavaScript is required to view the evidence card.</p>
     </div>
   </noscript>
 
   <script type="module" src="js/shell.js"></script>
-  <script type="module" src="js/pages/member-edit.js"></script>
+  <script type="module" src="js/pages/report.js"></script>
 </body>
 </html>

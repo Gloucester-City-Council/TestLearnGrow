@@ -1,11 +1,12 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
-import { loadItems, saveItem } from '../data.js';
+import { loadItems, saveItem, loadOutcomes } from '../data.js';
 import { el, moveFocus } from '../dom.js';
 import { validate, showErrors, clearErrors, saveDraft, loadDraft, clearDraft, autosaveDraft } from '../forms.js';
 
 let _item = null;
 let _config = null;
+let _outcomes = [];
 
 async function init() {
   const session = await requireSignIn();
@@ -27,6 +28,11 @@ async function init() {
   }
 
   if (!_item) { renderNotFound(); return; }
+
+  /* Outcomes drive the goal picker on experiments. Optional — ignore failures. */
+  if (_item.item_type === 'experiment') {
+    _outcomes = await loadOutcomes().catch(() => []);
+  }
 
   /* Permission check client-side (server enforces too) */
   const isOwner = _item.item_type === 'session'
@@ -62,6 +68,9 @@ function renderForm(item, draft, session, draftKey) {
   if (item.item_type === 'experiment') {
     form.appendChild(buildTextArea('question', 'Question', values.question, true));
     form.appendChild(buildTextArea('description', 'Background (optional)', values.description));
+    form.appendChild(buildTextArea('hypothesis', 'Hypothesis (optional)', values.hypothesis));
+    form.appendChild(buildTextField('predicted_outcome', 'Predicted outcome (optional)', values.predicted_outcome, false, 300));
+    form.appendChild(buildTextField('success_metric', 'Success measure', values.success_metric, true, 300));
     form.appendChild(buildSelect('difficulty', 'Difficulty (optional)',
       ['', 'Easy', 'Medium', 'Hard'], values.difficulty));
     form.appendChild(buildSelect('effort', 'Effort (optional)',
@@ -69,6 +78,8 @@ function renderForm(item, draft, session, draftKey) {
     form.appendChild(buildDateField('deadline', 'Deadline (optional)', values.deadline));
     const methodTags = buildMethodTags(_config, values.method_tags || []);
     if (methodTags) form.appendChild(methodTags);
+    const outcomeSel = buildOutcomeSelect(values.outcome_id || '');
+    if (outcomeSel) form.appendChild(outcomeSel);
   }
 
   if (item.item_type === 'session') {
@@ -101,6 +112,7 @@ function renderForm(item, draft, session, draftKey) {
     const errors = validate([
       { id: 'title', label: 'Title', value: formValues.title, required: true, maxLength: 200 },
       ...(item.item_type !== 'session' ? [{ id: 'question', label: 'Question', value: formValues.question, required: true }] : []),
+      ...(item.item_type === 'experiment' ? [{ id: 'success_metric', label: 'a success measure', value: formValues.success_metric, required: true, maxLength: 300 }] : []),
       ...(item.item_type === 'session' ? [{ id: 'topic', label: 'Topic', value: formValues.topic, required: true }] : []),
     ]);
     if (errors.length) { showErrors(errors, 'form-errors'); return; }
@@ -132,6 +144,9 @@ function getDefaultValues(item) {
     title:        item.title || '',
     question:     item.question || '',
     description:  item.description || '',
+    hypothesis:        item.hypothesis || '',
+    predicted_outcome: item.predicted_outcome || '',
+    success_metric:    item.success_metric || '',
     topic:        item.topic || '',
     difficulty:   item.difficulty || '',
     effort:       item.effort || '',
@@ -139,6 +154,7 @@ function getDefaultValues(item) {
     deadline:     item.deadline || '',
     session_date: item.session_date || '',
     method_tags:  Array.isArray(item.method_tags) ? item.method_tags : [],
+    outcome_id:   item.outcome_id || '',
   };
 }
 
@@ -148,9 +164,12 @@ function getFormValues(form, item) {
   if (item.item_type === 'experiment') {
     Object.assign(values, {
       question: v('question'), description: v('description'),
+      hypothesis: v('hypothesis'), predicted_outcome: v('predicted_outcome'),
+      success_metric: v('success_metric'),
       difficulty: v('difficulty') || null, effort: v('effort') || null,
       deadline: v('deadline') || null,
       method_tags: [...form.querySelectorAll('input[name="method_tags"]:checked')].map((c) => c.value),
+      outcome_id: v('outcome_id'),
     });
   }
   if (item.item_type === 'session') {
@@ -219,6 +238,25 @@ function buildMethodTags(config, selected) {
     fieldset.appendChild(catEl);
   }
   group.appendChild(fieldset);
+  return group;
+}
+
+/* Goal (outcome) picker — value is the outcome_id, label the goal title.
+   Returns null when there are no goals to link to. */
+function buildOutcomeSelect(selectedId) {
+  if (!_outcomes.length) return null;
+  const group = el('div', { class: 'form-group' });
+  group.appendChild(el('label', { for: 'outcome_id', text: 'Which goal does this test evidence? (optional)' }));
+  const sel = el('select', { id: 'outcome_id', name: 'outcome_id' });
+  const none = el('option', { value: '', text: 'Not linked to a goal' });
+  if (!selectedId) none.setAttribute('selected', '');
+  sel.appendChild(none);
+  for (const o of _outcomes) {
+    const opt = el('option', { value: o.outcome_id, text: o.title || 'Untitled goal' });
+    if (o.outcome_id === selectedId) opt.setAttribute('selected', '');
+    sel.appendChild(opt);
+  }
+  group.appendChild(sel);
   return group;
 }
 

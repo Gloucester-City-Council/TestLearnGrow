@@ -387,6 +387,12 @@ th {
   .skip-link,
   .shell-actions,
   .noscript-notice,
+  .site-header,
+  .breadcrumb,
+  .report-controls,
+  .board-toolbar,
+  .pipeline-move,
+  .pipeline-move-wrap,
   button,
   .btn {
     display: none;
@@ -400,6 +406,22 @@ th {
   a[href^="#"]::after,
   a[href^="javascript:"]::after {
     content: "";
+  }
+
+  /* The evidence card is the print deliverable — keep it clean: no URL
+     annotations, no card chrome, no page-breaks mid-section. */
+  .evidence-card a::after { content: ""; }
+
+  .evidence-card,
+  .learning-snapshot,
+  .design-snapshot {
+    border: 0;
+    padding: 0;
+    background: none;
+  }
+
+  .evidence-section {
+    break-inside: avoid;
   }
 }
 

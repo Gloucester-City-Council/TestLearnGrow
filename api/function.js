@@ -2,6 +2,8 @@ const { app } = require('@azure/functions');
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { parsePrincipal, isAdmin, isItemOwner, authorizeItemWrite } = require('./auth');
 const { awardPointsForTransition } = require('./points');
+const { linkSpawn } = require('./spawn');
+const { prepareOutcome } = require('./outcomes');
 const { effectiveConfig, redactConfig, validateConfig } = require('./config-store');
 
 const CONTAINER = process.env.AZURE_STORAGE_CONTAINER || 'sw-sidequests';
@@ -220,13 +222,24 @@ app.http('questSave', {
       const admin = isAdmin(principal, config);
       const current = await readBlob(`quests/${id}.json`);
 
+      /* Spawned follow-on (TLG learning loops): a brand-new item carrying a
+         parent_id must reference a real parent, which then gains this child in
+         its spawned_ids. Verify the parent up front so we can reject early. */
+      let parent = null;
+      if (!current && item.parent_id) {
+        parent = await readBlob(`quests/${item.parent_id}.json`);
+        if (!parent) return err(request, 400, 'parent_id does not reference an existing item');
+      }
+
       if (current) {
         item.points_awarded_at = current.points_awarded_at || null; // server-managed
+        item.grow_points_awarded_at = current.grow_points_awarded_at || null; // server-managed
         const verdict = authorizeItemWrite(current, item, principal, admin);
         if (!verdict.ok) return err(request, verdict.status, verdict.reason);
       } else {
         // Creator identity comes from the verified principal, not the body.
         item.points_awarded_at = null;
+        item.grow_points_awarded_at = null;
         if (item.item_type === 'session') {
           item.host_oid = principal.oid;
           item.host_name = principal.name;
@@ -241,6 +254,13 @@ app.http('questSave', {
 
       await writeBlob(`quests/${id}.json`, item);
       if (awards.length > 0) await writeBlob('leaderboard.json', leaderboard);
+
+      /* Link the new child into the parent's spawned_ids (single extra write). */
+      if (parent) {
+        const updatedParent = linkSpawn(parent, id);
+        if (updatedParent) await writeBlob(`quests/${parent.item_id || item.parent_id}.json`, updatedParent);
+      }
+
       return ok(request, { ok: true, item, awards });
     } catch (e) {
       context.error('questSave failed:', e.message);
@@ -359,6 +379,74 @@ app.http('memberSave', {
       return ok(request, { ok: true });
     } catch (e) {
       context.error('memberSave failed:', e.message);
+      return err(request, 500, e.message);
+    }
+  },
+});
+
+/* GET /api/outcomes — list all outcome blobs (TLG missions/goals) */
+app.http('outcomesList', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'outcomes',
+  handler: async (request, context) => {
+    const guard = guardStorage(request);
+    if (guard) return guard;
+    try {
+      if (!parsePrincipal(request)) return err(request, 401, 'Sign in required');
+      const names = await listBlobNames('outcomes/');
+      const outcomes = await Promise.all(names.map((n) => readJson(n)));
+      return ok(request, outcomes.filter(Boolean));
+    } catch (e) {
+      context.error('outcomesList failed:', e.message);
+      return err(request, 500, e.message);
+    }
+  },
+});
+
+/* POST /api/outcomes/{id} — any signed-in user may create or update an outcome.
+   Ownership is server-managed (creator on create, preserved on update). */
+app.http('outcomeSave', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'outcomes/{id}',
+  handler: async (request, context) => {
+    const guard = guardStorage(request);
+    if (guard) return guard;
+    try {
+      const principal = parsePrincipal(request);
+      if (!principal) return err(request, 401, 'Sign in required');
+      const { id } = request.params;
+      const incoming = await request.json();
+      const current = await readBlob(`outcomes/${id}.json`);
+      const result = prepareOutcome(id, incoming, principal, current);
+      if (!result.ok) return err(request, result.status, result.reason);
+      await writeBlob(`outcomes/${id}.json`, result.outcome);
+      return ok(request, { ok: true, outcome: result.outcome });
+    } catch (e) {
+      context.error('outcomeSave failed:', e.message);
+      return err(request, 500, e.message);
+    }
+  },
+});
+
+/* DELETE /api/outcomes/{id} — admins only. */
+app.http('outcomeDelete', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'outcomes/{id}',
+  handler: async (request, context) => {
+    const guard = guardStorage(request);
+    if (guard) return guard;
+    try {
+      const principal = parsePrincipal(request);
+      if (!principal) return err(request, 401, 'Sign in required');
+      if (!isAdmin(principal, await loadConfig())) return err(request, 403, 'Admins only');
+      const { id } = request.params;
+      await deleteBlob(`outcomes/${id}.json`);
+      return ok(request, { ok: true });
+    } catch (e) {
+      context.error('outcomeDelete failed:', e.message);
       return err(request, 500, e.message);
     }
   },

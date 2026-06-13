@@ -1,6 +1,6 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
-import { loadItems, loadMembers, saveItem, deleteItem, timeAgo, fullDate, nano } from '../data.js';
+import { loadItems, loadMembers, loadOutcomes, saveItem, deleteItem, timeAgo, fullDate, nano } from '../data.js';
 import { el, chipEl, statusVariant, moveFocus, announce, skeleton } from '../dom.js';
 import { validate, showErrors, clearErrors } from '../forms.js';
 import { initials } from '../profile-card.js';
@@ -9,10 +9,32 @@ import { VERDICTS, verdictChip, buildVerdictFieldset, selectedVerdict } from '..
 
 const ACTIVE_EXPERIMENT = ['designing', 'running', 'wrapping-up'];
 
+/* TLG grow / scale decision options (Phase 2). Values are stored; labels are
+   shown in the form and the grow snapshot. */
+const GROW_DECISIONS = [
+  { value: 'scale', label: 'Scale it' },
+  { value: 'adopt', label: 'Adopt as standard' },
+  { value: 'stop',  label: 'Stop — not worth scaling' },
+  { value: 'rerun', label: 'Run again with changes' },
+];
+const GROW_DECISION_LABELS = Object.fromEntries(GROW_DECISIONS.map((d) => [d.value, d.label]));
+
+/* TLG learning loop decision options (Phase 3). Recorded when a finding is
+   shared, then drives whether the team perseveres, pivots, stops or escalates. */
+const LEARN_DECISIONS = [
+  { value: 'persevere', label: 'Persevere' },
+  { value: 'pivot',     label: 'Pivot — run a variation' },
+  { value: 'stop',      label: 'Stop' },
+  { value: 'escalate',  label: 'Escalate for scaling' },
+];
+const LEARN_DECISION_LABELS = Object.fromEntries(LEARN_DECISIONS.map((d) => [d.value, d.label]));
+
 let _item = null;
+let _items = [];
 let _config = null;
 let _session = null;
 let _members = [];
+let _outcomes = [];
 
 async function init() {
   renderLoading();
@@ -36,13 +58,18 @@ async function init() {
     return;
   }
   _config = config;
+  _items = items;
   _item = items.find((i) => i.item_id === id);
 
   if (!_item) { renderNotFound(); return; }
 
-  /* Experiments match their methods against member profiles (who can help). */
+  /* Experiments match their methods against member profiles (who can help) and
+     may ladder up to a goal (outcome). Both are optional — ignore failures. */
   if (_item.item_type === 'experiment') {
-    _members = await loadMembers().catch(() => []);
+    [_members, _outcomes] = await Promise.all([
+      loadMembers().catch(() => []),
+      _item.outcome_id ? loadOutcomes().catch(() => []) : Promise.resolve([]),
+    ]);
   }
 
   updateMeta(_item, _config);
@@ -90,9 +117,20 @@ function renderMain() {
   }
   frag.appendChild(header);
 
+  /* Learning chain: if this experiment was spawned from another, link back. */
+  if (item.item_type === 'experiment' && item.parent_id) {
+    frag.appendChild(buildParentChain(item));
+  }
+
   /* Body */
   const bodyText = item.description || item.question || item.topic;
   if (bodyText) frag.appendChild(el('p', { text: bodyText }));
+
+  /* Design-time hypothesis (TLG): the prediction locked in before the test ran. */
+  if (item.item_type === 'experiment') {
+    const design = buildDesignSection(item);
+    if (design) frag.appendChild(design);
+  }
 
   /* Finding / output. Experiments with a shared finding render as a full
      learning snapshot (verdict, expected vs actual, methods, contributors). */
@@ -102,9 +140,19 @@ function renderMain() {
     frag.appendChild(el('h2', { text: 'Finding' }));
     frag.appendChild(el('p', { text: item.finding }));
   }
+
+  /* Grow snapshot — the scale/adopt decision and active ingredients (TLG). */
+  if (item.item_type === 'experiment' && item.grow_decision) {
+    frag.appendChild(buildGrowSnapshot(item));
+  }
   if (item.output) {
     frag.appendChild(el('h2', { text: 'Output' }));
     frag.appendChild(el('p', { text: item.output }));
+  }
+
+  /* Follow-on experiments spawned from this one (learning chain, downward). */
+  if (item.item_type === 'experiment' && (item.spawned_ids || []).length) {
+    frag.appendChild(buildSpawnedList(item));
   }
 
   /* Who can help — match active experiments to people by method. */
@@ -161,6 +209,10 @@ function buildUpdateEl(u) {
 function buildMetaItems(item, config) {
   const rows = [];
   rows.push(['Type', t(config, `items.${item.item_type}.singular`)]);
+  if (item.outcome_id) {
+    const goal = _outcomes.find((o) => o.outcome_id === item.outcome_id);
+    if (goal) rows.push(['Goal', goal.title || 'Untitled goal']);
+  }
   if (item.difficulty) rows.push(['Difficulty', item.difficulty]);
   if (item.effort) rows.push(['Effort', item.effort]);
   if (item.deadline) rows.push(['Deadline', fullDate(item.deadline)]);
@@ -174,6 +226,84 @@ function buildMetaItems(item, config) {
     rows.push([name.charAt(0).toUpperCase() + name.slice(1), String(item.xp_reward)]);
   }
   return rows;
+}
+
+/* ── Design-time hypothesis (TLG: locked in before the test starts) ──────── */
+
+function buildDesignSection(item) {
+  const rows = [
+    ['Hypothesis', item.hypothesis],
+    ['Predicted outcome', item.predicted_outcome],
+    ['Success measure', item.success_metric],
+  ].filter(([, value]) => value);
+  if (!rows.length) return null;
+
+  const sec = el('section', { class: 'design-snapshot', 'aria-labelledby': 'design-heading' });
+  sec.appendChild(el('h2', { id: 'design-heading', text: 'The test' }));
+  const dl = el('dl', { class: 'snapshot-grid' });
+  for (const [label, value] of rows) {
+    dl.appendChild(el('dt', { text: label }));
+    dl.appendChild(el('dd', { text: value }));
+  }
+  sec.appendChild(dl);
+  return sec;
+}
+
+/* ── Grow snapshot (TLG: the scale / adopt decision) ─────────────────────── */
+
+function buildGrowSnapshot(item) {
+  const rows = [
+    ['Decision', GROW_DECISION_LABELS[item.grow_decision] || item.grow_decision],
+    ['Active ingredients', item.active_ingredients],
+    ['Scale-up lead', item.grow_owner],
+    ['Target date', item.grow_date ? fullDate(item.grow_date) : ''],
+  ].filter(([, value]) => value);
+  if (!rows.length) return null;
+
+  const sec = el('section', { class: 'design-snapshot', 'aria-labelledby': 'grow-heading' });
+  sec.appendChild(el('h2', { id: 'grow-heading', text: 'Growing' }));
+  const dl = el('dl', { class: 'snapshot-grid' });
+  for (const [label, value] of rows) {
+    dl.appendChild(el('dt', { text: label }));
+    dl.appendChild(el('dd', { text: value }));
+  }
+  sec.appendChild(dl);
+  return sec;
+}
+
+/* ── Learning loops (TLG: pivot / persevere / spawn) ─────────────────────── */
+
+function buildParentChain(item) {
+  const parent = _items.find((i) => i.item_id === item.parent_id);
+  const p = el('p', { class: 'learning-chain-note' });
+  p.appendChild(el('span', { 'aria-hidden': 'true' }, '↳ '));
+  p.appendChild(document.createTextNode('Part of a learning chain — '));
+  if (parent) {
+    p.appendChild(el('a', { href: `item.html?id=${encodeURIComponent(parent.item_id)}` },
+      `view the parent experiment: ${parent.title || 'Untitled'}`));
+  } else {
+    p.appendChild(document.createTextNode('the parent experiment is no longer available.'));
+  }
+  return p;
+}
+
+function buildSpawnedList(item) {
+  const sec = el('section', { 'aria-labelledby': 'spawned-heading', style: 'margin-top:var(--space-6)' });
+  sec.appendChild(el('h2', { id: 'spawned-heading', text: 'Follow-on experiments' }));
+  sec.appendChild(el('p', { class: 'card-meta', text: 'Experiments spawned from this one to carry the learning forward.' }));
+  const ul = el('ul', { class: 'updates-list', role: 'list' });
+  for (const cid of item.spawned_ids) {
+    const child = _items.find((i) => i.item_id === cid);
+    const li = el('li', { class: 'update-item' });
+    if (child) {
+      li.appendChild(el('a', { href: `item.html?id=${encodeURIComponent(cid)}` }, child.title || 'Untitled experiment'));
+    } else {
+      li.appendChild(el('span', { class: 'card-meta', text: 'A follow-on experiment that is no longer available.' }));
+    }
+    ul.appendChild(li);
+  }
+  sec.appendChild(ul);
+  return sec;
 }
 
 /* ── Learning snapshot (fail-fast showcase) ──────────────────────────────── */
@@ -216,6 +346,11 @@ function buildLearningSnapshot(item) {
   if (item.outcome) {
     sec.appendChild(el('h3', { text: 'What we’d do differently' }));
     sec.appendChild(el('p', { text: item.outcome }));
+  }
+
+  if (item.learn_decision && LEARN_DECISION_LABELS[item.learn_decision]) {
+    sec.appendChild(el('h3', { text: 'What next' }));
+    sec.appendChild(el('p', { text: LEARN_DECISION_LABELS[item.learn_decision] }));
   }
 
   const methods = (item.method_tags || []).filter(Boolean);
@@ -317,6 +452,24 @@ function renderActions() {
     ));
   }
 
+  /* Evidence card — a print/PDF-ready summary, once there's a finding to show. */
+  if (item.item_type === 'experiment' && (item.finding || item.verdict)) {
+    frag.appendChild(el('p', null,
+      el('a', { href: `report.html?id=${encodeURIComponent(item.item_id)}`, class: 'btn btn-secondary' },
+        'Export evidence card'),
+    ));
+  }
+
+  /* Spawn a follow-on experiment once a finding exists (learning loop). Open to
+     anyone signed in — a follow-on can come from someone outside the team. */
+  if (item.item_type === 'experiment' && (item.status === 'finding-shared' || item.status === 'growing')) {
+    const spawnUrl = `new-experiment.html?parent_id=${encodeURIComponent(item.item_id)}`
+      + `&parent_title=${encodeURIComponent(item.title || '')}`;
+    frag.appendChild(el('p', null,
+      el('a', { href: spawnUrl, class: 'btn btn-secondary' }, 'Spawn follow-on experiment'),
+    ));
+  }
+
   /* Session sign-up / withdraw */
   if (item.item_type === 'session' && item.status === 'scheduled' && item.host_oid !== _session.oid) {
     const inList = (item.attendee_oids || []).includes(_session.oid);
@@ -412,6 +565,12 @@ function buildStatusAdvance(item) {
     wrap.appendChild(buildShareFindingForm());
   }
 
+  /* Grow form — appears on a shared finding (to move into Growing) and while
+     Growing (to update the plan). TLG scale/adopt decision. */
+  if (item.item_type === 'experiment' && (item.status === 'finding-shared' || item.status === 'growing')) {
+    wrap.appendChild(buildGrowForm());
+  }
+
   /* Share-output form for sessions happened */
   if (item.item_type === 'session' && item.status === 'happened') {
     wrap.appendChild(buildShareOutputForm());
@@ -500,6 +659,18 @@ function buildShareFindingForm() {
   outcomeGroup.appendChild(el('textarea', { id: 'outcome-text', name: 'outcome', rows: '3' }));
   form.appendChild(outcomeGroup);
 
+  /* Learning loop decision — persevere / pivot / stop / escalate. Optional, but
+     prompts the team to close the loop rather than letting the finding float. */
+  const learnFs = el('fieldset', { id: 'learn-decision-group' });
+  learnFs.appendChild(el('legend', { text: 'What next? (optional)' }));
+  learnFs.appendChild(el('span', { class: 'form-hint', text: 'The learning decision this finding leads to.' }));
+  for (const d of LEARN_DECISIONS) {
+    const radio = el('input', { type: 'radio', name: 'learn_decision', id: `learn-decision-${d.value}`, value: d.value });
+    if (_item.learn_decision === d.value) radio.checked = true;
+    learnFs.appendChild(el('label', { class: 'label-inline' }, radio, d.label));
+  }
+  form.appendChild(learnFs);
+
   const confirmWrap = buildConfirmBeforeSubmit(
     'Share finding',
     summary,
@@ -508,6 +679,7 @@ function buildShareFindingForm() {
       const outcomeEl = form.querySelector('#outcome-text');
       const expectedEl = form.querySelector('#expected-text');
       const actualEl = form.querySelector('#actual-text');
+      const learnDecision = (form.querySelector('input[name="learn_decision"]:checked') || {}).value || '';
       const verdict = selectedVerdict(form);
       resetVerdictError(form);
       const fieldErrors = validate([
@@ -527,7 +699,7 @@ function buildShareFindingForm() {
       }
       clearErrors('share-finding-errors');
       await doShareFinding(findingEl.value.trim(), outcomeEl.value.trim(),
-        verdict, expectedEl.value.trim(), actualEl.value.trim());
+        verdict, expectedEl.value.trim(), actualEl.value.trim(), learnDecision);
       return true;
     },
   );
@@ -556,6 +728,85 @@ function resetVerdictError(form) {
   for (const radio of fs.querySelectorAll('input[name="verdict"]')) {
     radio.removeAttribute('aria-describedby');
   }
+}
+
+/* Grow form — records the TLG scale/adopt decision and the active ingredients.
+   Used both to move a shared finding into Growing and to edit the plan after. */
+function buildGrowForm() {
+  const isGrowing = _item.status === 'growing';
+  const pts = _config.points;
+  const ptsName = (_config.terminology || {}).points_name || 'points';
+  const reward = _item.xp_reward || (pts && pts.values ? pts.values.experiment_complete : 100);
+  const teamCount = (_item.team_oids || []).length;
+  const willAward = pts && pts.enabled && !_item.grow_points_awarded_at;
+  const enterSummary = `Moving to Growing records the scale decision${willAward
+    ? ` and awards ${reward} ${ptsName} to each of ${teamCount} team member${teamCount !== 1 ? 's' : ''}`
+    : ''}.`;
+
+  const wrapper = el('div', { class: 'board-section', 'aria-label': isGrowing ? 'Grow plan' : 'Grow this finding' });
+  wrapper.appendChild(el('h2', { text: isGrowing ? 'Grow plan' : 'Grow this finding' }));
+  wrapper.appendChild(el('p', { text: isGrowing ? 'Update how this finding is being scaled or adopted.' : enterSummary }));
+
+  const errorSummary = el('div', {
+    id: 'grow-errors', class: 'error-summary', role: 'alert', hidden: true,
+    'aria-labelledby': 'grow-errors-title',
+  });
+  errorSummary.appendChild(el('h3', { id: 'grow-errors-title', class: 'error-summary__title', text: 'There is a problem' }));
+  errorSummary.appendChild(el('ul', { class: 'error-summary__list' }));
+  wrapper.appendChild(errorSummary);
+
+  const form = el('form', { id: 'grow-form', novalidate: true });
+
+  const fs = el('fieldset', { id: 'grow-decision-group' });
+  fs.appendChild(el('legend', { text: 'Grow decision (required)' }));
+  fs.appendChild(el('span', { class: 'form-hint', text: 'What happens to this finding now?' }));
+  for (const d of GROW_DECISIONS) {
+    const radio = el('input', { type: 'radio', name: 'grow_decision', id: `grow-decision-${d.value}`, value: d.value });
+    if (_item.grow_decision === d.value) radio.checked = true;
+    fs.appendChild(el('label', { class: 'label-inline' }, radio, d.label));
+  }
+  form.appendChild(fs);
+
+  const ingGroup = el('div', { class: 'form-group' });
+  ingGroup.appendChild(el('label', { for: 'active-ingredients', text: 'Active ingredients (optional)' }));
+  ingGroup.appendChild(el('span', { class: 'form-hint', text: 'What specifically caused the effect, so others can replicate it?' }));
+  const ingTa = el('textarea', { id: 'active-ingredients', name: 'active_ingredients', rows: '3' });
+  ingTa.value = _item.active_ingredients || '';
+  ingGroup.appendChild(ingTa);
+  form.appendChild(ingGroup);
+
+  const ownerGroup = el('div', { class: 'form-group' });
+  ownerGroup.appendChild(el('label', { for: 'grow-owner', text: 'Who is leading the scale-up? (optional)' }));
+  const ownerInput = el('input', { type: 'text', id: 'grow-owner', name: 'grow_owner', autocomplete: 'off', maxlength: '200' });
+  ownerInput.value = _item.grow_owner || '';
+  ownerGroup.appendChild(ownerInput);
+  form.appendChild(ownerGroup);
+
+  const dateGroup = el('div', { class: 'form-group' });
+  dateGroup.appendChild(el('label', { for: 'grow-date', text: 'Target scale-up date (optional)' }));
+  const dateInput = el('input', { type: 'date', id: 'grow-date', name: 'grow_date' });
+  if (_item.grow_date) dateInput.value = _item.grow_date.slice(0, 10);
+  dateGroup.appendChild(dateInput);
+  form.appendChild(dateGroup);
+
+  const submitBtn = el('button', { type: 'button', class: 'btn' }, isGrowing ? 'Update grow plan' : 'Move to Growing');
+  submitBtn.addEventListener('click', async () => {
+    const decision = (form.querySelector('input[name="grow_decision"]:checked') || {}).value || '';
+    if (!decision) {
+      showErrors([{ field: 'grow-decision-scale', message: 'Choose a grow decision' }], 'grow-errors');
+      return;
+    }
+    clearErrors('grow-errors');
+    await doMoveToGrowing({
+      grow_decision: decision,
+      active_ingredients: ingTa.value.trim(),
+      grow_owner: ownerInput.value.trim(),
+      grow_date: dateInput.value || '',
+    });
+  });
+  form.appendChild(submitBtn);
+  wrapper.appendChild(form);
+  return wrapper;
 }
 
 function buildShareOutputForm() {
@@ -725,7 +976,7 @@ async function doAddUpdate(text) {
   if (ta) ta.value = '';
 }
 
-async function doShareFinding(finding, outcome, verdict, expected, actual) {
+async function doShareFinding(finding, outcome, verdict, expected, actual, learnDecision) {
   const now = new Date().toISOString();
   await doSave({
     ..._item,
@@ -735,9 +986,23 @@ async function doShareFinding(finding, outcome, verdict, expected, actual) {
     verdict: verdict || null,
     learning_expected: expected || '',
     learning_actual: actual || '',
+    learn_decision: learnDecision || _item.learn_decision || '',
     updated_at: now,
     closed_at: now,
   }, 'Finding shared successfully.');
+}
+
+async function doMoveToGrowing(fields) {
+  const now = new Date().toISOString();
+  await doSave({
+    ..._item,
+    status: 'growing',
+    grow_decision: fields.grow_decision,
+    active_ingredients: fields.active_ingredients,
+    grow_owner: fields.grow_owner,
+    grow_date: fields.grow_date,
+    updated_at: now,
+  }, 'Grow plan saved — moved to Growing.');
 }
 
 async function doShareOutput(output) {

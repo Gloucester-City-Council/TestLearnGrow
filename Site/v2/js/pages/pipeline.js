@@ -14,11 +14,15 @@ const STAGES = [
   { status: 'running',        label: 'Running' },
   { status: 'wrapping-up',    label: 'Wrapping up' },
   { status: 'finding-shared', label: 'Shared' },
+  { status: 'growing',        label: 'Growing' },
 ];
 
 /* Owner/team can advance a card to the next stage straight from the board.
-   wrapping-up → finding-shared is deliberately absent: sharing a finding
-   needs the finding text, so that card links to the item page instead. */
+   Two stages are deliberately absent here because they need a form first, so
+   their cards link to the item page instead (see buildMove):
+   - wrapping-up → finding-shared needs the finding text.
+   - finding-shared → growing needs the grow / scale decision and the
+     "active ingredients" that caused the effect. */
 const NEXT = {
   designing:   { next: 'running',     label: 'Running' },
   running:     { next: 'wrapping-up', label: 'Wrapping up' },
@@ -109,7 +113,8 @@ function render() {
 
 function buildColumn(stage, items) {
   const headingId = `stage-${stage.status}`;
-  const col = el('section', { class: 'pipeline-col', 'aria-labelledby': headingId });
+  const colClass = stage.status === 'growing' ? 'pipeline-col pipeline-col--growing' : 'pipeline-col';
+  const col = el('section', { class: colClass, 'aria-labelledby': headingId });
 
   col.appendChild(el('div', { class: 'pipeline-col-head' },
     el('h2', { id: headingId, class: 'pipeline-col-title' }, stage.label),
@@ -159,6 +164,19 @@ function buildCard(item, stage) {
     card.appendChild(wrap);
   }
 
+  /* Learning chain: how many follow-on experiments grew out of this one. The
+     chip links to the item page, where the follow-ons are listed. */
+  const spawnedCount = (item.spawned_ids || []).length;
+  if (spawnedCount) {
+    const wrap = el('div', { class: 'pipeline-chips' });
+    wrap.appendChild(el('a', {
+      class: 'chip chip-purple',
+      href: `item.html?id=${encodeURIComponent(item.item_id)}#spawned-heading`,
+      'aria-label': `Spawned ${spawnedCount} follow-on experiment${spawnedCount !== 1 ? 's' : ''}`,
+    }, `Spawned ${spawnedCount}`));
+    card.appendChild(wrap);
+  }
+
   /* Footer: last activity + move control */
   const foot = el('div', { class: 'pipeline-card-foot' });
   const when = item.updated_at || item.created_at;
@@ -201,6 +219,13 @@ function buildChips(item, stage) {
   if (item.difficulty) { wrap.appendChild(chipEl(`${item.difficulty} difficulty`, 'purple')); any = true; }
   if (item.effort)     { wrap.appendChild(chipEl(`${item.effort} effort`, 'purple')); any = true; }
 
+  /* On Designing cards, surface the pre-registered success measure so reviewers
+     can see what the test is trying to prove before it runs. */
+  if (stage.status === 'designing' && item.success_metric) {
+    wrap.appendChild(chipEl(`Measure: ${item.success_metric}`, 'blue'));
+    any = true;
+  }
+
   if (item.deadline && stage.status !== 'finding-shared') {
     const due = new Date(item.deadline);
     const overdue = due.getTime() < Date.now();
@@ -223,6 +248,15 @@ function buildMove(item, stage) {
       class: 'btn btn-secondary pipeline-move',
       href: `item.html?id=${encodeURIComponent(item.item_id)}`,
     }, 'Share finding', el('span', { 'aria-hidden': 'true' }, ' →'));
+  }
+
+  /* finding-shared → growing needs the grow decision + active ingredients →
+     send them to the item page form so those are captured first. */
+  if (stage.status === 'finding-shared') {
+    return el('a', {
+      class: 'btn btn-secondary pipeline-move',
+      href: `item.html?id=${encodeURIComponent(item.item_id)}`,
+    }, 'Move to Growing', el('span', { 'aria-hidden': 'true' }, ' →'));
   }
 
   const tx = NEXT[stage.status];

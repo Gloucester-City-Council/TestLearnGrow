@@ -27,8 +27,10 @@ async function refresh() {
   if (wall) wall.hidden = true;
   try {
     const items = await loadItems();
+    /* A shared finding stays on the wall even after it moves on to Growing —
+       a scaled finding is still (and especially) worth showcasing. */
     _items = items
-      .filter((i) => i.item_type === 'experiment' && i.status === 'finding-shared' && i.finding)
+      .filter((i) => i.item_type === 'experiment' && (i.status === 'finding-shared' || i.status === 'growing') && i.finding)
       .sort((a, b) => new Date(b.closed_at || b.updated_at || 0) - new Date(a.closed_at || a.updated_at || 0));
     render();
     if (loadingEl) loadingEl.hidden = true;

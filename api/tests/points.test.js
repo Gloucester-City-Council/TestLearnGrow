@@ -22,6 +22,29 @@ test('experiment finding-shared awards each team member once', () => {
   assert.equal(lb.a.xp, 150);
 });
 
+test('experiment growing awards the team once, stacking on finding-shared', () => {
+  const shared = {
+    item_type: 'experiment', status: 'finding-shared', xp_reward: 100,
+    team_oids: ['a', 'b'], team_names: ['Alice', 'Bob'],
+    points_awarded_at: 'tShared', grow_points_awarded_at: null,
+  };
+  const growing = { ...shared, status: 'growing' };
+  const lb = { a: { oid: 'a', name: 'Alice', xp: 100 }, b: { oid: 'b', name: 'Bob', xp: 100 } };
+
+  // The finding-shared completion award is already stamped, so only the grow
+  // award fires here — once, to each team member.
+  const awards = awardPointsForTransition(shared, growing, null, lb);
+  assert.equal(awards.length, 2);
+  assert.equal(lb.a.xp, 200);
+  assert.equal(lb.b.xp, 200);
+  assert.ok(growing.grow_points_awarded_at);
+
+  // saving the same growing item again must not double-award
+  const again = awardPointsForTransition(shared, growing, null, lb);
+  assert.equal(again.length, 0);
+  assert.equal(lb.a.xp, 200);
+});
+
 test('session output-shared awards host and attendees', () => {
   const item = {
     item_type: 'session', status: 'output-shared', xp_reward: 75,

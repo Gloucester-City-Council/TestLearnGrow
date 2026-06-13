@@ -1,10 +1,16 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
-import { saveItem, nano } from '../data.js';
+import { saveItem, loadOutcomes, nano } from '../data.js';
 import { el } from '../dom.js';
 import { validate, showErrors, clearErrors, saveDraft, loadDraft, clearDraft, autosaveDraft } from '../forms.js';
 
 const DRAFT_KEY = 'new-experiment';
+
+/* When spawning a follow-on (TLG learning loop), the parent experiment is
+   passed in the query string so the new experiment links back to it. */
+const _params = new URLSearchParams(location.search);
+const _parentId = _params.get('parent_id') || '';
+const _parentTitle = _params.get('parent_title') || '';
 
 async function init() {
   const session = await requireSignIn();
@@ -39,9 +45,35 @@ async function init() {
     }
   }
 
+  /* Populate the outcome (goal) picker, if any goals exist. Optional — load
+     failures are non-fatal, the experiment just won't be linked to a goal. */
+  try {
+    const outcomes = await loadOutcomes();
+    if (outcomes.length) {
+      const group = document.getElementById('outcome-group');
+      const sel = document.getElementById('outcome_id');
+      if (group && sel) {
+        for (const o of outcomes) {
+          sel.appendChild(el('option', { value: o.outcome_id, text: o.title || 'Untitled goal' }));
+        }
+        group.hidden = false;
+      }
+    }
+  } catch { /* outcomes are optional */ }
+
   /* Restore draft */
   const draft = loadDraft(DRAFT_KEY);
   if (draft) restoreForm(draft);
+
+  /* Spawning a follow-on: announce the link to the parent and seed the
+     hypothesis so the chain is explicit. Only seed when the field is empty so a
+     restored draft is never clobbered. */
+  if (_parentId) {
+    const intro = document.querySelector('main > p');
+    if (intro) intro.textContent = `Follow-on experiment from “${_parentTitle || 'an earlier experiment'}”. What does it lead you to test next?`;
+    const hypo = document.getElementById('hypothesis');
+    if (hypo && !hypo.value) hypo.value = `Follow-on from: ${_parentTitle || 'parent experiment'}`;
+  }
 
   const form = document.getElementById('new-item-form');
   autosaveDraft(form, DRAFT_KEY, getValues);
@@ -52,6 +84,7 @@ async function init() {
     const errors = validate([
       { id: 'title',    label: 'Title',    value: values.title,    required: true, maxLength: 200 },
       { id: 'question', label: 'Question', value: values.question, required: true },
+      { id: 'success_metric', label: 'a success measure', value: values.success_metric, required: true, maxLength: 300 },
     ]);
     if (errors.length) { showErrors(errors, 'form-errors'); return; }
     clearErrors('form-errors');
@@ -68,10 +101,14 @@ async function init() {
         title: values.title,
         question: values.question,
         description: values.description || '',
+        hypothesis: values.hypothesis || '',
+        predicted_outcome: values.predicted_outcome || '',
+        success_metric: values.success_metric || '',
         difficulty: values.difficulty || null,
         effort: values.effort || null,
         deadline: values.deadline || null,
         method_tags: values.method_tags,
+        outcome_id: values.outcome_id || '',
         status: 'designing',
         posted_by_oid: session.oid,
         posted_by_name: session.name,
@@ -79,6 +116,8 @@ async function init() {
         team_names: [session.name],
         finding: '',
         outcome: '',
+        parent_id: _parentId || '',
+        spawned_ids: [],
         challenge_id: null,
         xp_reward: (config.points && config.points.values) ? config.points.values.experiment_complete : 100,
         created_at: now,
@@ -104,10 +143,14 @@ function getValues() {
     title:       (document.getElementById('title') || {}).value || '',
     question:    (document.getElementById('question') || {}).value || '',
     description: (document.getElementById('description') || {}).value || '',
+    hypothesis:        (document.getElementById('hypothesis') || {}).value || '',
+    predicted_outcome: (document.getElementById('predicted_outcome') || {}).value || '',
+    success_metric:    (document.getElementById('success_metric') || {}).value || '',
     difficulty:  (document.getElementById('difficulty') || {}).value || '',
     effort:      (document.getElementById('effort') || {}).value || '',
     deadline:    (document.getElementById('deadline') || {}).value || '',
     method_tags: [...document.querySelectorAll('input[name="method_tags"]:checked')].map((c) => c.value),
+    outcome_id:  (document.getElementById('outcome_id') || {}).value || '',
   };
 }
 
@@ -116,9 +159,13 @@ function restoreForm(draft) {
   set('title', draft.title);
   set('question', draft.question);
   set('description', draft.description);
+  set('hypothesis', draft.hypothesis);
+  set('predicted_outcome', draft.predicted_outcome);
+  set('success_metric', draft.success_metric);
   set('difficulty', draft.difficulty);
   set('effort', draft.effort);
   set('deadline', draft.deadline);
+  set('outcome_id', draft.outcome_id);
   if (draft.method_tags) {
     for (const cb of document.querySelectorAll('input[name="method_tags"]')) {
       cb.checked = draft.method_tags.includes(cb.value);

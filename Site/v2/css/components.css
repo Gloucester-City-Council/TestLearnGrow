@@ -1134,7 +1134,7 @@
 
 @media (min-width: 880px) {
   .pipeline {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: start;
   }
 }
@@ -1144,6 +1144,16 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-4);
+}
+
+/* Growing is the TLG scale/adopt stage — give it a distinct (token-only)
+   accent so the "we proved it, now scale it" column stands out. */
+.pipeline-col--growing {
+  border-top: 4px solid var(--chip-green-text);
+}
+
+.pipeline-col--growing .pipeline-col-head {
+  border-bottom-color: var(--chip-green-text);
 }
 
 .pipeline-col-head {
@@ -1278,12 +1288,55 @@
 
 /* ── Learning snapshot (item page) ────────────────────────────────────────── */
 
-.learning-snapshot {
+.learning-snapshot,
+.design-snapshot {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-5) var(--space-6);
   margin-bottom: var(--space-6);
+}
+
+.learning-snapshot h3,
+.design-snapshot h3 {
+  font-size: var(--font-size-md);
+  margin-bottom: var(--space-2);
+}
+
+/* Learning-chain link (a follow-on pointing back at its parent). */
+.learning-chain-note {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+/* ── Evidence card (printable per-experiment report) ──────────────────────── */
+
+.evidence-card {
+  max-width: 50rem;
+}
+
+.evidence-card-head {
+  margin-bottom: var(--space-6);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.evidence-card-head h1 {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.evidence-section {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.evidence-section h2 {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-3);
 }
 
 .snapshot-head {

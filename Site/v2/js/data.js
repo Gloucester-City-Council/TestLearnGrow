@@ -51,7 +51,7 @@ export function migrateItem(raw) {
   if (!item.item_type) item.item_type = 'experiment';
 
   /* Ensure array fields exist */
-  for (const k of ['team_oids', 'team_names', 'attendee_oids', 'attendee_names', 'updates', 'response_ids']) {
+  for (const k of ['team_oids', 'team_names', 'attendee_oids', 'attendee_names', 'updates', 'response_ids', 'spawned_ids']) {
     if (!Array.isArray(item[k])) item[k] = [];
   }
 
@@ -64,7 +64,47 @@ export function migrateItem(raw) {
   if (typeof item.learning_expected !== 'string') item.learning_expected = '';
   if (typeof item.learning_actual !== 'string') item.learning_actual = '';
 
+  /* TLG Phase 1 — design-time hypothesis. Written before the test starts so the
+     prediction is locked in, not back-filled at wrap-up. */
+  if (typeof item.hypothesis !== 'string') item.hypothesis = '';
+  if (typeof item.predicted_outcome !== 'string') item.predicted_outcome = '';
+  if (typeof item.success_metric !== 'string') item.success_metric = '';
+
+  /* TLG Phase 2 — grow / scale stage. Captured when a shared finding is taken
+     forward to scale or adopt. grow_points_awarded_at is server-managed (like
+     points_awarded_at) and stamps the once-only grow award. */
+  if (typeof item.grow_decision !== 'string') item.grow_decision = '';
+  if (typeof item.active_ingredients !== 'string') item.active_ingredients = '';
+  if (typeof item.grow_owner !== 'string') item.grow_owner = '';
+  if (typeof item.grow_date !== 'string') item.grow_date = '';
+  if (!item.grow_points_awarded_at) item.grow_points_awarded_at = null;
+
+  /* TLG Phase 3 — learning loops. pivot / persevere / spawn. spawned_ids is
+     defaulted with the other array fields above; parent_id links a follow-on
+     back to the experiment it grew out of. */
+  if (typeof item.learn_decision !== 'string') item.learn_decision = '';
+  if (typeof item.parent_id !== 'string') item.parent_id = '';
+
+  /* TLG Phase 4 — outcome hierarchy. Links an experiment to the mission/goal it
+     provides evidence for. */
+  if (typeof item.outcome_id !== 'string') item.outcome_id = '';
+
   return item;
+}
+
+/* Normalise an outcome (TLG mission/goal) record, filling missing fields with
+   safe defaults so the dashboard renders consistently. */
+export function migrateOutcome(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = { ...raw };
+  if (typeof o.outcome_id !== 'string') o.outcome_id = '';
+  if (typeof o.title !== 'string') o.title = '';
+  if (typeof o.goal_metric !== 'string') o.goal_metric = '';
+  if (typeof o.target_value !== 'string') o.target_value = '';
+  if (typeof o.target_date !== 'string') o.target_date = '';
+  if (typeof o.owner_oid !== 'string') o.owner_oid = '';
+  if (typeof o.owner_name !== 'string') o.owner_name = '';
+  return o;
 }
 
 /* Normalise a member record to the profile-card schema: skills is a
@@ -101,6 +141,24 @@ export async function saveItem(item) {
 export async function deleteItem(id) {
   if (!id) throw new Error('item_id required');
   return apiDelete(`quests/${id}`);
+}
+
+/* ── Outcomes (TLG missions/goals) ─────────────────────────────────────────── */
+
+export async function loadOutcomes() {
+  const outcomes = await apiGet('outcomes');
+  return (Array.isArray(outcomes) ? outcomes : []).map(migrateOutcome).filter(Boolean);
+}
+
+export async function saveOutcome(outcome) {
+  const id = outcome.outcome_id;
+  if (!id) throw new Error('outcome_id required');
+  return apiPost(`outcomes/${id}`, outcome);
+}
+
+export async function deleteOutcome(id) {
+  if (!id) throw new Error('outcome_id required');
+  return apiDelete(`outcomes/${id}`);
 }
 
 /* Members are read on several pages (item, pipeline, members, home). Within a

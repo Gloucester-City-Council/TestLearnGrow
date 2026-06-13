@@ -25,7 +25,7 @@ jobs:
         working-directory: api
 
       - name: API unit tests
-        run: node --test tests/auth.test.js tests/points.test.js tests/config.test.js
+        run: node --test tests/*.test.js
         working-directory: api
 
       - name: Shell block sync check
