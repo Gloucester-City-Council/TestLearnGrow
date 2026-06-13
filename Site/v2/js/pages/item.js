@@ -499,7 +499,7 @@ function renderActions() {
   }
 
   /* Add update (anyone authenticated) */
-  const terminalStatuses = ['finding-shared', 'output-shared', 'closed'];
+  const terminalStatuses = ['finding-shared', 'output-shared', 'closed', 'scaled'];
   if (!terminalStatuses.includes(item.status)) {
     frag.appendChild(buildUpdateForm());
   }
@@ -569,6 +569,15 @@ function buildStatusAdvance(item) {
      Growing (to update the plan). TLG scale/adopt decision. */
   if (item.item_type === 'experiment' && (item.status === 'finding-shared' || item.status === 'growing')) {
     wrap.appendChild(buildGrowForm());
+  }
+
+  /* Growing → Scaled: close the loop by confirming the scale-up actually held.
+     Only offered once the decision is to scale/adopt (not stop/rerun). */
+  if (item.item_type === 'experiment' && item.status === 'growing'
+      && (item.grow_decision === 'scale' || item.grow_decision === 'adopt')) {
+    wrap.appendChild(el('div', { style: 'margin-top: var(--space-4)' },
+      el('button', { type: 'button', class: 'btn',
+        onclick: () => doStatusAdvance('scaled', 'Scaled') }, 'Mark as scaled — it held')));
   }
 
   /* Share-output form for sessions happened */

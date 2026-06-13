@@ -88,6 +88,7 @@ export function statusVariant(status) {
     'finding-shared': 'green',
     'output-shared': 'green',
     growing: 'green',
+    scaled: 'green',
     closed: 'neutral',
   };
   return map[status] || 'neutral';
@@ -109,6 +110,7 @@ export function statusLabel(status) {
     'finding-shared': 'Finding shared',
     'output-shared': 'Output shared',
     growing: 'Growing',
+    scaled: 'Scaled',
     closed: 'Closed',
   };
   if (map[status]) return map[status];

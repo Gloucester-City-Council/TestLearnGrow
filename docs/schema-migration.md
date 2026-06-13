@@ -75,6 +75,12 @@ if (!item.grow_points_awarded_at) item.grow_points_awarded_at = null;
 `pipeline.js`. Existing blobs with no `status` field default to `'designing'` via
 existing `migrateItem()` logic (no change needed).
 
+A sixth terminal status `'scaled'` closes the Grow loop: from `growing` (with a
+`scale`/`adopt` decision) the team confirms the scale-up held. It is a status
+value only — no new field, no migration — and awards no further points (the grow
+award already fired at `growing`). Treated as "done" on the board and kept on the
+learning wall.
+
 ---
 
 ### Phase 3 — Learning loops
