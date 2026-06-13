@@ -34,20 +34,22 @@ after.
 
 ### To-do
 
-- [ ] **`Site/v2/js/pages/item.js`** — add three new form fields to the "Designing" section:
+- [x] **`Site/v2/js/pages/item.js`** — add three new form fields to the "Designing" section:
   - `hypothesis` — textarea, label "If we do X, we expect Y because Z"
   - `predicted_outcome` — input, label "Predicted outcome"
   - `success_metric` — input, label "Success measure (how will you know?)"
-- [ ] **`Site/v2/js/forms.js`** — require `success_metric` before status can advance from `designing`; show GOV.UK error pattern if missing.
-- [ ] **`Site/v2/js/data.js` → `migrateItem()`** — add defaults for legacy records:
+  - *Done via the design-time form on `new-experiment.html`/`new-experiment.js` and `edit-item.js` (where experiments are actually created/designed). `item.js` now renders a read-only "The test" section showing these.*
+- [x] **`Site/v2/js/forms.js`** — require `success_metric` before status can advance from `designing`; show GOV.UK error pattern if missing.
+  - *Enforced via `validate()` (required, maxLength 300) at creation — status starts at `designing` — and on the experiment edit form, using the existing GOV.UK error summary + inline field error pattern.*
+- [x] **`Site/v2/js/data.js` → `migrateItem()`** — add defaults for legacy records:
   ```js
   if (typeof item.hypothesis !== 'string') item.hypothesis = '';
   if (typeof item.predicted_outcome !== 'string') item.predicted_outcome = '';
   if (typeof item.success_metric !== 'string') item.success_metric = '';
   ```
-- [ ] **`Site/v2/js/pages/pipeline.js` → `buildCard()`** — show `success_metric` as a chip on Designing cards so reviewers can see what the test is trying to prove.
-- [ ] **`api/tests/auth.test.js`** — add `hypothesis`, `predicted_outcome`, `success_metric` to experiment fixture.
-- [ ] **`api/function.js` → `questSave`** — no server change needed (fields pass through as-is); confirm no stripping.
+- [x] **`Site/v2/js/pages/pipeline.js` → `buildCard()`** — show `success_metric` as a chip on Designing cards so reviewers can see what the test is trying to prove.
+- [x] **`api/tests/auth.test.js`** — add `hypothesis`, `predicted_outcome`, `success_metric` to experiment fixture.
+- [x] **`api/function.js` → `questSave`** — no server change needed (fields pass through as-is); confirm no stripping. *Confirmed: body is written verbatim and the owner/team full-replace path permits these edits.*
 
 ### Acceptance criteria
 

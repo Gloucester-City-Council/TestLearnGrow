@@ -51,7 +51,7 @@ export function migrateItem(raw) {
   if (!item.item_type) item.item_type = 'experiment';
 
   /* Ensure array fields exist */
-  for (const k of ['team_oids', 'team_names', 'attendee_oids', 'attendee_names', 'updates', 'response_ids']) {
+  for (const k of ['team_oids', 'team_names', 'attendee_oids', 'attendee_names', 'updates', 'response_ids', 'spawned_ids']) {
     if (!Array.isArray(item[k])) item[k] = [];
   }
 
@@ -63,6 +63,12 @@ export function migrateItem(raw) {
   if (item.verdict === undefined) item.verdict = null;
   if (typeof item.learning_expected !== 'string') item.learning_expected = '';
   if (typeof item.learning_actual !== 'string') item.learning_actual = '';
+
+  /* TLG Phase 1 — design-time hypothesis. Written before the test starts so the
+     prediction is locked in, not back-filled at wrap-up. */
+  if (typeof item.hypothesis !== 'string') item.hypothesis = '';
+  if (typeof item.predicted_outcome !== 'string') item.predicted_outcome = '';
+  if (typeof item.success_metric !== 'string') item.success_metric = '';
 
   return item;
 }

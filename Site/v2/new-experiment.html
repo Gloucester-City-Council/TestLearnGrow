@@ -85,6 +85,32 @@
                   aria-describedby="description-hint"></textarea>
       </div>
 
+      <fieldset class="form-group">
+        <legend>Before you start</legend>
+        <span class="form-hint" id="design-hint">Lock these in before the test runs — that is what makes it a test rather than a hunch.</span>
+
+        <div class="form-group">
+          <label for="hypothesis">Hypothesis (optional)</label>
+          <span class="form-hint" id="hypothesis-hint">If we do X, we expect Y because Z.</span>
+          <textarea id="hypothesis" name="hypothesis" rows="3"
+                    aria-describedby="hypothesis-hint"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="predicted_outcome">Predicted outcome (optional)</label>
+          <span class="form-hint" id="predicted-outcome-hint">What you think will happen if the hypothesis holds.</span>
+          <input type="text" id="predicted_outcome" name="predicted_outcome" autocomplete="off"
+                 aria-describedby="predicted-outcome-hint" maxlength="300">
+        </div>
+
+        <div class="form-group">
+          <label for="success_metric">Success measure (required)</label>
+          <span class="form-hint" id="success-metric-hint">How will you know? A measurable outcome you can check, e.g. "completion rate above 60%".</span>
+          <input type="text" id="success_metric" name="success_metric" autocomplete="off"
+                 aria-describedby="success-metric-hint" required maxlength="300">
+        </div>
+      </fieldset>
+
       <div class="form-group">
         <label for="difficulty">Difficulty (optional)</label>
         <select id="difficulty" name="difficulty">

@@ -16,6 +16,7 @@ function experiment(overrides) {
     method_tags: [], difficulty: null, effort: null, reward: null, deadline: null,
     status: 'running', posted_by_oid: 'oid-alice', posted_by_name: 'Alice',
     team_oids: ['oid-alice'], team_names: ['Alice'], finding: '', outcome: '',
+    hypothesis: '', predicted_outcome: '', success_metric: '',
     challenge_id: null, xp_reward: 100, created_at: 't0', updated_at: 't0',
     closed_at: null, updates: [], points_awarded_at: null,
     ...overrides,

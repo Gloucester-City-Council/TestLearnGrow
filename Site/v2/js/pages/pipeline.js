@@ -201,6 +201,13 @@ function buildChips(item, stage) {
   if (item.difficulty) { wrap.appendChild(chipEl(`${item.difficulty} difficulty`, 'purple')); any = true; }
   if (item.effort)     { wrap.appendChild(chipEl(`${item.effort} effort`, 'purple')); any = true; }
 
+  /* On Designing cards, surface the pre-registered success measure so reviewers
+     can see what the test is trying to prove before it runs. */
+  if (stage.status === 'designing' && item.success_metric) {
+    wrap.appendChild(chipEl(`Measure: ${item.success_metric}`, 'blue'));
+    any = true;
+  }
+
   if (item.deadline && stage.status !== 'finding-shared') {
     const due = new Date(item.deadline);
     const overdue = due.getTime() < Date.now();

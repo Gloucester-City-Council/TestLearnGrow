@@ -52,6 +52,7 @@ async function init() {
     const errors = validate([
       { id: 'title',    label: 'Title',    value: values.title,    required: true, maxLength: 200 },
       { id: 'question', label: 'Question', value: values.question, required: true },
+      { id: 'success_metric', label: 'a success measure', value: values.success_metric, required: true, maxLength: 300 },
     ]);
     if (errors.length) { showErrors(errors, 'form-errors'); return; }
     clearErrors('form-errors');
@@ -68,6 +69,9 @@ async function init() {
         title: values.title,
         question: values.question,
         description: values.description || '',
+        hypothesis: values.hypothesis || '',
+        predicted_outcome: values.predicted_outcome || '',
+        success_metric: values.success_metric || '',
         difficulty: values.difficulty || null,
         effort: values.effort || null,
         deadline: values.deadline || null,
@@ -104,6 +108,9 @@ function getValues() {
     title:       (document.getElementById('title') || {}).value || '',
     question:    (document.getElementById('question') || {}).value || '',
     description: (document.getElementById('description') || {}).value || '',
+    hypothesis:        (document.getElementById('hypothesis') || {}).value || '',
+    predicted_outcome: (document.getElementById('predicted_outcome') || {}).value || '',
+    success_metric:    (document.getElementById('success_metric') || {}).value || '',
     difficulty:  (document.getElementById('difficulty') || {}).value || '',
     effort:      (document.getElementById('effort') || {}).value || '',
     deadline:    (document.getElementById('deadline') || {}).value || '',
@@ -116,6 +123,9 @@ function restoreForm(draft) {
   set('title', draft.title);
   set('question', draft.question);
   set('description', draft.description);
+  set('hypothesis', draft.hypothesis);
+  set('predicted_outcome', draft.predicted_outcome);
+  set('success_metric', draft.success_metric);
   set('difficulty', draft.difficulty);
   set('effort', draft.effort);
   set('deadline', draft.deadline);

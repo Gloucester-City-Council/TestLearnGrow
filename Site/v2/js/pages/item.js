@@ -94,6 +94,12 @@ function renderMain() {
   const bodyText = item.description || item.question || item.topic;
   if (bodyText) frag.appendChild(el('p', { text: bodyText }));
 
+  /* Design-time hypothesis (TLG): the prediction locked in before the test ran. */
+  if (item.item_type === 'experiment') {
+    const design = buildDesignSection(item);
+    if (design) frag.appendChild(design);
+  }
+
   /* Finding / output. Experiments with a shared finding render as a full
      learning snapshot (verdict, expected vs actual, methods, contributors). */
   if (item.item_type === 'experiment' && (item.finding || item.verdict)) {
@@ -174,6 +180,27 @@ function buildMetaItems(item, config) {
     rows.push([name.charAt(0).toUpperCase() + name.slice(1), String(item.xp_reward)]);
   }
   return rows;
+}
+
+/* ── Design-time hypothesis (TLG: locked in before the test starts) ──────── */
+
+function buildDesignSection(item) {
+  const rows = [
+    ['Hypothesis', item.hypothesis],
+    ['Predicted outcome', item.predicted_outcome],
+    ['Success measure', item.success_metric],
+  ].filter(([, value]) => value);
+  if (!rows.length) return null;
+
+  const sec = el('section', { class: 'design-snapshot', 'aria-labelledby': 'design-heading' });
+  sec.appendChild(el('h2', { id: 'design-heading', text: 'The test' }));
+  const dl = el('dl', { class: 'snapshot-grid' });
+  for (const [label, value] of rows) {
+    dl.appendChild(el('dt', { text: label }));
+    dl.appendChild(el('dd', { text: value }));
+  }
+  sec.appendChild(dl);
+  return sec;
 }
 
 /* ── Learning snapshot (fail-fast showcase) ──────────────────────────────── */

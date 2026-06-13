@@ -62,6 +62,9 @@ function renderForm(item, draft, session, draftKey) {
   if (item.item_type === 'experiment') {
     form.appendChild(buildTextArea('question', 'Question', values.question, true));
     form.appendChild(buildTextArea('description', 'Background (optional)', values.description));
+    form.appendChild(buildTextArea('hypothesis', 'Hypothesis (optional)', values.hypothesis));
+    form.appendChild(buildTextField('predicted_outcome', 'Predicted outcome (optional)', values.predicted_outcome, false, 300));
+    form.appendChild(buildTextField('success_metric', 'Success measure', values.success_metric, true, 300));
     form.appendChild(buildSelect('difficulty', 'Difficulty (optional)',
       ['', 'Easy', 'Medium', 'Hard'], values.difficulty));
     form.appendChild(buildSelect('effort', 'Effort (optional)',
@@ -101,6 +104,7 @@ function renderForm(item, draft, session, draftKey) {
     const errors = validate([
       { id: 'title', label: 'Title', value: formValues.title, required: true, maxLength: 200 },
       ...(item.item_type !== 'session' ? [{ id: 'question', label: 'Question', value: formValues.question, required: true }] : []),
+      ...(item.item_type === 'experiment' ? [{ id: 'success_metric', label: 'a success measure', value: formValues.success_metric, required: true, maxLength: 300 }] : []),
       ...(item.item_type === 'session' ? [{ id: 'topic', label: 'Topic', value: formValues.topic, required: true }] : []),
     ]);
     if (errors.length) { showErrors(errors, 'form-errors'); return; }
@@ -132,6 +136,9 @@ function getDefaultValues(item) {
     title:        item.title || '',
     question:     item.question || '',
     description:  item.description || '',
+    hypothesis:        item.hypothesis || '',
+    predicted_outcome: item.predicted_outcome || '',
+    success_metric:    item.success_metric || '',
     topic:        item.topic || '',
     difficulty:   item.difficulty || '',
     effort:       item.effort || '',
@@ -148,6 +155,8 @@ function getFormValues(form, item) {
   if (item.item_type === 'experiment') {
     Object.assign(values, {
       question: v('question'), description: v('description'),
+      hypothesis: v('hypothesis'), predicted_outcome: v('predicted_outcome'),
+      success_metric: v('success_metric'),
       difficulty: v('difficulty') || null, effort: v('effort') || null,
       deadline: v('deadline') || null,
       method_tags: [...form.querySelectorAll('input[name="method_tags"]:checked')].map((c) => c.value),
