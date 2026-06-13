@@ -16,7 +16,6 @@ const DEFAULT_VALUES = {
 function awardPointsForTransition(prev, item, config, leaderboard) {
   const enabled = !config || !config.points || config.points.enabled !== false;
   if (!enabled) return [];
-  if (item.points_awarded_at) return [];
 
   const values = { ...DEFAULT_VALUES, ...((config && config.points && config.points.values) || {}) };
   const awards = [];
@@ -27,25 +26,43 @@ function awardPointsForTransition(prev, item, config, leaderboard) {
     awards.push({ oid, name: leaderboard[oid].name, amount });
   };
 
-  if (item.item_type === 'challenge' && !prev) {
-    add(item.posted_by_oid, item.posted_by_name, values.challenge_post);
+  /* Completion awards (challenge post, shared finding, shared session output)
+     are stamped once via points_awarded_at. */
+  if (!item.points_awarded_at) {
+    if (item.item_type === 'challenge' && !prev) {
+      add(item.posted_by_oid, item.posted_by_name, values.challenge_post);
+    }
+
+    if (item.item_type === 'experiment' &&
+        item.status === 'finding-shared' &&
+        (!prev || prev.status !== 'finding-shared')) {
+      const amount = item.xp_reward || values.experiment_complete;
+      (item.team_oids || []).forEach((oid, i) => add(oid, (item.team_names || [])[i], amount));
+    }
+
+    if (item.item_type === 'session' &&
+        item.status === 'output-shared' &&
+        (!prev || prev.status !== 'output-shared')) {
+      add(item.host_oid, item.host_name, item.xp_reward || values.session_host);
+      (item.attendee_oids || []).forEach((oid, i) => add(oid, (item.attendee_names || [])[i], values.session_attend));
+    }
+
+    if (awards.length > 0) item.points_awarded_at = new Date().toISOString();
   }
 
-  if (item.item_type === 'experiment' &&
-      item.status === 'finding-shared' &&
-      (!prev || prev.status !== 'finding-shared')) {
+  /* TLG Grow award (Phase 2): taking a shared finding forward to scale/adopt is
+     its own milestone, awarded once — separately stamped so it stacks on top of
+     the finding-shared completion award rather than being blocked by it. */
+  if (!item.grow_points_awarded_at &&
+      item.item_type === 'experiment' &&
+      item.status === 'growing' &&
+      (!prev || prev.status !== 'growing')) {
+    const before = awards.length;
     const amount = item.xp_reward || values.experiment_complete;
     (item.team_oids || []).forEach((oid, i) => add(oid, (item.team_names || [])[i], amount));
+    if (awards.length > before) item.grow_points_awarded_at = new Date().toISOString();
   }
 
-  if (item.item_type === 'session' &&
-      item.status === 'output-shared' &&
-      (!prev || prev.status !== 'output-shared')) {
-    add(item.host_oid, item.host_name, item.xp_reward || values.session_host);
-    (item.attendee_oids || []).forEach((oid, i) => add(oid, (item.attendee_names || [])[i], values.session_attend));
-  }
-
-  if (awards.length > 0) item.points_awarded_at = new Date().toISOString();
   return awards;
 }
 

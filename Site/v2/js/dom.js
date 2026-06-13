@@ -87,6 +87,7 @@ export function statusVariant(status) {
     parked: 'neutral',
     'finding-shared': 'green',
     'output-shared': 'green',
+    growing: 'green',
     closed: 'neutral',
   };
   return map[status] || 'neutral';

@@ -1134,7 +1134,7 @@
 
 @media (min-width: 880px) {
   .pipeline {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: start;
   }
 }
@@ -1144,6 +1144,16 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-4);
+}
+
+/* Growing is the TLG scale/adopt stage — give it a distinct (token-only)
+   accent so the "we proved it, now scale it" column stands out. */
+.pipeline-col--growing {
+  border-top: 4px solid var(--chip-green-text);
+}
+
+.pipeline-col--growing .pipeline-col-head {
+  border-bottom-color: var(--chip-green-text);
 }
 
 .pipeline-col-head {

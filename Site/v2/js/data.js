@@ -70,6 +70,15 @@ export function migrateItem(raw) {
   if (typeof item.predicted_outcome !== 'string') item.predicted_outcome = '';
   if (typeof item.success_metric !== 'string') item.success_metric = '';
 
+  /* TLG Phase 2 — grow / scale stage. Captured when a shared finding is taken
+     forward to scale or adopt. grow_points_awarded_at is server-managed (like
+     points_awarded_at) and stamps the once-only grow award. */
+  if (typeof item.grow_decision !== 'string') item.grow_decision = '';
+  if (typeof item.active_ingredients !== 'string') item.active_ingredients = '';
+  if (typeof item.grow_owner !== 'string') item.grow_owner = '';
+  if (typeof item.grow_date !== 'string') item.grow_date = '';
+  if (!item.grow_points_awarded_at) item.grow_points_awarded_at = null;
+
   return item;
 }
 

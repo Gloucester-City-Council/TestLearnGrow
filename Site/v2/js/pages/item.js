@@ -9,6 +9,16 @@ import { VERDICTS, verdictChip, buildVerdictFieldset, selectedVerdict } from '..
 
 const ACTIVE_EXPERIMENT = ['designing', 'running', 'wrapping-up'];
 
+/* TLG grow / scale decision options (Phase 2). Values are stored; labels are
+   shown in the form and the grow snapshot. */
+const GROW_DECISIONS = [
+  { value: 'scale', label: 'Scale it' },
+  { value: 'adopt', label: 'Adopt as standard' },
+  { value: 'stop',  label: 'Stop — not worth scaling' },
+  { value: 'rerun', label: 'Run again with changes' },
+];
+const GROW_DECISION_LABELS = Object.fromEntries(GROW_DECISIONS.map((d) => [d.value, d.label]));
+
 let _item = null;
 let _config = null;
 let _session = null;
@@ -108,6 +118,11 @@ function renderMain() {
     frag.appendChild(el('h2', { text: 'Finding' }));
     frag.appendChild(el('p', { text: item.finding }));
   }
+
+  /* Grow snapshot — the scale/adopt decision and active ingredients (TLG). */
+  if (item.item_type === 'experiment' && item.grow_decision) {
+    frag.appendChild(buildGrowSnapshot(item));
+  }
   if (item.output) {
     frag.appendChild(el('h2', { text: 'Output' }));
     frag.appendChild(el('p', { text: item.output }));
@@ -194,6 +209,28 @@ function buildDesignSection(item) {
 
   const sec = el('section', { class: 'design-snapshot', 'aria-labelledby': 'design-heading' });
   sec.appendChild(el('h2', { id: 'design-heading', text: 'The test' }));
+  const dl = el('dl', { class: 'snapshot-grid' });
+  for (const [label, value] of rows) {
+    dl.appendChild(el('dt', { text: label }));
+    dl.appendChild(el('dd', { text: value }));
+  }
+  sec.appendChild(dl);
+  return sec;
+}
+
+/* ── Grow snapshot (TLG: the scale / adopt decision) ─────────────────────── */
+
+function buildGrowSnapshot(item) {
+  const rows = [
+    ['Decision', GROW_DECISION_LABELS[item.grow_decision] || item.grow_decision],
+    ['Active ingredients', item.active_ingredients],
+    ['Scale-up lead', item.grow_owner],
+    ['Target date', item.grow_date ? fullDate(item.grow_date) : ''],
+  ].filter(([, value]) => value);
+  if (!rows.length) return null;
+
+  const sec = el('section', { class: 'design-snapshot', 'aria-labelledby': 'grow-heading' });
+  sec.appendChild(el('h2', { id: 'grow-heading', text: 'Growing' }));
   const dl = el('dl', { class: 'snapshot-grid' });
   for (const [label, value] of rows) {
     dl.appendChild(el('dt', { text: label }));
@@ -439,6 +476,12 @@ function buildStatusAdvance(item) {
     wrap.appendChild(buildShareFindingForm());
   }
 
+  /* Grow form — appears on a shared finding (to move into Growing) and while
+     Growing (to update the plan). TLG scale/adopt decision. */
+  if (item.item_type === 'experiment' && (item.status === 'finding-shared' || item.status === 'growing')) {
+    wrap.appendChild(buildGrowForm());
+  }
+
   /* Share-output form for sessions happened */
   if (item.item_type === 'session' && item.status === 'happened') {
     wrap.appendChild(buildShareOutputForm());
@@ -583,6 +626,85 @@ function resetVerdictError(form) {
   for (const radio of fs.querySelectorAll('input[name="verdict"]')) {
     radio.removeAttribute('aria-describedby');
   }
+}
+
+/* Grow form — records the TLG scale/adopt decision and the active ingredients.
+   Used both to move a shared finding into Growing and to edit the plan after. */
+function buildGrowForm() {
+  const isGrowing = _item.status === 'growing';
+  const pts = _config.points;
+  const ptsName = (_config.terminology || {}).points_name || 'points';
+  const reward = _item.xp_reward || (pts && pts.values ? pts.values.experiment_complete : 100);
+  const teamCount = (_item.team_oids || []).length;
+  const willAward = pts && pts.enabled && !_item.grow_points_awarded_at;
+  const enterSummary = `Moving to Growing records the scale decision${willAward
+    ? ` and awards ${reward} ${ptsName} to each of ${teamCount} team member${teamCount !== 1 ? 's' : ''}`
+    : ''}.`;
+
+  const wrapper = el('div', { class: 'board-section', 'aria-label': isGrowing ? 'Grow plan' : 'Grow this finding' });
+  wrapper.appendChild(el('h2', { text: isGrowing ? 'Grow plan' : 'Grow this finding' }));
+  wrapper.appendChild(el('p', { text: isGrowing ? 'Update how this finding is being scaled or adopted.' : enterSummary }));
+
+  const errorSummary = el('div', {
+    id: 'grow-errors', class: 'error-summary', role: 'alert', hidden: true,
+    'aria-labelledby': 'grow-errors-title',
+  });
+  errorSummary.appendChild(el('h3', { id: 'grow-errors-title', class: 'error-summary__title', text: 'There is a problem' }));
+  errorSummary.appendChild(el('ul', { class: 'error-summary__list' }));
+  wrapper.appendChild(errorSummary);
+
+  const form = el('form', { id: 'grow-form', novalidate: true });
+
+  const fs = el('fieldset', { id: 'grow-decision-group' });
+  fs.appendChild(el('legend', { text: 'Grow decision (required)' }));
+  fs.appendChild(el('span', { class: 'form-hint', text: 'What happens to this finding now?' }));
+  for (const d of GROW_DECISIONS) {
+    const radio = el('input', { type: 'radio', name: 'grow_decision', id: `grow-decision-${d.value}`, value: d.value });
+    if (_item.grow_decision === d.value) radio.checked = true;
+    fs.appendChild(el('label', { class: 'label-inline' }, radio, d.label));
+  }
+  form.appendChild(fs);
+
+  const ingGroup = el('div', { class: 'form-group' });
+  ingGroup.appendChild(el('label', { for: 'active-ingredients', text: 'Active ingredients (optional)' }));
+  ingGroup.appendChild(el('span', { class: 'form-hint', text: 'What specifically caused the effect, so others can replicate it?' }));
+  const ingTa = el('textarea', { id: 'active-ingredients', name: 'active_ingredients', rows: '3' });
+  ingTa.value = _item.active_ingredients || '';
+  ingGroup.appendChild(ingTa);
+  form.appendChild(ingGroup);
+
+  const ownerGroup = el('div', { class: 'form-group' });
+  ownerGroup.appendChild(el('label', { for: 'grow-owner', text: 'Who is leading the scale-up? (optional)' }));
+  const ownerInput = el('input', { type: 'text', id: 'grow-owner', name: 'grow_owner', autocomplete: 'off', maxlength: '200' });
+  ownerInput.value = _item.grow_owner || '';
+  ownerGroup.appendChild(ownerInput);
+  form.appendChild(ownerGroup);
+
+  const dateGroup = el('div', { class: 'form-group' });
+  dateGroup.appendChild(el('label', { for: 'grow-date', text: 'Target scale-up date (optional)' }));
+  const dateInput = el('input', { type: 'date', id: 'grow-date', name: 'grow_date' });
+  if (_item.grow_date) dateInput.value = _item.grow_date.slice(0, 10);
+  dateGroup.appendChild(dateInput);
+  form.appendChild(dateGroup);
+
+  const submitBtn = el('button', { type: 'button', class: 'btn' }, isGrowing ? 'Update grow plan' : 'Move to Growing');
+  submitBtn.addEventListener('click', async () => {
+    const decision = (form.querySelector('input[name="grow_decision"]:checked') || {}).value || '';
+    if (!decision) {
+      showErrors([{ field: 'grow-decision-scale', message: 'Choose a grow decision' }], 'grow-errors');
+      return;
+    }
+    clearErrors('grow-errors');
+    await doMoveToGrowing({
+      grow_decision: decision,
+      active_ingredients: ingTa.value.trim(),
+      grow_owner: ownerInput.value.trim(),
+      grow_date: dateInput.value || '',
+    });
+  });
+  form.appendChild(submitBtn);
+  wrapper.appendChild(form);
+  return wrapper;
 }
 
 function buildShareOutputForm() {
@@ -765,6 +887,19 @@ async function doShareFinding(finding, outcome, verdict, expected, actual) {
     updated_at: now,
     closed_at: now,
   }, 'Finding shared successfully.');
+}
+
+async function doMoveToGrowing(fields) {
+  const now = new Date().toISOString();
+  await doSave({
+    ..._item,
+    status: 'growing',
+    grow_decision: fields.grow_decision,
+    active_ingredients: fields.active_ingredients,
+    grow_owner: fields.grow_owner,
+    grow_date: fields.grow_date,
+    updated_at: now,
+  }, 'Grow plan saved — moved to Growing.');
 }
 
 async function doShareOutput(output) {

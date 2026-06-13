@@ -69,34 +69,38 @@ what specifically caused the effect — so others can replicate it.
 
 ### To-do
 
-- [ ] **`Site/v2/js/pages/pipeline.js` → `STAGES`** — append:
+- [x] **`Site/v2/js/pages/pipeline.js` → `STAGES`** — append:
   ```js
   { status: 'growing', label: 'Growing' },
   ```
-- [ ] **`Site/v2/js/pages/pipeline.js` → `NEXT`** — add:
+- [x] **`Site/v2/js/pages/pipeline.js` → `NEXT`** — add:
   ```js
   'finding-shared': { next: 'growing', label: 'Growing' },
   ```
   The "Move to Growing" button on a Shared card should open the item page (like
   "wrapping-up → Share finding") so the team must fill in the grow fields first.
-- [ ] **`Site/v2/js/pages/item.js`** — add a "Growing" section that appears when
+  - *Implemented per the stated intent: rather than a `NEXT` auto-advance (which would skip the grow form), `buildMove()` special-cases `finding-shared` to link to `item.html` — exactly like `wrapping-up`. `NEXT` is left unchanged so the board never moves a card to Growing without the grow decision.*
+- [x] **`Site/v2/js/pages/item.js`** — add a "Growing" section that appears when
   `status === 'growing'`:
   - `grow_decision` — radio: "Scale it", "Adopt as standard", "Stop — not worth scaling", "Run again with changes"
   - `active_ingredients` — textarea, label "What specifically caused the effect? (active ingredients)"
   - `grow_owner` — input, label "Who is leading the scale-up?"
   - `grow_date` — date, label "Target scale-up date"
-- [ ] **`Site/v2/js/data.js` → `migrateItem()`** — add defaults:
+  - *The grow form also appears on a `finding-shared` item (the entry point into Growing) and submitting it sets `status: 'growing'`. A read-only "Growing" snapshot renders once a decision is recorded.*
+- [x] **`Site/v2/js/data.js` → `migrateItem()`** — add defaults:
   ```js
   if (typeof item.grow_decision !== 'string') item.grow_decision = '';
   if (typeof item.active_ingredients !== 'string') item.active_ingredients = '';
   if (typeof item.grow_owner !== 'string') item.grow_owner = '';
   if (typeof item.grow_date !== 'string') item.grow_date = '';
   ```
-- [ ] **`api/points.js`** — decide whether reaching `growing` awards points (currently
+- [x] **`api/points.js`** — decide whether reaching `growing` awards points (currently
   only `finding-shared` does). Recommend: yes — same value as sharing, awarded once.
   Add test in `api/tests/points.test.js`.
-- [ ] **CSS** — `pipeline.css` or `components.css`: give the `growing` column a distinct
+  - *Yes. Awarded once via a separate `grow_points_awarded_at` stamp so it stacks on the finding-shared award instead of being blocked by `points_awarded_at`. `function.js` preserves both server-managed stamps. Test added.*
+- [x] **CSS** — `pipeline.css` or `components.css`: give the `growing` column a distinct
   accent (use `--color-success` token; do **not** hardcode green).
+  - *No `--color-success` token exists; used the token-based `--chip-green-text` (the codebase's success colour) on `.pipeline-col--growing`. No hardcoded hex.*
 
 ### Acceptance criteria
 

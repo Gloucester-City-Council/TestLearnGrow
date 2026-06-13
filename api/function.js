@@ -222,11 +222,13 @@ app.http('questSave', {
 
       if (current) {
         item.points_awarded_at = current.points_awarded_at || null; // server-managed
+        item.grow_points_awarded_at = current.grow_points_awarded_at || null; // server-managed
         const verdict = authorizeItemWrite(current, item, principal, admin);
         if (!verdict.ok) return err(request, verdict.status, verdict.reason);
       } else {
         // Creator identity comes from the verified principal, not the body.
         item.points_awarded_at = null;
+        item.grow_points_awarded_at = null;
         if (item.item_type === 'session') {
           item.host_oid = principal.oid;
           item.host_name = principal.name;
