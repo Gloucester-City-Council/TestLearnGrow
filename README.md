@@ -6,6 +6,26 @@ The rebuilt `Site/v2/` app targets **WCAG 2.2 AAA** conformance. The original Re
 
 ---
 
+## What is this?
+
+A shared board for running a **Test–Learn–Grow** practice in the open. Instead of
+improvement work happening in scattered documents and inboxes, a team uses the
+board to: post **experiments** with a hypothesis and a success measure written
+*before* the test starts, run **sessions** people can sign up to, set
+**challenges** others can respond to — and then carry the findings that worked
+forward to a deliberate scale decision.
+
+It is deliberately a thin presentation layer over that method: the value is in the
+gates (a test must have a success measure, a scale decision must record its
+evidence) and in making the work visible, not in heavy machinery. It is
+white-label — every label, colour, and points rule is configurable — so the same
+board serves any organisation that wants to test, learn, and grow.
+
+**New here? Start with the [user guide](docs/guide.md)** — what each activity is,
+the experiment lifecycle, points, and roles.
+
+---
+
 ## What it does
 
 - **Board** — view experiments, sessions, and challenges in one place
