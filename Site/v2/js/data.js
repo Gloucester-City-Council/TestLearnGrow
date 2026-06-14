@@ -151,6 +151,10 @@ export function migrateOutcome(raw) {
   if (typeof o.goal_metric !== 'string') o.goal_metric = '';
   if (typeof o.target_value !== 'string') o.target_value = '';
   if (typeof o.target_date !== 'string') o.target_date = '';
+  /* Owner synthesis (Grow governance) */
+  if (typeof o.learning_summary !== 'string') o.learning_summary = '';
+  if (typeof o.grow_recommendation !== 'string') o.grow_recommendation = '';
+  if (typeof o.next_review_date !== 'string') o.next_review_date = '';
   if (typeof o.owner_oid !== 'string') o.owner_oid = '';
   if (typeof o.owner_name !== 'string') o.owner_name = '';
   return o;

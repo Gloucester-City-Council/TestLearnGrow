@@ -29,6 +29,19 @@ test('prepareOutcome preserves the original owner on update', () => {
   assert.equal(r.outcome.title, 'Renamed');
 });
 
+test('prepareOutcome persists owner synthesis fields from the body', () => {
+  const r = prepareOutcome('o1', {
+    outcome_id: 'o1', title: 'Goal',
+    learning_summary: 'We now believe early reminders work',
+    grow_recommendation: 'Scale A widely; stop B',
+    next_review_date: '2026-09-01',
+  }, alice, null);
+  assert.equal(r.ok, true);
+  assert.equal(r.outcome.learning_summary, 'We now believe early reminders work');
+  assert.equal(r.outcome.grow_recommendation, 'Scale A widely; stop B');
+  assert.equal(r.outcome.next_review_date, '2026-09-01');
+});
+
 test('prepareOutcome rejects a title-less outcome', () => {
   const r = prepareOutcome('o1', { outcome_id: 'o1', title: '   ' }, alice, null);
   assert.equal(r.ok, false);

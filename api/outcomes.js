@@ -4,6 +4,7 @@
 
 const OUTCOME_FIELDS = [
   'outcome_id', 'title', 'goal_metric', 'target_value', 'target_date',
+  'learning_summary', 'grow_recommendation', 'next_review_date',
   'owner_oid', 'owner_name',
 ];
 
@@ -30,6 +31,10 @@ function prepareOutcome(id, incoming, principal, current) {
     goal_metric: String(incoming.goal_metric || ''),
     target_value: String(incoming.target_value || ''),
     target_date: String(incoming.target_date || ''),
+    /* Owner synthesis (Grow governance) — body-supplied free text/date. */
+    learning_summary: String(incoming.learning_summary || ''),
+    grow_recommendation: String(incoming.grow_recommendation || ''),
+    next_review_date: String(incoming.next_review_date || ''),
     owner_oid: current ? (current.owner_oid || '') : principal.oid,
     owner_name: current ? (current.owner_name || '') : principal.name,
   };
