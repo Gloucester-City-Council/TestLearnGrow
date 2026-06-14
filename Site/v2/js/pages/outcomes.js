@@ -1,6 +1,6 @@
 import { requireSignIn } from '../auth.js';
 import { loadConfig } from '../config-loader.js';
-import { loadOutcomes, saveOutcome, loadItems, nano, fullDate } from '../data.js';
+import { loadOutcomes, saveOutcome, loadItems, nano, fullDate, daysBetween } from '../data.js';
 import { el, chipEl, statusVariant, statusLabel, announce, moveFocus } from '../dom.js';
 import { validate, showErrors, clearErrors } from '../forms.js';
 import { VERDICTS } from '../verdict.js';
@@ -49,13 +49,18 @@ function render() {
   const list = document.getElementById('outcomes-list');
   if (!list) return;
 
+  const frag = document.createDocumentFragment();
+
+  /* Grow programme health — portfolio-wide analytics and quality prompts. */
+  const analytics = buildGrowAnalytics(_items, _outcomes);
+  if (analytics) frag.appendChild(analytics);
+
   if (!_outcomes.length) {
-    list.replaceChildren(el('p', { class: 'empty-state', text: 'No goals yet. Add one below to start laddering experiments up to a mission.' }));
+    frag.appendChild(el('p', { class: 'empty-state', text: 'No goals yet. Add one below to start laddering experiments up to a mission.' }));
+    list.replaceChildren(frag);
     announce('No outcomes yet.');
     return;
   }
-
-  const frag = document.createDocumentFragment();
 
   /* Quality flag: experiments with no goal are evidence that isn't attributable. */
   const unlinked = _items.filter((i) => !i.outcome_id).length;
@@ -264,6 +269,81 @@ function buildSynthesisEditor(outcome) {
   return details;
 }
 
+/* ── Grow programme health (Phase 6 analytics) ───────────────────────────── */
+
+const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+const pct = (n, d) => (d ? `${Math.round((n / d) * 100)}% (${n}/${d})` : '—');
+const SHARED = ['finding-shared', 'growing', 'scaled'];
+
+function buildGrowAnalytics(exps, outcomes) {
+  if (!exps.length) return null;
+
+  const growDecided = exps.filter((i) => i.grow_decision);
+  const scaleAdopt = exps.filter((i) => i.grow_decision === 'scale' || i.grow_decision === 'adopt');
+  const scaled = exps.filter((i) => i.status === 'scaled');
+
+  const panel = el('section', { class: 'card', 'aria-labelledby': 'grow-health-heading', style: 'margin-bottom:var(--space-4)' });
+  panel.appendChild(el('h2', { id: 'grow-health-heading', text: 'Grow programme health' }));
+
+  const stats = el('dl', { class: 'detail-meta-list' });
+  const stat = (label, value) => stats.appendChild(el('div', { class: 'detail-meta-item' },
+    el('dt', { class: 'detail-meta-label', text: label }), el('dd', { text: value })));
+
+  const DEC = { scale: 'scaling', adopt: 'adopting', rerun: 're-testing', stop: 'stopped' };
+  stat('Grow decisions', ['scale', 'adopt', 'rerun', 'stop']
+    .map((k) => `${growDecided.filter((i) => i.grow_decision === k).length} ${DEC[k]}`).join(' · '));
+
+  const sharedNoDecision = exps.filter((i) => i.finding && SHARED.includes(i.status) && !i.grow_decision).length;
+  stat('Shared findings awaiting a Grow decision', String(sharedNoDecision));
+
+  const sg = growDecided.map((i) => daysBetween(i.closed_at, i.grow_decided_at)).filter((n) => n != null);
+  stat('Avg days, finding → Grow decision', sg.length ? `${Math.round(avg(sg))}` : '—');
+
+  const gs = scaled.map((i) => daysBetween(i.grow_decided_at, i.scale_review_date)).filter((n) => n != null);
+  stat('Avg days, Grow decision → scaled', gs.length ? `${Math.round(avg(gs))}` : '—');
+
+  stat('Scale/adopt with active ingredients', pct(scaleAdopt.filter((i) => i.active_ingredients).length, scaleAdopt.length));
+  stat('Scaled with a scale-review result', pct(scaled.filter((i) => i.scale_result).length, scaled.length));
+
+  const followOns = exps
+    .filter((i) => (i.grow_decision === 'stop' || i.grow_decision === 'rerun'))
+    .reduce((n, i) => n + (i.spawned_ids || []).length, 0);
+  stat('Follow-ons from stop / re-test decisions', String(followOns));
+
+  panel.appendChild(stats);
+
+  const prompts = buildQualityPrompts(exps, outcomes);
+  if (prompts) panel.appendChild(prompts);
+  return panel;
+}
+
+/* Actionable Grow-quality gaps across the portfolio. */
+function buildQualityPrompts(exps, outcomes) {
+  const prompts = [];
+  const plural = (n) => (n !== 1 ? 's' : '');
+
+  const c1 = exps.filter((i) => i.finding && SHARED.includes(i.status) && !i.grow_decision).length;
+  if (c1) prompts.push(`${c1} shared finding${plural(c1)} missing a Grow decision.`);
+  const c2 = exps.filter((i) => (i.grow_decision === 'scale' || i.grow_decision === 'adopt') && !i.active_ingredients).length;
+  if (c2) prompts.push(`${c2} scale/adopt decision${plural(c2)} missing active ingredients.`);
+  const c3 = exps.filter((i) => i.status === 'growing' && !i.grow_owner).length;
+  if (c3) prompts.push(`${c3} growing experiment${plural(c3)} with no owner.`);
+  const c4 = exps.filter((i) => i.status === 'growing'
+    && (i.grow_decision === 'scale' || i.grow_decision === 'adopt')
+    && i.grow_date && new Date(i.grow_date).getTime() < Date.now()).length;
+  if (c4) prompts.push(`${c4} scale review${plural(c4)} overdue.`);
+  const c5 = outcomes.filter((o) => !o.learning_summary && experimentsFor(o.outcome_id).some((i) => i.finding)).length;
+  if (c5) prompts.push(`${c5} goal${plural(c5)} with evidence but no “what we now believe” summary.`);
+
+  if (!prompts.length) return null;
+  const wrap = el('div', { style: 'margin-top:var(--space-3)' });
+  wrap.appendChild(el('h3', { text: 'Next Grow-quality actions' }));
+  const ul = el('ul');
+  for (const p of prompts) ul.appendChild(el('li', { text: p }));
+  wrap.appendChild(ul);
+  return wrap;
+}
+
 /* ── Add-goal form ────────────────────────────────────────────────────────── */
 
 function setupForm() {
@@ -319,13 +399,19 @@ function exportPortfolio() {
     'Goal', 'Goal metric', 'Target', 'Target date', 'Learning summary', 'Grow recommendation',
     'Experiment', 'Status', 'Grow decision', 'Evidence strength', 'Scale readiness',
     'Active ingredients', 'Grow owner', 'Grow date',
+    'Days design→shared', 'Days finding→grow', 'Days grow→scaled',
+    'Scale result', 'Metric at scale', 'Open grow tasks',
   ];
   const lines = [header.map(csvCell).join(',')];
+  const days = (a, b) => { const n = daysBetween(a, b); return n == null ? '' : String(n); };
   const expCols = (exp) => [
     exp.title || 'Untitled', exp.status || '', exp.grow_decision || '', exp.evidence_strength || '',
     exp.scale_readiness || '', exp.active_ingredients || '', exp.grow_owner || '', exp.grow_date || '',
+    days(exp.created_at, exp.closed_at), days(exp.closed_at, exp.grow_decided_at), days(exp.grow_decided_at, exp.scale_review_date),
+    exp.scale_result || '', exp.scale_metric_result || '',
+    String((exp.grow_tasks || []).filter((t) => t && !t.completed_at).length),
   ];
-  const emptyExp = ['', '', '', '', '', '', '', ''];
+  const emptyExp = new Array(14).fill('');
   for (const o of _outcomes) {
     const linked = experimentsFor(o.outcome_id);
     const base = [o.title, o.goal_metric, o.target_value, o.target_date, o.learning_summary, o.grow_recommendation];

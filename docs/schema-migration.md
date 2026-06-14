@@ -93,6 +93,14 @@ A `growing` experiment with a `scale`/`adopt` decision can only reach the termin
 
 Tasks are part of the item blob, so adding/completing them is a full item write — already restricted to the poster/host/team/admin by `authorizeItemWrite` (no auth change). The pipeline shows open/overdue task counts on Growing cards; the scale-review form warns (does not block) when tasks remain open.
 
+**Grow analytics (Phase 6 of the Grow build plan).** One new experiment field enables cycle-time metrics.
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `grow_decided_at` | string (ISO) | `''` | Stamped client-side when the experiment first moves to `growing` (preserved on later edits). Powers "finding → Grow decision" and "Grow decision → scaled" averages. |
+
+The Outcomes page renders a "Grow programme health" panel (decision mix, shared findings awaiting a decision, average Grow cycle times, % of scale/adopt with active ingredients, % of scaled with a scale-review result, follow-ons from stop/re-test) plus actionable quality prompts. The portfolio CSV gains cycle-time, Grow cycle-time, scale-review, and open-task columns. All analytics are computed client-side from existing item/outcome data — no new API.
+
 **`migrateItem()` additions:**
 ```js
 if (typeof item.grow_decision !== 'string') item.grow_decision = '';

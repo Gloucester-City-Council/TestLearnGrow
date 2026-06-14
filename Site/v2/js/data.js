@@ -112,6 +112,7 @@ export function migrateItem(raw) {
   if (typeof item.active_ingredients !== 'string') item.active_ingredients = '';
   if (typeof item.grow_owner !== 'string') item.grow_owner = '';
   if (typeof item.grow_date !== 'string') item.grow_date = '';
+  if (typeof item.grow_decided_at !== 'string') item.grow_decided_at = ''; // when the grow decision was first made (Grow cycle-time analytics)
   if (!item.grow_points_awarded_at) item.grow_points_awarded_at = null;
 
   /* Grow decision quality — why the decision was made, how strong the evidence
