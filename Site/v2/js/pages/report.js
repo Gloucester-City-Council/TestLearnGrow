@@ -3,7 +3,10 @@ import { loadConfig, t } from '../config-loader.js';
 import { loadItems, loadOutcomes, fullDate, daysBetween } from '../data.js';
 import { el, chipEl, statusLabel, announce, moveFocus, skeleton } from '../dom.js';
 import { verdictChip, verdictLabel } from '../verdict.js';
-import { LEARN_DECISION_LABELS, GROW_DECISION_LABELS } from '../decisions.js';
+import {
+  LEARN_DECISION_LABELS, GROW_DECISION_LABELS, EVIDENCE_STRENGTH_LABELS,
+  SCALE_READINESS_LABELS, GROWTH_DECISIONS,
+} from '../decisions.js';
 
 /* Evidence card (TLG Phase 5). A clean, print-ready summary of one experiment —
    the design-time prediction, the verdict, what happened, and the grow decision
@@ -92,11 +95,31 @@ function render(item, goal) {
   /* Growing */
   const growRows = [
     ['Decision', GROW_DECISION_LABELS[item.grow_decision] || ''],
+    ['Why', item.grow_rationale],
+    ['Evidence strength', EVIDENCE_STRENGTH_LABELS[item.evidence_strength] || ''],
+    ['Scale readiness', SCALE_READINESS_LABELS[item.scale_readiness] || ''],
     ['Active ingredients', item.active_ingredients],
     ['Scale-up lead', item.grow_owner],
     ['Target date', item.grow_date ? fullDate(item.grow_date) : ''],
+    ['Risks / constraints', item.scale_risks],
   ];
   if (growRows.some(([, v]) => v)) frag.appendChild(buildSection('Growing', growRows));
+
+  /* Highlight missing Grow detail on a scale/adopt record — new records can't be
+     saved incomplete, so this surfaces gaps in legacy data. */
+  if (GROWTH_DECISIONS.includes(item.grow_decision)) {
+    const missing = [];
+    if (!item.grow_rationale)     missing.push('a rationale');
+    if (!item.evidence_strength)  missing.push('evidence strength');
+    if (!item.scale_readiness)    missing.push('scale readiness');
+    if (!item.active_ingredients) missing.push('active ingredients');
+    if (!item.grow_owner)         missing.push('a scale-up lead');
+    if (!item.grow_date)          missing.push('a target date');
+    if (missing.length) {
+      frag.appendChild(el('div', { class: 'status-message status-message--info', role: 'note' },
+        el('p', { text: `Missing Grow detail for this ${(GROW_DECISION_LABELS[item.grow_decision] || 'grow').toLowerCase()} decision: ${missing.join(', ')}.` })));
+    }
+  }
 
   /* Peer review — independent challenges of the finding, recorded for
      transparency. Only shown when at least one review exists. */

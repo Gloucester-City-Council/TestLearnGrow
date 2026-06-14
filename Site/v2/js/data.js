@@ -114,6 +114,13 @@ export function migrateItem(raw) {
   if (typeof item.grow_date !== 'string') item.grow_date = '';
   if (!item.grow_points_awarded_at) item.grow_points_awarded_at = null;
 
+  /* Grow decision quality — why the decision was made, how strong the evidence
+     is, how ready to scale, and the risks/constraints for replication. */
+  if (typeof item.grow_rationale !== 'string') item.grow_rationale = '';
+  if (typeof item.evidence_strength !== 'string') item.evidence_strength = '';
+  if (typeof item.scale_readiness !== 'string') item.scale_readiness = '';
+  if (typeof item.scale_risks !== 'string') item.scale_risks = '';
+
   /* TLG Phase 3 — learning loops. pivot / persevere / spawn. spawned_ids is
      defaulted with the other array fields above; parent_id links a follow-on
      back to the experiment it grew out of. */
