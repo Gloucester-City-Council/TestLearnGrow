@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guide — Activity Board</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <script src="config.js"></script>
+</head>
+<body class="site-wrapper">
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <!-- shell:start -->
+  <header class="site-header">
+    <div class="site-header-bar">
+      <a class="site-name" href="index.html" id="site-name">Activity Board</a>
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-controls="main-nav" aria-expanded="false" hidden>
+        <span class="nav-toggle-icon" aria-hidden="true"></span>
+        Menu
+      </button>
+      <div class="shell-actions">
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false">
+          <span class="theme-toggle-glyph" aria-hidden="true"></span>
+          <span class="theme-toggle-label">Dark mode</span>
+        </button>
+        <div class="shell-user" id="shell-user" hidden>
+          <span class="shell-avatar" id="user-avatar" aria-hidden="true"></span>
+          <span class="user-name" id="user-name"></span>
+          <button type="button" id="sign-out" class="shell-signout" hidden>Sign out</button>
+        </div>
+      </div>
+    </div>
+    <nav aria-label="Main navigation" id="main-nav">
+      <ul>
+        <li><a href="index.html">Board</a></li>
+        <li><a href="pipeline.html">Pipeline</a></li>
+        <li><a href="outcomes.html">Outcomes</a></li>
+        <li><a href="learning.html">Learning</a></li>
+        <li><a href="members.html">Members</a></li>
+        <li><a href="leaderboard.html">Leaderboard</a></li>
+        <li><a href="guide.html">Guide</a></li>
+        <li><a href="admin.html" id="nav-admin" hidden>Admin</a></li>
+      </ul>
+    </nav>
+  </header>
+  <!-- shell:end -->
+
+  <main id="main" class="site-main" tabindex="-1">
+    <div class="section-toolbar">
+      <h1 id="page-title">What this is &amp; how to use it</h1>
+    </div>
+
+    <p class="board-intro">
+      A shared board for running a <strong>Test–Learn–Grow</strong> practice in the
+      open: post experiments with a hypothesis and a success measure written before
+      the test starts, run sessions people can sign up to, set challenges others can
+      respond to — then carry the findings that worked forward to a deliberate scale
+      decision.
+    </p>
+
+    <p class="measure">
+      <strong>A note on names:</strong> this guide uses the default labels —
+      <em>Experiment</em>, <em>Session</em>, <em>Challenge</em>, <em>Member</em>,
+      <em>points</em>. Your board may rename any of these; the behaviour is the same
+      whatever they are called.
+    </p>
+
+    <section aria-labelledby="purpose-heading">
+      <h2 id="purpose-heading">What the board is for</h2>
+      <p>The board runs a Test–Learn–Grow loop and keeps it visible:</p>
+      <ol>
+        <li><strong>Test</strong> — make a clear prediction, try something small, measure the result.</li>
+        <li><strong>Learn</strong> — share what you found, honestly, whether it worked or not.</li>
+        <li><strong>Grow</strong> — scale the findings that held up; park the ones that didn't.</li>
+      </ol>
+      <p>
+        Its job is to hold a few useful gates in place — a test must state how you'll
+        know it worked <em>before</em> it starts, and a decision to scale must record
+        the evidence behind it. Everything else is kept light on purpose.
+      </p>
+    </section>
+
+    <section aria-labelledby="types-heading">
+      <h2 id="types-heading">The three activity types</h2>
+      <p>Everything on the board is one of three kinds of activity. You don't have to use all three — an admin can switch Sessions or Challenges off.</p>
+      <table>
+        <caption>Activity types at a glance</caption>
+        <thead>
+          <tr>
+            <th scope="col">Type</th>
+            <th scope="col">What it is</th>
+            <th scope="col">Lifecycle in short</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Experiment</th>
+            <td>A test of a change, with a hypothesis and a success measure. The heart of the board.</td>
+            <td>Designing → Running → Wrapping up → Finding shared → Growing → Scaled</td>
+          </tr>
+          <tr>
+            <th scope="row">Session</th>
+            <td>A scheduled event others can sign up to — a workshop, talk, or working session.</td>
+            <td>Scheduled → Held → Output shared</td>
+          </tr>
+          <tr>
+            <th scope="row">Challenge</th>
+            <td>An open prompt or problem inviting responses from others.</td>
+            <td>Open → responses come in → Closed</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section aria-labelledby="lifecycle-heading">
+      <h2 id="lifecycle-heading">The experiment lifecycle</h2>
+      <p>An experiment is designed to make you think before you act and reflect after.</p>
+      <ol>
+        <li><strong>Designing.</strong> Write the test before running it: a hypothesis ("If we do X, we expect Y because Z"), a predicted outcome, and — required — a success measure plus a baseline. You can't advance without a success measure; that gate is the point.</li>
+        <li><strong>Running.</strong> The test is live.</li>
+        <li><strong>Wrapping up.</strong> Record the measured result against your success measure, and a verdict — did the prediction hold? A validated verdict requires a measured result.</li>
+        <li><strong>Finding shared.</strong> The learning is published for everyone. This is a milestone — the team earns points here.</li>
+        <li><strong>Growing.</strong> Decide what to do with a finding that worked: scale, adopt, re-run, or stop. A scale/adopt decision records its active ingredients, an owner, the evidence strength, and scale readiness. Only scale/adopt earn the grow reward — parking a dead end is honest, not points-worthy.</li>
+        <li><strong>Scaled.</strong> A later review records whether the finding actually held at scale, not just that someone intended to scale it.</li>
+      </ol>
+      <p>
+        Off-ramps exist too: an experiment can be <strong>parked</strong>, and learnings can
+        <strong>spawn</strong> a follow-on experiment that links back to its parent.
+        Experiments can also ladder up to a mission/outcome so their impact is attributable.
+        The <a href="pipeline.html">Pipeline</a> page groups all experiments by stage so you can see where work is stuck.
+      </p>
+    </section>
+
+    <section aria-labelledby="member-heading">
+      <h2 id="member-heading">Using it as a team member</h2>
+      <ul>
+        <li><strong>Sign in</strong> with your organisation account. On a local or demo board you'll get a mock account picker instead.</li>
+        <li><strong>Browse the board.</strong> The <a href="index.html">home page</a> shows your next steps, fresh learning, and the full board. Open any item for detail.</li>
+        <li><strong>Start something</strong> from the create pages. For an experiment, you'll be asked for the hypothesis and success measure up front — that's deliberate.</li>
+        <li><strong>Take part without owning.</strong> On items you don't own you can still: sign up for or leave a session, join or leave an experiment's team, post an update you authored, and respond to a challenge. These are additive — you add or remove yourself and append your own contributions, but you can't edit other people's content.</li>
+        <li><strong>Keep your profile current.</strong> Your <a href="members.html">Member card</a> lists your expertise, what you'll mentor on, and your stretch goals, so people can find who can help.</li>
+        <li><strong>Watch the <a href="leaderboard.html">leaderboard</a></strong> if points are enabled.</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="points-heading">
+      <h2 id="points-heading">How points work</h2>
+      <p>Points (if enabled) reward finishing and sharing, not just starting. Defaults:</p>
+      <table>
+        <caption>Default points awards</caption>
+        <thead>
+          <tr>
+            <th scope="col">Action</th>
+            <th scope="col">Points</th>
+            <th scope="col">Who earns</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Experiment finding shared</th><td>100</td><td>the experiment team</td></tr>
+          <tr><th scope="row">Growing (scale/adopt decision)</th><td>100</td><td>the experiment team</td></tr>
+          <tr><th scope="row">Hosting a session (output shared)</th><td>75</td><td>the host</td></tr>
+          <tr><th scope="row">Attending a session (output shared)</th><td>25</td><td>each attendee</td></tr>
+          <tr><th scope="row">Posting a challenge</th><td>25</td><td>the poster</td></tr>
+        </tbody>
+      </table>
+      <p>
+        The server awards points, once: you never edit the leaderboard directly, and
+        the same milestone can't pay out twice. Amounts, rank names, and thresholds are
+        all configurable, and points can be turned off entirely.
+      </p>
+    </section>
+
+    <section aria-labelledby="roles-heading">
+      <h2 id="roles-heading">Roles and permissions</h2>
+      <p>There are no complicated roles — just a sensible trust model, enforced by the server (the interface only hides buttons you can't use; the server is the real gate).</p>
+      <ul>
+        <li><strong>Anyone signed in</strong> can create activities, take part additively, and edit their own Member card.</li>
+        <li><strong>An item's owner</strong> — the poster, a session's host, or a team member — can edit and delete that item fully. Who created it, when, and what type can never be changed, even by the owner.</li>
+        <li><strong>Admins</strong> can edit any item, correct the leaderboard, and use the <a href="admin.html">Admin</a> page to set branding, terminology, features, points, and the colour theme. Bootstrap admins can't be removed from the interface, so a board can't lock everyone out.</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="admin-heading">
+      <h2 id="admin-heading">For admins: configuring a board</h2>
+      <p>
+        The <a href="admin.html">Admin</a> page edits the live config. The notable
+        guardrail: theme colours are validated to WCAG 2.2 AAA contrast on save — the
+        board refuses a palette whose text falls below 7:1, so you can't accidentally
+        ship an inaccessible theme. You can change branding, terminology, which features
+        are enabled, points rules, the colour theme, and the skills catalogue that
+        populates Member cards.
+      </p>
+    </section>
+
+    <section aria-labelledby="next-heading">
+      <h2 id="next-heading">Where to go next</h2>
+      <ul>
+        <li><a href="index.html">Go to the board</a> and start an activity.</li>
+        <li><a href="members.html">Set up your Member card</a> so people can find you.</li>
+      </ul>
+    </section>
+  </main>
+
+  <div role="status" aria-live="polite" id="live-region" class="sr-only"></div>
+
+  <script type="module" src="js/shell.js"></script>
+</body>
+</html>
