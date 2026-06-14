@@ -2,7 +2,7 @@ import { requireSignIn } from '../auth.js';
 import { loadConfig, t } from '../config-loader.js';
 import { loadItems, saveItem, timeAgo, fullDate } from '../data.js';
 import { el, announce, chipEl, moveFocus, skeleton } from '../dom.js';
-import { initials } from '../profile-card.js';
+import { avatarEl } from '../profile-card.js';
 
 /* The experiment pipeline — a Monday-light board where experiments flow
    left-to-right through their lifecycle. No drag-and-drop (WCAG 2.5.7):
@@ -209,7 +209,7 @@ function buildAvatars(item) {
   }
   const shown = names.slice(0, 4);
   for (const n of shown) {
-    wrap.appendChild(el('span', { class: 'member-avatar member-avatar--sm', 'aria-hidden': 'true' }, initials(n)));
+    wrap.appendChild(avatarEl(n, { sm: true }));
   }
   if (names.length > shown.length) {
     wrap.appendChild(el('span', { class: 'pipeline-avatar-more', 'aria-hidden': 'true', text: `+${names.length - shown.length}` }));

@@ -1,6 +1,6 @@
 import { getSession, clearSession } from './auth.js';
 import { loadConfig, applyTheme } from './config-loader.js';
-import { initials } from './profile-card.js';
+import { initials, avatarColour } from './profile-card.js';
 
 /* Mark the current nav link as the active page (2.4.1 / 3.2.3) */
 function markCurrentPage() {
@@ -107,7 +107,10 @@ async function initUser() {
     if (nameEl) nameEl.textContent = session.name;
     /* Avatar initials are decorative (aria-hidden) — the name beside them is the
        accessible label, so this never reads as duplicate text to a screen reader. */
-    if (avatarEl) avatarEl.textContent = initials(session.name);
+    if (avatarEl) {
+      avatarEl.textContent = initials(session.name);
+      avatarEl.classList.add(`avatar-${avatarColour(session.name)}`);
+    }
     if (userWrap) userWrap.hidden = false;
     if (signOutBtn) signOutBtn.hidden = false;
     if (adminLink && session.isAdmin) adminLink.hidden = false;
