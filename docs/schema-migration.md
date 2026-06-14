@@ -145,8 +145,13 @@ New blob type: **outcome** (stored under `outcomes/{id}.json`).
 | `goal_metric` | string | What is being measured |
 | `target_value` | string | The target (e.g. "20% reduction") |
 | `target_date` | string (ISO date) | When the goal must be met |
-| `owner_oid` | string | AAD OID of the goal owner |
-| `owner_name` | string | Display name |
+| `learning_summary` | string | Owner synthesis — "what we now believe" (Grow governance, Phase 4). Body-supplied. |
+| `grow_recommendation` | string | Owner synthesis — recommended grow action. Body-supplied. |
+| `next_review_date` | string (ISO date) | Owner synthesis — next portfolio review date. Body-supplied. |
+| `owner_oid` | string | AAD OID of the goal owner (server-managed) |
+| `owner_name` | string | Display name (server-managed) |
+
+The three synthesis fields are persisted by `prepareOutcome()` (covered by `outcomes.test.js`) and editable only by the outcome owner or an admin in the UI. `migrateOutcome()` defaults them to `''`.
 
 Experiments gain one new field:
 
