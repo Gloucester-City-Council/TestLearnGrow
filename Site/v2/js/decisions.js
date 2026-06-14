@@ -26,11 +26,12 @@ export const GROW_DECISIONS = [
 ];
 
 /* How strong is the evidence behind the grow decision? Required for every grow
-   submission so a weak signal is never treated like robust evidence. */
+   submission so a weak signal is never treated like robust evidence. The hints
+   give concrete criteria so "high" means the same thing across teams. */
 export const EVIDENCE_STRENGTHS = [
-  { value: 'low',    label: 'Low — a directional signal only' },
-  { value: 'medium', label: 'Medium — enough for a limited rollout or follow-on' },
-  { value: 'high',   label: 'High — strong enough to scale or adopt' },
+  { value: 'low',    label: 'Low',    hint: 'Anecdotal feedback, very small sample, no comparison.' },
+  { value: 'medium', label: 'Medium', hint: 'Measured before/after, limited rollout, plausible effect.' },
+  { value: 'high',   label: 'High',   hint: 'Robust comparison, repeated result, larger sample, controlled confounders.' },
 ];
 
 /* How ready is the finding to grow? Required when scaling or adopting, so the

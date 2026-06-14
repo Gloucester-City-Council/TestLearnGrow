@@ -837,11 +837,11 @@ function buildShareFindingForm() {
   /* Measured result against the pre-registered target — turns the verdict from
      a judgment call into an evidenced one. */
   const measuredGroup = el('div', { class: 'form-group' });
-  measuredGroup.appendChild(el('label', { for: 'measured-result', text: 'Measured result (optional)' }));
-  const measuredHint = _item.success_metric
+  measuredGroup.appendChild(el('label', { for: 'measured-result', text: 'Measured result' }));
+  const measuredBase = _item.success_metric
     ? `The value you actually measured, against your target: “${_item.success_metric}”.`
     : 'The value you actually measured against your success measure.';
-  measuredGroup.appendChild(el('span', { class: 'form-hint', text: measuredHint }));
+  measuredGroup.appendChild(el('span', { class: 'form-hint', text: `${measuredBase} Required for a Validated verdict; otherwise optional.` }));
   const measuredInput = el('input', { type: 'text', id: 'measured-result', name: 'measured_result', autocomplete: 'off', maxlength: '300' });
   measuredInput.value = _item.measured_result || '';
   measuredGroup.appendChild(measuredInput);
@@ -889,9 +889,15 @@ function buildShareFindingForm() {
       const learnDecision = (form.querySelector('input[name="learn_decision"]:checked') || {}).value || '';
       const verdict = selectedVerdict(form);
       resetVerdictError(form);
-      const fieldErrors = validate([
+      /* A "validated" verdict must show the number that backs the claim — the
+         measured result is otherwise optional. */
+      const rules = [
         { id: 'finding-text', label: 'Finding', value: findingEl.value, required: true, minLength: 10 },
-      ]);
+      ];
+      if (verdict === 'validated') {
+        rules.push({ id: 'measured-result', label: 'the measured result for a validated finding', value: measuredEl.value, required: true });
+      }
+      const fieldErrors = validate(rules);
       /* Anchor the verdict error to the first radio (a real, focusable control)
          rather than the <fieldset>, whose aria-invalid isn't announced. The
          inline message is relocated under the legend and linked to every radio
@@ -1083,7 +1089,9 @@ function buildGrowForm() {
   return wrapper;
 }
 
-/* A labelled radio fieldset for the grow form. Options are {value,label}. */
+/* A labelled radio fieldset for the grow form. Options are {value,label,hint?};
+   when an option carries a hint, it renders as a second line (verdict-option
+   styling) so the choice is self-describing. */
 function buildRadioFieldset({ fieldsetId, name, idPrefix, legend, hint, options, selected }) {
   const fs = el('fieldset', { id: fieldsetId });
   fs.appendChild(el('legend', { text: legend }));
@@ -1091,7 +1099,17 @@ function buildRadioFieldset({ fieldsetId, name, idPrefix, legend, hint, options,
   for (const o of options) {
     const radio = el('input', { type: 'radio', name, id: `${idPrefix}-${o.value}`, value: o.value });
     if (selected === o.value) radio.checked = true;
-    fs.appendChild(el('label', { class: 'label-inline' }, radio, o.label));
+    if (o.hint) {
+      fs.appendChild(el('label', { class: 'label-inline verdict-option' },
+        radio,
+        el('span', null,
+          el('span', { class: 'verdict-option-label', text: o.label }),
+          el('span', { class: 'verdict-option-hint', text: o.hint }),
+        ),
+      ));
+    } else {
+      fs.appendChild(el('label', { class: 'label-inline' }, radio, o.label));
+    }
   }
   return fs;
 }

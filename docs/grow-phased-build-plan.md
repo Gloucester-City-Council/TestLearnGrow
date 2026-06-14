@@ -438,3 +438,31 @@ The Grow improvement programme is complete when:
 - Outcome owners can summarise what the portfolio evidence means for their goal.
 - Leadership can identify scale-ready findings, blocked Grow work, and overdue scale reviews.
 - Evidence exports explain not only what was tested, but whether it should be grown and why.
+
+---
+
+## Deferred enhancements (post-review backlog)
+
+From the product review of the shipped Grow work (2026-06-14). Recommendations
+1–3 were implemented (evidence-strength criteria, measured result required for a
+Validated verdict, peer-review Grow-quality prompt). The items below are
+**deliberately not scheduled** — adding them now risks over-engineering the Grow
+flow ahead of real usage. Revisit only when the trigger condition is met.
+
+- [ ] **Benefits-realisation fields after scaling** (review #4). The scale-review
+  form currently captures whether the finding held, a metric at scale, and
+  lessons. A public-sector benefits process may later want: sustained metric over
+  time, cost impact, capacity impact, equality considerations, unintended
+  consequences, and adoption coverage. **Do not add all of this.** Start with a
+  single "review again on" / "sustained benefit check" field, and only once teams
+  are actually using `scaled` as a final assurance state.
+
+- [ ] **Age-based outcome-synthesis prompt** (review #5). The outcomes health
+  panel already flags goals that have evidence but no "what we now believe"
+  summary. A later, lighter-touch addition: prompt when a goal's synthesis is
+  stale, e.g. "goal synthesis not reviewed in 90 days." Needs a last-reviewed
+  timestamp on the outcome (or reuse `next_review_date` once it's in regular use).
+
+**Trigger to revisit:** teams routinely reaching `scaled` and maintaining outcome
+synthesis — i.e. the existing fields are being used in anger and their absence is
+the next felt gap.

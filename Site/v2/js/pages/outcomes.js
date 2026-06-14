@@ -334,6 +334,12 @@ function buildQualityPrompts(exps, outcomes) {
   if (c4) prompts.push(`${c4} scale review${plural(c4)} overdue.`);
   const c5 = outcomes.filter((o) => !o.learning_summary && experimentsFor(o.outcome_id).some((i) => i.finding)).length;
   if (c5) prompts.push(`${c5} goal${plural(c5)} with evidence but no “what we now believe” summary.`);
+  /* High-confidence grow decisions that no one has independently sanity-checked. */
+  const c6 = exps.filter((i) =>
+    (i.grow_decision === 'scale' || i.grow_decision === 'adopt')
+    && (i.evidence_strength === 'high' || i.scale_readiness === 'ready-for-wide-scale' || i.scale_readiness === 'adopt-as-standard')
+    && !(i.updates || []).some((u) => u && u.kind === 'review')).length;
+  if (c6) prompts.push(`${c6} high-evidence or wide-scale decision${plural(c6)} with no peer review.`);
 
   if (!prompts.length) return null;
   const wrap = el('div', { style: 'margin-top:var(--space-3)' });
