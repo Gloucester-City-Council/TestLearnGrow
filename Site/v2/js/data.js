@@ -74,7 +74,7 @@ export function migrateItem(raw) {
   if (!item.item_type) item.item_type = 'experiment';
 
   /* Ensure array fields exist */
-  for (const k of ['team_oids', 'team_names', 'attendee_oids', 'attendee_names', 'updates', 'response_ids', 'spawned_ids', 'themes']) {
+  for (const k of ['team_oids', 'team_names', 'attendee_oids', 'attendee_names', 'updates', 'response_ids', 'spawned_ids', 'themes', 'grow_tasks']) {
     if (!Array.isArray(item[k])) item[k] = [];
   }
 
