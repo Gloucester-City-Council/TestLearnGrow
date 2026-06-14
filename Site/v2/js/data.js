@@ -121,6 +121,13 @@ export function migrateItem(raw) {
   if (typeof item.scale_readiness !== 'string') item.scale_readiness = '';
   if (typeof item.scale_risks !== 'string') item.scale_risks = '';
 
+  /* Scale-review evidence — captured when an experiment is marked scaled, so the
+     Scaled stage records whether the finding held at scale, not just a status. */
+  if (typeof item.scale_review_date !== 'string') item.scale_review_date = '';
+  if (typeof item.scale_result !== 'string') item.scale_result = '';
+  if (typeof item.scale_metric_result !== 'string') item.scale_metric_result = '';
+  if (typeof item.scale_lessons !== 'string') item.scale_lessons = '';
+
   /* TLG Phase 3 — learning loops. pivot / persevere / spawn. spawned_ids is
      defaulted with the other array fields above; parent_id links a follow-on
      back to the experiment it grew out of. */

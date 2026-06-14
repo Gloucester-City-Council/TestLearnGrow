@@ -266,6 +266,24 @@ function buildChips(item, stage) {
       wrap.appendChild(chipEl(`Ready: ${READY_SHORT[ready] || ready}`, variant));
       any = true;
     }
+    /* Scale review due once the target scale-up date has passed. */
+    if ((item.grow_decision === 'scale' || item.grow_decision === 'adopt')
+        && item.grow_date && new Date(item.grow_date).getTime() < Date.now()) {
+      wrap.appendChild(chipEl('Scale review due', 'amber'));
+      any = true;
+    }
+  }
+
+  /* On Scaled cards, summarise the scale-review result (or flag it missing). */
+  if (stage.status === 'scaled') {
+    if (item.scale_metric_result) {
+      wrap.appendChild(chipEl(`At scale: ${item.scale_metric_result}`, 'green'));
+    } else if (item.scale_result) {
+      wrap.appendChild(chipEl('Scale reviewed', 'green'));
+    } else {
+      wrap.appendChild(chipEl('Scale review not recorded', 'neutral'));
+    }
+    any = true;
   }
 
   /* Staleness — an active experiment that's gone quiet for a while. */
