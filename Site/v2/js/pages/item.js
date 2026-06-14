@@ -147,6 +147,12 @@ function renderMain() {
     const sr = buildScaleReviewSnapshot(item);
     if (sr) frag.appendChild(sr);
   }
+
+  /* Grow tasks — the scale-up / adoption checklist. */
+  if (item.item_type === 'experiment' && (item.status === 'growing' || item.status === 'scaled')) {
+    const gt = buildGrowTasksSection(item);
+    if (gt) frag.appendChild(gt);
+  }
   if (item.output) {
     frag.appendChild(el('h2', { text: 'Output' }));
     frag.appendChild(el('p', { text: item.output }));
@@ -318,6 +324,111 @@ function buildScaleReviewSnapshot(item) {
   }
   sec.appendChild(dl);
   return sec;
+}
+
+/* ── Grow tasks (the scale-up / adoption checklist) ──────────────────────── */
+
+function buildGrowTasksSection(item) {
+  const tasks = Array.isArray(item.grow_tasks) ? item.grow_tasks : [];
+  const canManage = canManageItem();
+  const canAdd = item.status === 'growing' && canManage;
+  if (!tasks.length && !canAdd) return null;
+
+  const sec = el('section', { 'aria-labelledby': 'grow-tasks-heading', style: 'margin-top:var(--space-6)' });
+  sec.appendChild(el('h2', { id: 'grow-tasks-heading', text: 'Grow tasks' }));
+  sec.appendChild(el('p', { class: 'card-meta', text: 'What must happen to scale or adopt this finding.' }));
+
+  const open = tasks.filter((t) => t && !t.completed_at);
+  const done = tasks.filter((t) => t && t.completed_at);
+
+  if (open.length) {
+    sec.appendChild(el('h3', { text: `Open (${open.length})` }));
+    const ul = el('ul', { class: 'updates-list', role: 'list' });
+    for (const t of open) ul.appendChild(buildGrowTaskEl(t, canAdd));
+    sec.appendChild(ul);
+  } else if (tasks.length) {
+    sec.appendChild(el('p', { class: 'card-meta', text: 'All Grow tasks are complete.' }));
+  }
+
+  if (done.length) {
+    sec.appendChild(el('h3', { text: `Completed (${done.length})` }));
+    const ul = el('ul', { class: 'updates-list', role: 'list' });
+    for (const t of done) ul.appendChild(buildGrowTaskEl(t, false));
+    sec.appendChild(ul);
+  }
+
+  if (canAdd) sec.appendChild(buildAddGrowTaskForm());
+  return sec;
+}
+
+function buildGrowTaskEl(task, canComplete) {
+  const li = el('li', { class: 'update-item' });
+  li.appendChild(el('p', { class: 'update-text', text: task.text || '(Untitled task)' }));
+
+  const metaParts = [];
+  if (task.owner_name) metaParts.push(`Owner: ${task.owner_name}`);
+  if (task.due_date) {
+    const overdue = !task.completed_at && new Date(task.due_date).getTime() < Date.now();
+    metaParts.push(`${overdue ? 'Overdue — was due' : 'Due'} ${fullDate(task.due_date)}`);
+  }
+  if (task.completed_at) metaParts.push(`Completed ${fullDate(task.completed_at)}`);
+  if (metaParts.length) li.appendChild(el('p', { class: 'update-meta', text: metaParts.join(' · ') }));
+
+  if (canComplete && !task.completed_at) {
+    const btn = el('button', { type: 'button', class: 'btn btn-secondary' }, 'Mark done');
+    btn.addEventListener('click', () => { btn.disabled = true; doCompleteGrowTask(task.task_id); });
+    li.appendChild(btn);
+  }
+  return li;
+}
+
+function buildAddGrowTaskForm() {
+  const wrapper = el('div', { class: 'board-section', 'aria-label': 'Add grow task' });
+  wrapper.appendChild(el('h3', { text: 'Add a Grow task' }));
+
+  const errorSummary = el('div', {
+    id: 'grow-task-errors', class: 'error-summary', role: 'alert', hidden: true,
+    'aria-labelledby': 'grow-task-errors-title',
+  });
+  errorSummary.appendChild(el('h4', { id: 'grow-task-errors-title', class: 'error-summary__title', text: 'There is a problem' }));
+  errorSummary.appendChild(el('ul', { class: 'error-summary__list' }));
+  wrapper.appendChild(errorSummary);
+
+  const form = el('form', { id: 'grow-task-form', novalidate: true });
+
+  const textGroup = el('div', { class: 'form-group' });
+  textGroup.appendChild(el('label', { for: 'grow-task-text', text: 'Task (required)' }));
+  const textInput = el('textarea', { id: 'grow-task-text', name: 'text', rows: '2', required: true });
+  textGroup.appendChild(textInput);
+  form.appendChild(textGroup);
+
+  const ownerGroup = el('div', { class: 'form-group' });
+  ownerGroup.appendChild(el('label', { for: 'grow-task-owner', text: 'Owner (optional)' }));
+  const ownerInput = el('input', { type: 'text', id: 'grow-task-owner', name: 'owner_name', autocomplete: 'off', maxlength: '200' });
+  ownerGroup.appendChild(ownerInput);
+  form.appendChild(ownerGroup);
+
+  const dueGroup = el('div', { class: 'form-group' });
+  dueGroup.appendChild(el('label', { for: 'grow-task-due', text: 'Due date (optional)' }));
+  const dueInput = el('input', { type: 'date', id: 'grow-task-due', name: 'due_date' });
+  dueGroup.appendChild(dueInput);
+  form.appendChild(dueGroup);
+
+  const submitBtn = el('button', { type: 'submit', class: 'btn' }, 'Add task');
+  form.appendChild(submitBtn);
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    withSubmitting(submitBtn, async () => {
+      const errors = validate([
+        { id: 'grow-task-text', label: 'a task', value: textInput.value, required: true, minLength: 3 },
+      ]);
+      if (errors.length) { showErrors(errors, 'grow-task-errors'); return false; }
+      clearErrors('grow-task-errors');
+      await doAddGrowTask(textInput.value.trim(), ownerInput.value.trim(), dueInput.value || '');
+    });
+  });
+  wrapper.appendChild(form);
+  return wrapper;
 }
 
 /* ── Learning loops (TLG: pivot / persevere / spawn) ─────────────────────── */
@@ -1012,6 +1123,13 @@ function buildScaleReviewForm() {
   wrapper.appendChild(el('h2', { text: 'Scale review' }));
   wrapper.appendChild(el('p', { text: 'Confirm whether the finding still worked after scale-up. Recording a result marks this experiment as scaled.' }));
 
+  /* Warn (don't block) if scale-up work is still outstanding. */
+  const openTasks = (_item.grow_tasks || []).filter((t) => t && !t.completed_at).length;
+  if (openTasks) {
+    wrapper.appendChild(el('p', { class: 'card-meta',
+      text: `Note: ${openTasks} Grow task${openTasks !== 1 ? 's are' : ' is'} still open.` }));
+  }
+
   const errorSummary = el('div', {
     id: 'scale-errors', class: 'error-summary', role: 'alert', hidden: true,
     'aria-labelledby': 'scale-errors-title',
@@ -1360,6 +1478,19 @@ async function doMarkScaled(fields) {
     scale_lessons: fields.scale_lessons,
     updated_at: now,
   }, 'Scale review saved — marked as scaled.');
+}
+
+async function doAddGrowTask(text, owner, due) {
+  const now = new Date().toISOString();
+  const task = { task_id: nano(), text, owner_name: owner || '', due_date: due || '', completed_at: null };
+  const grow_tasks = [...(_item.grow_tasks || []), task];
+  await doSave({ ..._item, grow_tasks, updated_at: now }, 'Grow task added.');
+}
+
+async function doCompleteGrowTask(taskId) {
+  const now = new Date().toISOString();
+  const grow_tasks = (_item.grow_tasks || []).map((t) => (t.task_id === taskId ? { ...t, completed_at: now } : t));
+  await doSave({ ..._item, grow_tasks, updated_at: now }, 'Grow task completed.');
 }
 
 async function doShareOutput(output) {

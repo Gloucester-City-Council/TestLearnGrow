@@ -20,6 +20,7 @@ function experiment(overrides) {
     grow_decision: '', active_ingredients: '', grow_owner: '', grow_date: '',
     grow_rationale: '', evidence_strength: '', scale_readiness: '', scale_risks: '',
     scale_review_date: '', scale_result: '', scale_metric_result: '', scale_lessons: '',
+    grow_tasks: [],
     grow_points_awarded_at: null,
     learn_decision: '', spawned_ids: [], parent_id: '',
     outcome_id: '',

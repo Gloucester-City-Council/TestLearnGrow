@@ -272,6 +272,22 @@ function buildChips(item, stage) {
       wrap.appendChild(chipEl('Scale review due', 'amber'));
       any = true;
     }
+    /* Grow-task progress and overdue work. */
+    const openTasks = (item.grow_tasks || []).filter((t) => t && !t.completed_at);
+    if (openTasks.length) {
+      wrap.appendChild(chipEl(`${openTasks.length} Grow task${openTasks.length !== 1 ? 's' : ''} open`, 'blue'));
+      any = true;
+    }
+    if (openTasks.some((t) => t.due_date && new Date(t.due_date).getTime() < Date.now())) {
+      wrap.appendChild(chipEl('Grow task overdue', 'amber'));
+      any = true;
+    }
+    /* Legacy scale/adopt records that predate the required owner/date. */
+    if ((item.grow_decision === 'scale' || item.grow_decision === 'adopt')
+        && (!item.grow_owner || !item.grow_date)) {
+      wrap.appendChild(chipEl('Needs owner/date', 'amber'));
+      any = true;
+    }
   }
 
   /* On Scaled cards, summarise the scale-review result (or flag it missing). */

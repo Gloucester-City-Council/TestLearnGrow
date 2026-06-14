@@ -85,6 +85,14 @@ Added to experiment blobs.
 
 A `growing` experiment with a `scale`/`adopt` decision can only reach the terminal `scaled` status via the scale-review form, which requires `scale_review_date` and `scale_result`. Legacy `scaled` records render "Scale review not recorded." on the evidence card and pipeline.
 
+**Grow tasks (Phase 3 of the Grow build plan).** Added to experiment blobs.
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `grow_tasks` | object[] | `[]` | Scale-up / adoption checklist. Each: `{ task_id, text, owner_name, due_date, completed_at }`. Defaulted with the other array fields in `migrateItem()`. |
+
+Tasks are part of the item blob, so adding/completing them is a full item write — already restricted to the poster/host/team/admin by `authorizeItemWrite` (no auth change). The pipeline shows open/overdue task counts on Growing cards; the scale-review form warns (does not block) when tasks remain open.
+
 **`migrateItem()` additions:**
 ```js
 if (typeof item.grow_decision !== 'string') item.grow_decision = '';
