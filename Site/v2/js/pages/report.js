@@ -121,6 +121,19 @@ function render(item, goal) {
     }
   }
 
+  /* Scale review — whether the finding held at scale. Always shown for a scaled
+     experiment (buildSection renders "Not recorded." for legacy records); the
+     test metric sits beside the scale metric so the two are easy to compare. */
+  if (item.status === 'scaled') {
+    frag.appendChild(buildSection('Scale review', [
+      ['Reviewed', item.scale_review_date ? fullDate(item.scale_review_date) : ''],
+      ['Result at scale', item.scale_result],
+      ['Metric at test', item.measured_result],
+      ['Metric at scale', item.scale_metric_result],
+      ['Lessons from scaling', item.scale_lessons],
+    ]));
+  }
+
   /* Peer review — independent challenges of the finding, recorded for
      transparency. Only shown when at least one review exists. */
   const reviews = (item.updates || []).filter((u) => u && u.kind === 'review');

@@ -141,6 +141,12 @@ function renderMain() {
   if (item.item_type === 'experiment' && item.grow_decision) {
     frag.appendChild(buildGrowSnapshot(item));
   }
+
+  /* Scale-review snapshot — whether the finding held once scaled. */
+  if (item.item_type === 'experiment' && item.status === 'scaled') {
+    const sr = buildScaleReviewSnapshot(item);
+    if (sr) frag.appendChild(sr);
+  }
   if (item.output) {
     frag.appendChild(el('h2', { text: 'Output' }));
     frag.appendChild(el('p', { text: item.output }));
@@ -282,6 +288,29 @@ function buildGrowSnapshot(item) {
 
   const sec = el('section', { class: 'design-snapshot', 'aria-labelledby': 'grow-heading' });
   sec.appendChild(el('h2', { id: 'grow-heading', text: 'Growing' }));
+  const dl = el('dl', { class: 'snapshot-grid' });
+  for (const [label, value] of rows) {
+    dl.appendChild(el('dt', { text: label }));
+    dl.appendChild(el('dd', { text: value }));
+  }
+  sec.appendChild(dl);
+  return sec;
+}
+
+/* ── Scale review (did the finding hold at scale?) ───────────────────────── */
+
+function buildScaleReviewSnapshot(item) {
+  const rows = [
+    ['Reviewed', item.scale_review_date ? fullDate(item.scale_review_date) : ''],
+    ['Result at scale', item.scale_result],
+    ['Metric at test', item.measured_result],
+    ['Metric at scale', item.scale_metric_result],
+    ['Lessons from scaling', item.scale_lessons],
+  ].filter(([, value]) => value);
+  if (!rows.length) return null;
+
+  const sec = el('section', { class: 'design-snapshot', 'aria-labelledby': 'scale-review-heading' });
+  sec.appendChild(el('h2', { id: 'scale-review-heading', text: 'Scale review' }));
   const dl = el('dl', { class: 'snapshot-grid' });
   for (const [label, value] of rows) {
     dl.appendChild(el('dt', { text: label }));
@@ -617,13 +646,11 @@ function buildStatusAdvance(item) {
     wrap.appendChild(buildGrowForm());
   }
 
-  /* Growing → Scaled: close the loop by confirming the scale-up actually held.
-     Only offered once the decision is to scale/adopt (not stop/rerun). */
+  /* Growing → Scaled: a scale-review form captures whether the finding held at
+     scale before the status moves. Only for scale/adopt decisions. */
   if (item.item_type === 'experiment' && item.status === 'growing'
-      && (item.grow_decision === 'scale' || item.grow_decision === 'adopt')) {
-    wrap.appendChild(el('div', { style: 'margin-top: var(--space-4)' },
-      el('button', { type: 'button', class: 'btn',
-        onclick: () => doStatusAdvance('scaled', 'Scaled') }, 'Mark as scaled — it held')));
+      && GROWTH_DECISIONS.includes(item.grow_decision)) {
+    wrap.appendChild(buildScaleReviewForm());
   }
 
   /* Share-output form for sessions happened */
@@ -978,6 +1005,77 @@ function resetGroupError(form, name) {
   }
 }
 
+/* Scale-review form — captures whether the finding held at scale, and on submit
+   moves the experiment to the terminal Scaled stage. */
+function buildScaleReviewForm() {
+  const wrapper = el('div', { class: 'board-section', 'aria-label': 'Scale review' });
+  wrapper.appendChild(el('h2', { text: 'Scale review' }));
+  wrapper.appendChild(el('p', { text: 'Confirm whether the finding still worked after scale-up. Recording a result marks this experiment as scaled.' }));
+
+  const errorSummary = el('div', {
+    id: 'scale-errors', class: 'error-summary', role: 'alert', hidden: true,
+    'aria-labelledby': 'scale-errors-title',
+  });
+  errorSummary.appendChild(el('h3', { id: 'scale-errors-title', class: 'error-summary__title', text: 'There is a problem' }));
+  errorSummary.appendChild(el('ul', { class: 'error-summary__list' }));
+  wrapper.appendChild(errorSummary);
+
+  const form = el('form', { id: 'scale-review-form', novalidate: true });
+
+  const dateGroup = el('div', { class: 'form-group' });
+  dateGroup.appendChild(el('label', { for: 'scale-review-date', text: 'Review date (required)' }));
+  const dateInput = el('input', { type: 'date', id: 'scale-review-date', name: 'scale_review_date', required: true });
+  dateInput.value = (_item.scale_review_date || new Date().toISOString()).slice(0, 10);
+  dateGroup.appendChild(dateInput);
+  form.appendChild(dateGroup);
+
+  const resultGroup = el('div', { class: 'form-group' });
+  resultGroup.appendChild(el('label', { for: 'scale-result', text: 'Result at scale (required)' }));
+  resultGroup.appendChild(el('span', { class: 'form-hint', text: 'Did the finding still work once scaled or adopted? What changed?' }));
+  const resultTa = el('textarea', { id: 'scale-result', name: 'scale_result', rows: '3', required: true });
+  resultTa.value = _item.scale_result || '';
+  resultGroup.appendChild(resultTa);
+  form.appendChild(resultGroup);
+
+  const metricGroup = el('div', { class: 'form-group' });
+  metricGroup.appendChild(el('label', { for: 'scale-metric-result', text: 'Metric at scale (optional)' }));
+  const metricHint = _item.measured_result
+    ? `The value measured at scale, to compare with the test result: “${_item.measured_result}”.`
+    : (_item.success_metric ? `The value measured at scale, against your target: “${_item.success_metric}”.` : 'The value measured at scale.');
+  metricGroup.appendChild(el('span', { class: 'form-hint', text: metricHint }));
+  const metricInput = el('input', { type: 'text', id: 'scale-metric-result', name: 'scale_metric_result', autocomplete: 'off', maxlength: '300' });
+  metricInput.value = _item.scale_metric_result || '';
+  metricGroup.appendChild(metricInput);
+  form.appendChild(metricGroup);
+
+  const lessonsGroup = el('div', { class: 'form-group' });
+  lessonsGroup.appendChild(el('label', { for: 'scale-lessons', text: 'Lessons from scaling (optional)' }));
+  lessonsGroup.appendChild(el('span', { class: 'form-hint', text: 'What did adoption teach you that the test did not?' }));
+  const lessonsTa = el('textarea', { id: 'scale-lessons', name: 'scale_lessons', rows: '2' });
+  lessonsTa.value = _item.scale_lessons || '';
+  lessonsGroup.appendChild(lessonsTa);
+  form.appendChild(lessonsGroup);
+
+  const submitBtn = el('button', { type: 'button', class: 'btn' }, 'Mark as scaled');
+  submitBtn.addEventListener('click', () => withSubmitting(submitBtn, async () => {
+    const errors = validate([
+      { id: 'scale-review-date', label: 'a review date', value: dateInput.value, required: true },
+      { id: 'scale-result', label: 'the result at scale', value: resultTa.value, required: true, minLength: 10 },
+    ]);
+    if (errors.length) { showErrors(errors, 'scale-errors'); return false; }
+    clearErrors('scale-errors');
+    await doMarkScaled({
+      scale_review_date: dateInput.value || '',
+      scale_result: resultTa.value.trim(),
+      scale_metric_result: metricInput.value.trim(),
+      scale_lessons: lessonsTa.value.trim(),
+    });
+  }));
+  form.appendChild(submitBtn);
+  wrapper.appendChild(form);
+  return wrapper;
+}
+
 function buildShareOutputForm() {
   const pts = _config.points;
   const ptsName = (_config.terminology || {}).points_name || 'points';
@@ -1249,6 +1347,19 @@ async function doMoveToGrowing(fields) {
     scale_risks: fields.scale_risks,
     updated_at: now,
   }, 'Grow plan saved — moved to Growing.');
+}
+
+async function doMarkScaled(fields) {
+  const now = new Date().toISOString();
+  await doSave({
+    ..._item,
+    status: 'scaled',
+    scale_review_date: fields.scale_review_date,
+    scale_result: fields.scale_result,
+    scale_metric_result: fields.scale_metric_result,
+    scale_lessons: fields.scale_lessons,
+    updated_at: now,
+  }, 'Scale review saved — marked as scaled.');
 }
 
 async function doShareOutput(output) {

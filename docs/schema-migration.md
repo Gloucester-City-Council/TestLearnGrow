@@ -74,6 +74,17 @@ Added to experiment blobs.
 
 `active_ingredients`, `grow_owner`, and `grow_date` also become **required at the grow gate when `grow_decision` is `scale`/`adopt`** (form validation only — the server still accepts legacy blobs that lack them; the evidence card flags the gap).
 
+**Scale-review evidence (Phase 5 of the Grow build plan).** Added to experiment blobs.
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `scale_review_date` | string (ISO date) | `''` | When the scale-up was reviewed. **Required to mark as scaled.** |
+| `scale_result` | string | `''` | Did the finding hold at scale? **Required to mark as scaled** (the scale-review form replaces the old one-click "mark as scaled"). |
+| `scale_metric_result` | string | `''` | Measured value at scale, shown beside `measured_result` (the test value). Optional. |
+| `scale_lessons` | string | `''` | What adoption taught that the test did not. Optional. |
+
+A `growing` experiment with a `scale`/`adopt` decision can only reach the terminal `scaled` status via the scale-review form, which requires `scale_review_date` and `scale_result`. Legacy `scaled` records render "Scale review not recorded." on the evidence card and pipeline.
+
 **`migrateItem()` additions:**
 ```js
 if (typeof item.grow_decision !== 'string') item.grow_decision = '';
