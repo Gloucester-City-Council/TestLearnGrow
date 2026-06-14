@@ -18,6 +18,7 @@ function experiment(overrides) {
     team_oids: ['oid-alice'], team_names: ['Alice'], finding: '', outcome: '',
     hypothesis: '', predicted_outcome: '', success_metric: '', baseline: '', measured_result: '', test_type: '',
     grow_decision: '', active_ingredients: '', grow_owner: '', grow_date: '',
+    grow_rationale: '', evidence_strength: '', scale_readiness: '', scale_risks: '',
     grow_points_awarded_at: null,
     learn_decision: '', spawned_ids: [], parent_id: '',
     outcome_id: '',

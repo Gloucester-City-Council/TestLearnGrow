@@ -243,6 +243,31 @@ function buildChips(item, stage) {
     any = true;
   }
 
+  /* On Growing cards, surface evidence strength and scale readiness so leaders
+     can spot the high-confidence, scale-ready candidates. The chip text carries
+     the meaning (never colour alone). */
+  if (stage.status === 'growing') {
+    if (item.evidence_strength) {
+      const ev = item.evidence_strength;
+      const variant = ev === 'high' ? 'green' : ev === 'medium' ? 'blue' : 'neutral';
+      wrap.appendChild(chipEl(`Evidence: ${ev.charAt(0).toUpperCase()}${ev.slice(1)}`, variant));
+      any = true;
+    }
+    if (item.scale_readiness) {
+      const READY_SHORT = {
+        'not-ready': 'Not ready',
+        'ready-for-limited-rollout': 'Limited rollout',
+        'ready-for-wide-scale': 'Wide scale',
+        'adopt-as-standard': 'Adopt as standard',
+      };
+      const ready = item.scale_readiness;
+      const variant = (ready === 'ready-for-wide-scale' || ready === 'adopt-as-standard') ? 'green'
+        : ready === 'ready-for-limited-rollout' ? 'blue' : 'neutral';
+      wrap.appendChild(chipEl(`Ready: ${READY_SHORT[ready] || ready}`, variant));
+      any = true;
+    }
+  }
+
   /* Staleness — an active experiment that's gone quiet for a while. */
   if (ACTIVE_STAGES.includes(stage.status)) {
     const last = item.updated_at || item.created_at;

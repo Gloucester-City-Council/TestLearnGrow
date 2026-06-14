@@ -6,7 +6,10 @@ import { validate, showErrors, clearErrors } from '../forms.js';
 import { initials } from '../profile-card.js';
 import { whoCanHelp, hasHelpers, HELP_BANDS } from '../skills-match.js';
 import { VERDICTS, verdictChip, buildVerdictFieldset, selectedVerdict } from '../verdict.js';
-import { LEARN_DECISIONS, GROW_DECISIONS, LEARN_DECISION_LABELS, GROW_DECISION_LABELS } from '../decisions.js';
+import {
+  LEARN_DECISIONS, GROW_DECISIONS, EVIDENCE_STRENGTHS, SCALE_READINESS, GROWTH_DECISIONS,
+  LEARN_DECISION_LABELS, GROW_DECISION_LABELS, EVIDENCE_STRENGTH_LABELS, SCALE_READINESS_LABELS,
+} from '../decisions.js';
 
 const ACTIVE_EXPERIMENT = ['designing', 'running', 'wrapping-up'];
 
@@ -267,9 +270,13 @@ function buildDesignSection(item) {
 function buildGrowSnapshot(item) {
   const rows = [
     ['Decision', GROW_DECISION_LABELS[item.grow_decision] || item.grow_decision],
+    ['Why', item.grow_rationale],
+    ['Evidence strength', EVIDENCE_STRENGTH_LABELS[item.evidence_strength] || item.evidence_strength],
+    ['Scale readiness', SCALE_READINESS_LABELS[item.scale_readiness] || item.scale_readiness],
     ['Active ingredients', item.active_ingredients],
     ['Scale-up lead', item.grow_owner],
     ['Target date', item.grow_date ? fullDate(item.grow_date) : ''],
+    ['Risks / constraints', item.scale_risks],
   ].filter(([, value]) => value);
   if (!rows.length) return null;
 
@@ -820,56 +827,155 @@ function buildGrowForm() {
 
   const form = el('form', { id: 'grow-form', novalidate: true });
 
-  const fs = el('fieldset', { id: 'grow-decision-group' });
-  fs.appendChild(el('legend', { text: 'Grow decision (required)' }));
-  fs.appendChild(el('span', { class: 'form-hint', text: 'What happens to this finding now?' }));
-  for (const d of GROW_DECISIONS) {
-    const radio = el('input', { type: 'radio', name: 'grow_decision', id: `grow-decision-${d.value}`, value: d.value });
-    if (_item.grow_decision === d.value) radio.checked = true;
-    fs.appendChild(el('label', { class: 'label-inline' }, radio, d.label));
-  }
-  form.appendChild(fs);
+  /* 1 — the decision (required for every submission) */
+  form.appendChild(buildRadioFieldset({
+    fieldsetId: 'grow-decision-group', name: 'grow_decision', idPrefix: 'grow-decision',
+    legend: 'Grow decision (required)', hint: 'What happens to this finding now?',
+    options: GROW_DECISIONS, selected: _item.grow_decision,
+  }));
 
+  /* 2 — why (required for every submission, including stop / rerun) */
+  const rationaleGroup = el('div', { class: 'form-group' });
+  rationaleGroup.appendChild(el('label', { for: 'grow-rationale', text: 'Why this decision? (required)' }));
+  rationaleGroup.appendChild(el('span', { class: 'form-hint', text: 'The reasoning a reviewer would need — what the evidence says and why this is the right next move.' }));
+  const rationaleTa = el('textarea', { id: 'grow-rationale', name: 'grow_rationale', rows: '3', required: true });
+  rationaleTa.value = _item.grow_rationale || '';
+  rationaleGroup.appendChild(rationaleTa);
+  form.appendChild(rationaleGroup);
+
+  /* 3 — evidence strength (required for every submission) */
+  form.appendChild(buildRadioFieldset({
+    fieldsetId: 'evidence-strength-group', name: 'evidence_strength', idPrefix: 'evidence-strength',
+    legend: 'Evidence strength (required)', hint: 'How robust is the signal behind this decision?',
+    options: EVIDENCE_STRENGTHS, selected: _item.evidence_strength,
+  }));
+
+  /* 4 — active ingredients (required when scaling or adopting) */
   const ingGroup = el('div', { class: 'form-group' });
-  ingGroup.appendChild(el('label', { for: 'active-ingredients', text: 'Active ingredients (optional)' }));
-  ingGroup.appendChild(el('span', { class: 'form-hint', text: 'What specifically caused the effect, so others can replicate it?' }));
+  ingGroup.appendChild(el('label', { for: 'active-ingredients', text: 'Active ingredients (required when scaling or adopting)' }));
+  ingGroup.appendChild(el('span', { class: 'form-hint', text: 'What specifically caused the effect — the causal mechanism, not just the activity — so another team can replicate it.' }));
   const ingTa = el('textarea', { id: 'active-ingredients', name: 'active_ingredients', rows: '3' });
   ingTa.value = _item.active_ingredients || '';
   ingGroup.appendChild(ingTa);
   form.appendChild(ingGroup);
 
+  /* 5 — scale readiness (required when scaling or adopting) */
+  form.appendChild(buildRadioFieldset({
+    fieldsetId: 'scale-readiness-group', name: 'scale_readiness', idPrefix: 'scale-readiness',
+    legend: 'Scale readiness (required when scaling or adopting)',
+    hint: 'Is this ready to scale, or only promising so far?',
+    options: SCALE_READINESS, selected: _item.scale_readiness,
+  }));
+
+  /* 6 — accountable owner (required when scaling or adopting) */
   const ownerGroup = el('div', { class: 'form-group' });
-  ownerGroup.appendChild(el('label', { for: 'grow-owner', text: 'Who is leading the scale-up? (optional)' }));
+  ownerGroup.appendChild(el('label', { for: 'grow-owner', text: 'Who is leading the scale-up? (required when scaling or adopting)' }));
+  ownerGroup.appendChild(el('span', { class: 'form-hint', text: 'The person accountable for the scale-up or adoption follow-through.' }));
   const ownerInput = el('input', { type: 'text', id: 'grow-owner', name: 'grow_owner', autocomplete: 'off', maxlength: '200' });
   ownerInput.value = _item.grow_owner || '';
   ownerGroup.appendChild(ownerInput);
   form.appendChild(ownerGroup);
 
+  /* 7 — target date (required when scaling or adopting) */
   const dateGroup = el('div', { class: 'form-group' });
-  dateGroup.appendChild(el('label', { for: 'grow-date', text: 'Target scale-up date (optional)' }));
+  dateGroup.appendChild(el('label', { for: 'grow-date', text: 'Target scale-up date (required when scaling or adopting)' }));
   const dateInput = el('input', { type: 'date', id: 'grow-date', name: 'grow_date' });
   if (_item.grow_date) dateInput.value = _item.grow_date.slice(0, 10);
   dateGroup.appendChild(dateInput);
   form.appendChild(dateGroup);
 
+  /* 8 — risks / constraints (optional but encouraged) */
+  const risksGroup = el('div', { class: 'form-group' });
+  risksGroup.appendChild(el('label', { for: 'scale-risks', text: 'Risks, constraints, or conditions for replication (optional)' }));
+  risksGroup.appendChild(el('span', { class: 'form-hint', text: 'What could stop this working at scale, or what must be true for it to transfer?' }));
+  const risksTa = el('textarea', { id: 'scale-risks', name: 'scale_risks', rows: '2' });
+  risksTa.value = _item.scale_risks || '';
+  risksGroup.appendChild(risksTa);
+  form.appendChild(risksGroup);
+
   const submitBtn = el('button', { type: 'button', class: 'btn' }, isGrowing ? 'Update grow plan' : 'Move to Growing');
   submitBtn.addEventListener('click', () => withSubmitting(submitBtn, async () => {
     const decision = (form.querySelector('input[name="grow_decision"]:checked') || {}).value || '';
-    if (!decision) {
-      showErrors([{ field: 'grow-decision-scale', message: 'Choose a grow decision' }], 'grow-errors');
+    const evidence = (form.querySelector('input[name="evidence_strength"]:checked') || {}).value || '';
+    const readiness = (form.querySelector('input[name="scale_readiness"]:checked') || {}).value || '';
+    const isGrowth = GROWTH_DECISIONS.includes(decision);
+
+    for (const name of ['grow_decision', 'evidence_strength', 'scale_readiness']) resetGroupError(form, name);
+
+    /* Free-text rules: rationale always; active ingredients / owner / date only
+       when the decision commits to growing. */
+    const textRules = [
+      { id: 'grow-rationale', label: 'why this decision was made', value: rationaleTa.value, required: true, minLength: 10, maxLength: 600 },
+    ];
+    if (isGrowth) {
+      textRules.push({ id: 'active-ingredients', label: 'the active ingredients', value: ingTa.value, required: true, minLength: 10 });
+      textRules.push({ id: 'grow-owner', label: 'who is leading the scale-up', value: ownerInput.value, required: true, maxLength: 200 });
+      textRules.push({ id: 'grow-date', label: 'a target scale-up date', value: dateInput.value, required: true });
+    }
+    const fieldErrors = validate(textRules);
+
+    /* Radio-group rules, anchored to each group's first radio for focus. */
+    const groupErrors = [];
+    if (!decision) groupErrors.push({ field: 'grow-decision-scale', message: 'Choose a grow decision' });
+    if (!evidence)  groupErrors.push({ field: 'evidence-strength-low', message: 'Choose how strong the evidence is' });
+    if (isGrowth && !readiness) groupErrors.push({ field: 'scale-readiness-not-ready', message: 'Choose how ready this is to scale' });
+
+    const errors = [...groupErrors, ...fieldErrors];
+    if (errors.length) {
+      showErrors(errors, 'grow-errors');
+      if (!decision) placeGroupError(form, 'grow-decision-group', 'grow-decision-scale', 'grow_decision');
+      if (!evidence)  placeGroupError(form, 'evidence-strength-group', 'evidence-strength-low', 'evidence_strength');
+      if (isGrowth && !readiness) placeGroupError(form, 'scale-readiness-group', 'scale-readiness-not-ready', 'scale_readiness');
       return false;
     }
     clearErrors('grow-errors');
     await doMoveToGrowing({
       grow_decision: decision,
+      grow_rationale: rationaleTa.value.trim(),
+      evidence_strength: evidence,
       active_ingredients: ingTa.value.trim(),
+      scale_readiness: isGrowth ? readiness : (readiness || ''),
       grow_owner: ownerInput.value.trim(),
       grow_date: dateInput.value || '',
+      scale_risks: risksTa.value.trim(),
     });
   }));
   form.appendChild(submitBtn);
   wrapper.appendChild(form);
   return wrapper;
+}
+
+/* A labelled radio fieldset for the grow form. Options are {value,label}. */
+function buildRadioFieldset({ fieldsetId, name, idPrefix, legend, hint, options, selected }) {
+  const fs = el('fieldset', { id: fieldsetId });
+  fs.appendChild(el('legend', { text: legend }));
+  if (hint) fs.appendChild(el('span', { class: 'form-hint', text: hint }));
+  for (const o of options) {
+    const radio = el('input', { type: 'radio', name, id: `${idPrefix}-${o.value}`, value: o.value });
+    if (selected === o.value) radio.checked = true;
+    fs.appendChild(el('label', { class: 'label-inline' }, radio, o.label));
+  }
+  return fs;
+}
+
+/* Move a radio-group error (created by showErrors before the first radio) up
+   under the fieldset legend/hint and link every radio to it — the GOV.UK
+   radio-group error pattern, mirrored from the verdict fieldset. */
+function placeGroupError(form, fieldsetId, anchorId, name) {
+  const fs = form.querySelector(`#${fieldsetId}`);
+  const errEl = form.querySelector(`#${anchorId}-error`);
+  if (!fs || !errEl) return;
+  const anchor = fs.querySelector('.form-hint') || fs.querySelector('legend');
+  if (anchor) anchor.insertAdjacentElement('afterend', errEl);
+  for (const radio of fs.querySelectorAll(`input[name="${name}"]`)) {
+    radio.setAttribute('aria-describedby', `${anchorId}-error`);
+  }
+}
+
+function resetGroupError(form, name) {
+  for (const radio of form.querySelectorAll(`input[name="${name}"]`)) {
+    radio.removeAttribute('aria-describedby');
+  }
 }
 
 function buildShareOutputForm() {
@@ -1134,9 +1240,13 @@ async function doMoveToGrowing(fields) {
     ..._item,
     status: 'growing',
     grow_decision: fields.grow_decision,
+    grow_rationale: fields.grow_rationale,
+    evidence_strength: fields.evidence_strength,
     active_ingredients: fields.active_ingredients,
+    scale_readiness: fields.scale_readiness,
     grow_owner: fields.grow_owner,
     grow_date: fields.grow_date,
+    scale_risks: fields.scale_risks,
     updated_at: now,
   }, 'Grow plan saved — moved to Growing.');
 }

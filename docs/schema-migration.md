@@ -63,6 +63,17 @@ Added to experiment blobs.
 | `grow_date` | string (ISO date) | `''` | Target scale-up date |
 | `grow_points_awarded_at` | string \| null | `null` | **Server-managed** — stamps the once-only grow award, separate from `points_awarded_at` so the grow award stacks on the finding-shared award. Preserved by `questSave`. The grow award is only granted for a `scale` or `adopt` decision — a `stop` or `rerun` lands in the growing stage but earns nothing (`points.js` → `GROW_REWARDED_DECISIONS`). |
 
+**Grow decision quality (Phase 1–2 of the Grow build plan).** Added to experiment blobs.
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `grow_rationale` | string | `''` | Why the grow decision was made. **Required at the grow gate for every decision** (form validation only). |
+| `evidence_strength` | string | `''` | One of `'low'`, `'medium'`, `'high'`. **Required at the grow gate.** |
+| `scale_readiness` | string | `''` | One of `'not-ready'`, `'ready-for-limited-rollout'`, `'ready-for-wide-scale'`, `'adopt-as-standard'`. **Required when `grow_decision` is `scale`/`adopt`.** |
+| `scale_risks` | string | `''` | Risks/constraints/conditions for replication. Optional. |
+
+`active_ingredients`, `grow_owner`, and `grow_date` also become **required at the grow gate when `grow_decision` is `scale`/`adopt`** (form validation only — the server still accepts legacy blobs that lack them; the evidence card flags the gap).
+
 **`migrateItem()` additions:**
 ```js
 if (typeof item.grow_decision !== 'string') item.grow_decision = '';
@@ -70,6 +81,10 @@ if (typeof item.active_ingredients !== 'string') item.active_ingredients = '';
 if (typeof item.grow_owner !== 'string') item.grow_owner = '';
 if (typeof item.grow_date !== 'string') item.grow_date = '';
 if (!item.grow_points_awarded_at) item.grow_points_awarded_at = null;
+if (typeof item.grow_rationale !== 'string') item.grow_rationale = '';
+if (typeof item.evidence_strength !== 'string') item.evidence_strength = '';
+if (typeof item.scale_readiness !== 'string') item.scale_readiness = '';
+if (typeof item.scale_risks !== 'string') item.scale_risks = '';
 ```
 
 **Pipeline status:** Add `'growing'` to the `STAGES` array and `NEXT` map in
