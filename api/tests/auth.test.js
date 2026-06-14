@@ -17,7 +17,7 @@ function experiment(overrides) {
     status: 'running', posted_by_oid: 'oid-alice', posted_by_name: 'Alice',
     team_oids: ['oid-alice'], team_names: ['Alice'], finding: '', outcome: '',
     hypothesis: '', predicted_outcome: '', success_metric: '', baseline: '', measured_result: '', test_type: '',
-    grow_decision: '', active_ingredients: '', grow_owner: '', grow_date: '',
+    grow_decision: '', active_ingredients: '', grow_owner: '', grow_date: '', grow_decided_at: '',
     grow_rationale: '', evidence_strength: '', scale_readiness: '', scale_risks: '',
     scale_review_date: '', scale_result: '', scale_metric_result: '', scale_lessons: '',
     grow_tasks: [],

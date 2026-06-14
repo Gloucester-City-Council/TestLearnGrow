@@ -1455,6 +1455,7 @@ async function doMoveToGrowing(fields) {
   await doSave({
     ..._item,
     status: 'growing',
+    grow_decided_at: _item.grow_decided_at || now,
     grow_decision: fields.grow_decision,
     grow_rationale: fields.grow_rationale,
     evidence_strength: fields.evidence_strength,
