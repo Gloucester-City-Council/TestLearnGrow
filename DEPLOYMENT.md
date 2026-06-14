@@ -45,7 +45,7 @@ Step-by-step guide to deploying a new instance of the Activity Board for your or
 2. Select **Standard** pricing tier.
 3. Choose **GitHub** as the deployment source and authorise Azure to access your fork.
 4. Select your fork, the `main` branch, and set:
-   - App location: `/Site`
+   - App location: `/Site/v2`
    - API location: `/api`
    - Output location: *(leave blank)*
 5. Azure will add a workflow file to your repository. **Delete it** — the repo already has `.github/workflows/azure-static-web-apps.yml`.
@@ -85,7 +85,7 @@ In the Azure portal, open your Static Web Apps resource → **Settings → Confi
 
 ## 6 — Set your tenant ID in the static config
 
-Edit `Site/staticwebapp.config.json` and replace `<TENANT_ID>` with the Directory (tenant) ID from step 4:
+Edit `Site/v2/staticwebapp.config.json` and replace `<TENANT_ID>` with the Directory (tenant) ID from step 4:
 
 ```json
 "openIdIssuer": "https://login.microsoftonline.com/YOUR-TENANT-ID-HERE/v2.0"
@@ -94,7 +94,7 @@ Edit `Site/staticwebapp.config.json` and replace `<TENANT_ID>` with the Director
 Commit and push this change:
 
 ```
-git add Site/staticwebapp.config.json
+git add Site/v2/staticwebapp.config.json
 git commit -m "Set Entra tenant ID for <org name>"
 git push
 ```
@@ -114,13 +114,13 @@ git push
 
 Push to `main`. The GitHub Actions workflow will run tests and deploy automatically. Check the **Actions** tab for status.
 
-Once deployed, browse to `https://<your-hostname>/v2/` and sign in with a work account from your tenant. Your ADMIN_EMAILS bootstrap account will have admin access immediately.
+Once deployed, browse to `https://<your-hostname>/` and sign in with a work account from your tenant. Your ADMIN_EMAILS bootstrap account will have admin access immediately.
 
 ---
 
 ## 9 — Configure your instance
 
-Sign in as an admin and browse to `/v2/admin.html`. Set:
+Sign in as an admin and browse to `/admin.html`. Set:
 - **Organisation name** — replaces "Activity Board" throughout the UI
 - **Terminology** — rename item types for your context (e.g. Experiments → Tests)
 - **Points** — adjust award values or disable the points system entirely
@@ -147,31 +147,29 @@ Edit `Site/v2/config.js` and set `AUTH_MODE: 'mock'` for local dev without real 
 Start the local dev server:
 
 ```
-swa start Site --api-location api
+swa start Site/v2 --api-location api
 ```
 
-Browse to `http://localhost:4280/v2/`. The mock sign-in page lets you switch between test accounts.
+Browse to `http://localhost:4280/`. The mock sign-in page lets you switch between test accounts.
 
 ---
 
-## Go/no-go decision (not yet executed)
+## What gets deployed
 
-This step is documented here but intentionally not automated. It requires a team decision.
+This is a **v2-only deployment**. The Static Web App's `app_location` is `/Site/v2`, so only the rebuilt v2 app is published, served at the site root:
 
-### Enabling `/api/*` authentication on `main`
+- `https://<site>/` — the v2 app (board, pipeline, members, admin, …)
+- `https://<site>/api/*` — the Azure Functions API
 
-The `Site/staticwebapp.config.json` route `"/api/*": authenticated` currently protects the preview environment only. When you are ready to enforce real authentication on the production `main` branch:
+The legacy React app and its files still live in `Site/` at the repo root, but they are **outside `app_location` and are never deployed**. They are retained only as a reference until they are removed in a later cleanup; nothing in production serves them.
 
-- The existing React app at the site root will silently fall back to localStorage demo mode (it already does this when the API returns 401).
-- Confirm with your team before enabling.
+Routing, auth, and the 404 page are configured in `Site/v2/staticwebapp.config.json`:
 
----
+- `/api/*` requires an authenticated session (with `/api/config` and `/api/me` allowing anonymous).
+- `/admin.html` requires an authenticated session.
+- Unauthenticated requests (401) redirect to `/signin.html`.
+- Unmatched paths serve `/404.html`.
 
-## Keeping both apps permanently
+### Removing the legacy React app entirely
 
-The React app at `Site/` and the v2 app at `Site/v2/` can coexist indefinitely — no cutover required. Both run on the same origin:
-
-- `https://<site>/` — original React app (unchanged)
-- `https://<site>/v2/` — rebuilt v2 app
-
-The only lasting side-effect of keeping both is that the site-wide 404 rewrite in `staticwebapp.config.json` points to the React app's `/index.html` rather than `/v2/404.html`. Unmatched paths fall into the React SPA rather than serving a plain 404 page. This causes no functional breakage.
+When you are ready, you can delete the legacy files (`Site/index.html`, `Site/quest-*.jsx`, `Site/quest-styles.css`, `Site/staticwebapp.config.json`, `Site/avatars/`, `Site/config*.js`). The deployment does not depend on any of them — `app_location` already points at `/Site/v2`.

@@ -89,7 +89,7 @@ function initSignOut() {
     if (cfg.AUTH_MODE === 'mock') {
       location.href = 'signin.html';
     } else {
-      const ret = encodeURIComponent(location.origin + '/v2/signin.html');
+      const ret = encodeURIComponent(location.origin + '/signin.html');
       location.href = `/.auth/logout?post_logout_redirect_uri=${ret}`;
     }
   });

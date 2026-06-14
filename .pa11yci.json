@@ -9,7 +9,7 @@
     }
   },
   "urls": [
-    "http://localhost:4280/v2/signin.html",
-    "http://localhost:4280/v2/404.html"
+    "http://localhost:4280/signin.html",
+    "http://localhost:4280/404.html"
   ]
 }
