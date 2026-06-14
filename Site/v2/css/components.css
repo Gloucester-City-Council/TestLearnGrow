@@ -89,16 +89,24 @@
   text-decoration: underline;
 }
 
-/* Active page reads as a filled accent pill (Monday style). The bold weight and
-   underline carry the state too, so it never rests on the pill colour alone
-   (1.4.1) — and aria-current marks it for assistive tech. */
+/* Active page reads as a solid accent pill (Monday style). The fill, bold weight
+   and underline all carry the state, so it never rests on colour alone (1.4.1) —
+   and aria-current marks it for assistive tech. White-on-accent in light mode is
+   AAA (~9.6:1); --on-accent keeps it correct (dark-on-light) in dark mode. */
 .site-header nav a[aria-current="page"] {
   font-weight: 700;
-  background: var(--accent-soft);
-  color: var(--color-text);
+  background: var(--accent);
+  color: var(--on-accent);
   text-decoration: underline;
   text-underline-offset: 0.15em;
   text-decoration-thickness: 2px;
+}
+
+/* Keep the active pill solid (not the pale hover fill) when hovered/focused. */
+.site-header nav a[aria-current="page"]:hover,
+.site-header nav a[aria-current="page"]:focus-visible {
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 /* Hide a nav item whose only link is hidden (e.g. Admin for non-admins) so it
