@@ -3,7 +3,7 @@ import { loadConfig, t } from '../config-loader.js';
 import { loadItems, loadMembers, loadOutcomes, saveItem, deleteItem, timeAgo, fullDate, nano, daysBetween } from '../data.js';
 import { el, chipEl, statusVariant, statusLabel, moveFocus, announce, skeleton } from '../dom.js';
 import { validate, showErrors, clearErrors } from '../forms.js';
-import { initials } from '../profile-card.js';
+import { avatarEl } from '../profile-card.js';
 import { whoCanHelp, hasHelpers, HELP_BANDS } from '../skills-match.js';
 import { VERDICTS, verdictChip, buildVerdictFieldset, selectedVerdict } from '../verdict.js';
 import {
@@ -545,7 +545,7 @@ function buildLearningSnapshot(item) {
     sec.appendChild(el('h3', { text: 'Who ran it' }));
     const row = el('div', { class: 'pipeline-avatars' });
     for (const n of names.slice(0, 6)) {
-      row.appendChild(el('span', { class: 'member-avatar member-avatar--sm', 'aria-hidden': 'true' }, initials(n)));
+      row.appendChild(avatarEl(n, { sm: true }));
     }
     row.appendChild(el('span', { class: 'sr-only' }, names.join(', ')));
     row.appendChild(el('span', { class: 'card-meta', text: names.join(', ') }));
@@ -581,7 +581,7 @@ function buildWhoCanHelp(item) {
 
 function buildHelperRow(member, methods) {
   const li = el('li', { class: 'helper-row' });
-  li.appendChild(el('span', { class: 'member-avatar member-avatar--sm', 'aria-hidden': 'true' }, initials(member.name)));
+  li.appendChild(avatarEl(member.name, { sm: true }));
   const body = el('div', { class: 'helper-body' });
   body.appendChild(el('p', { class: 'helper-name' },
     el('a', { href: `member.html?id=${encodeURIComponent(member.oid)}` }, member.name || 'Member')));

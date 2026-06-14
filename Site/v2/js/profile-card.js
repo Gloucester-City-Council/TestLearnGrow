@@ -9,6 +9,28 @@ export function initials(name) {
   return (name || '?').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
+/* Deterministic avatar colour.
+   Seeded from the member's name so the same person always gets the same swatch
+   in every spot they appear (shell, cards, pipeline, item). The five swatches are
+   the AAA-verified chip token pairs, so initials stay legible in light, dark and
+   high-contrast themes with no runtime contrast check needed. */
+const AVATAR_COLOURS = ['neutral', 'blue', 'purple', 'amber', 'green'];
+
+export function avatarColour(seed) {
+  const s = String(seed || '');
+  let h = 0;
+  for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return AVATAR_COLOURS[h % AVATAR_COLOURS.length];
+}
+
+/* Build a decorative avatar span. The initials are aria-hidden — the member's
+   name always appears as real text nearby, so this never reads as duplicate. */
+export function avatarEl(name, opts = {}) {
+  const { sm = false } = opts;
+  const cls = `member-avatar${sm ? ' member-avatar--sm' : ''} avatar-${avatarColour(name)}`;
+  return el('span', { class: cls, 'aria-hidden': 'true' }, initials(name));
+}
+
 export function skillsByKind(member) {
   const out = { strength: [], mentor: [], stretch: [] };
   const skills = (member && member.skills) || {};
@@ -52,7 +74,7 @@ export function buildProfileCard(member, opts = {}) {
 
   /* Header */
   const header = el('div', { class: 'profile-card-header' });
-  header.appendChild(el('span', { class: 'member-avatar', 'aria-hidden': 'true' }, initials(member.name)));
+  header.appendChild(avatarEl(member.name));
   const head = el('div', { class: 'profile-card-head-text' });
   if (nameNode) head.appendChild(nameNode);
   if ((member.role_team || '').trim()) {

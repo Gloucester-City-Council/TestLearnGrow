@@ -544,6 +544,15 @@
   /* aria-hidden on the avatar span — initials are redundant with the name heading */
 }
 
+/* Per-person avatar swatches. Each is an AAA-verified chip token pair, so the
+   initials stay legible on every theme. Applied alongside .member-avatar or
+   .shell-avatar; assigned deterministically by avatarColour() in profile-card.js. */
+.avatar-neutral { background: var(--chip-neutral-bg); color: var(--chip-neutral-text); }
+.avatar-blue    { background: var(--chip-blue-bg);    color: var(--chip-blue-text); }
+.avatar-purple  { background: var(--chip-purple-bg);  color: var(--chip-purple-text); }
+.avatar-amber   { background: var(--chip-amber-bg);   color: var(--chip-amber-text); }
+.avatar-green   { background: var(--chip-green-bg);   color: var(--chip-green-text); }
+
 .member-info {
   flex: 1;
 }
@@ -921,11 +930,9 @@
 }
 
 .profile-card-header .member-avatar {
+  /* Larger on the profile header; colour comes from the per-person .avatar-* class. */
   width: 3.5rem;
   height: 3.5rem;
-  background: var(--color-bg);
-  color: var(--accent);
-  border: 2px solid var(--accent);
 }
 
 .profile-card-head-text {
