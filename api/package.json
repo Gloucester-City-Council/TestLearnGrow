@@ -1,7 +1,7 @@
 {
   "name": "sw-sidequests-api",
   "version": "1.0.0",
-  "description": "Azure Functions API for SW Side Quests",
+  "description": "Azure Functions API for the Activity Board",
   "main": "function.js",
   "scripts": {
     "start": "func start"

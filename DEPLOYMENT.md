@@ -161,7 +161,7 @@ This is a **v2-only deployment**. The Static Web App's `app_location` is `/Site/
 - `https://<site>/` — the v2 app (board, pipeline, members, admin, …)
 - `https://<site>/api/*` — the Azure Functions API
 
-The legacy React app and its files still live in `Site/` at the repo root, but they are **outside `app_location` and are never deployed**. They are retained only as a reference until they are removed in a later cleanup; nothing in production serves them.
+`Site/` contains only the v2 app; the legacy React app has been removed.
 
 Routing, auth, and the 404 page are configured in `Site/v2/staticwebapp.config.json`:
 
@@ -169,7 +169,3 @@ Routing, auth, and the 404 page are configured in `Site/v2/staticwebapp.config.j
 - `/admin.html` requires an authenticated session.
 - Unauthenticated requests (401) redirect to `/signin.html`.
 - Unmatched paths serve `/404.html`.
-
-### Removing the legacy React app entirely
-
-When you are ready, you can delete the legacy files (`Site/index.html`, `Site/quest-*.jsx`, `Site/quest-styles.css`, `Site/staticwebapp.config.json`, `Site/avatars/`, `Site/config*.js`). The deployment does not depend on any of them — `app_location` already points at `/Site/v2`.

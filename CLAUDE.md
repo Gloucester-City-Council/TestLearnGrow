@@ -6,7 +6,7 @@ This file is for AI-assisted development. It describes codebase structure, conve
 
 ## Project overview
 
-A white-label activity board deployable for any organisation. Rebuilt in `Site/v2/` as plain HTML5 + vanilla JS ES modules + hand-written CSS, targeting WCAG 2.2 AAA. The Azure Functions API lives in `api/`. The legacy React app at `Site/` root stays intact until final cutover.
+A white-label activity board deployable for any organisation. Built in `Site/v2/` as plain HTML5 + vanilla JS ES modules + hand-written CSS, targeting WCAG 2.2 AAA. The Azure Functions API lives in `api/`.
 
 ---
 

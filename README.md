@@ -2,7 +2,7 @@
 
 A white-label activity tracking board for teams and communities. Built on Azure Static Web Apps with Entra ID authentication, blob storage, and no build tools.
 
-The rebuilt `Site/v2/` app targets **WCAG 2.2 AAA** conformance. The original React app remains at the site root and both apps run on the same origin permanently (see `DEPLOYMENT.md`).
+The app lives in `Site/v2/` and targets **WCAG 2.2 AAA** conformance (see `DEPLOYMENT.md`).
 
 ---
 
@@ -52,8 +52,7 @@ the experiment lifecycle, points, and roles.
 
 ```
 Site/
-├── (legacy React app at root — untouched until final cutover)
-└── v2/                  # rebuilt app — self-contained, relative paths
+└── v2/                  # the app — self-contained, relative paths
     ├── index.html       # Home — your next steps, fresh learning, board
     ├── item.html        # Activity detail (?id=…)
     ├── new-*.html       # Create experiment/session/challenge
