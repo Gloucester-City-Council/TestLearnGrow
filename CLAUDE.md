@@ -6,14 +6,14 @@ This file is for AI-assisted development. It describes codebase structure, conve
 
 ## Project overview
 
-A white-label activity board deployable for any organisation. Built in `Site/v2/` as plain HTML5 + vanilla JS ES modules + hand-written CSS, targeting WCAG 2.2 AAA. The Azure Functions API lives in `api/`.
+A white-label activity board deployable for any organisation. Built in `Site/` as plain HTML5 + vanilla JS ES modules + hand-written CSS, targeting WCAG 2.2 AAA. The Azure Functions API lives in `api/`.
 
 ---
 
 ## File structure
 
 ```
-Site/v2/                  # The rebuilt app (self-contained, relative paths)
+Site/                  # The app (self-contained, relative paths)
   css/tokens.css          # All custom properties — palette, spacing, type
   css/base.css            # Reset, typography, skip link, focus, forms, print
   css/components.css      # Header, nav, breadcrumb, cards, chips, tables, etc.
@@ -74,9 +74,9 @@ background: #F4F4F1;
 
 The only exception is `#B10000` (error red) in `base.css`, which is intentionally fixed so it always passes on both light and dark backgrounds.
 
-### 3 — ES modules only in Site/v2/
+### 3 — ES modules only in Site/
 
-Use `import`/`export` in `Site/v2/js/`. Do **not** use `<script>` tags without `type="module"` for app code. Do **not** use global variables as a communication channel between modules.
+Use `import`/`export` in `Site/js/`. Do **not** use `<script>` tags without `type="module"` for app code. Do **not** use global variables as a communication channel between modules.
 
 ### 4 — Shell block must stay in sync
 
@@ -129,7 +129,7 @@ When in doubt about whether a user action is allowed, let the server reject it w
 
 ## Data schemas
 
-Item schemas are defined in `api/tests/auth.test.js` (experiment, session, challenge fixtures). The `migrateItem()` function in `Site/v2/js/data.js` normalises legacy `quest_id` → `item_id` and ensures array fields exist. Always pass items through `migrateItem()` before using them.
+Item schemas are defined in `api/tests/auth.test.js` (experiment, session, challenge fixtures). The `migrateItem()` function in `Site/js/data.js` normalises legacy `quest_id` → `item_id` and ensures array fields exist. Always pass items through `migrateItem()` before using them.
 
 ---
 

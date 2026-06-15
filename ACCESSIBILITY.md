@@ -1,8 +1,8 @@
 # Accessibility conformance
 
-The `Site/v2/` application targets **WCAG 2.2 Level AAA** conformance. This document records the status of every applicable success criterion, with implementation notes and a manual test checklist.
+The `Site/` application targets **WCAG 2.2 Level AAA** conformance. This document records the status of every applicable success criterion, with implementation notes and a manual test checklist.
 
-**Conformance scope:** All pages under `Site/v2/` served from Azure Static Web Apps.  
+**Conformance scope:** All pages under `Site/` served from Azure Static Web Apps.  
 **Language:** English (`lang="en"` on every `<html>` element).  
 **Last audit:** Automated (axe-core, pa11y-ci) + manual (keyboard + screen reader walkthrough).
 

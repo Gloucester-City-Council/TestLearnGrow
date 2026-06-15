@@ -34,20 +34,20 @@ after.
 
 ### To-do
 
-- [x] **`Site/v2/js/pages/item.js`** — add three new form fields to the "Designing" section:
+- [x] **`Site/js/pages/item.js`** — add three new form fields to the "Designing" section:
   - `hypothesis` — textarea, label "If we do X, we expect Y because Z"
   - `predicted_outcome` — input, label "Predicted outcome"
   - `success_metric` — input, label "Success measure (how will you know?)"
   - *Done via the design-time form on `new-experiment.html`/`new-experiment.js` and `edit-item.js` (where experiments are actually created/designed). `item.js` now renders a read-only "The test" section showing these.*
-- [x] **`Site/v2/js/forms.js`** — require `success_metric` before status can advance from `designing`; show GOV.UK error pattern if missing.
+- [x] **`Site/js/forms.js`** — require `success_metric` before status can advance from `designing`; show GOV.UK error pattern if missing.
   - *Enforced via `validate()` (required, maxLength 300) at creation — status starts at `designing` — and on the experiment edit form, using the existing GOV.UK error summary + inline field error pattern.*
-- [x] **`Site/v2/js/data.js` → `migrateItem()`** — add defaults for legacy records:
+- [x] **`Site/js/data.js` → `migrateItem()`** — add defaults for legacy records:
   ```js
   if (typeof item.hypothesis !== 'string') item.hypothesis = '';
   if (typeof item.predicted_outcome !== 'string') item.predicted_outcome = '';
   if (typeof item.success_metric !== 'string') item.success_metric = '';
   ```
-- [x] **`Site/v2/js/pages/pipeline.js` → `buildCard()`** — show `success_metric` as a chip on Designing cards so reviewers can see what the test is trying to prove.
+- [x] **`Site/js/pages/pipeline.js` → `buildCard()`** — show `success_metric` as a chip on Designing cards so reviewers can see what the test is trying to prove.
 - [x] **`api/tests/auth.test.js`** — add `hypothesis`, `predicted_outcome`, `success_metric` to experiment fixture.
 - [x] **`api/function.js` → `questSave`** — no server change needed (fields pass through as-is); confirm no stripping. *Confirmed: body is written verbatim and the owner/team full-replace path permits these edits.*
 
@@ -69,25 +69,25 @@ what specifically caused the effect — so others can replicate it.
 
 ### To-do
 
-- [x] **`Site/v2/js/pages/pipeline.js` → `STAGES`** — append:
+- [x] **`Site/js/pages/pipeline.js` → `STAGES`** — append:
   ```js
   { status: 'growing', label: 'Growing' },
   ```
-- [x] **`Site/v2/js/pages/pipeline.js` → `NEXT`** — add:
+- [x] **`Site/js/pages/pipeline.js` → `NEXT`** — add:
   ```js
   'finding-shared': { next: 'growing', label: 'Growing' },
   ```
   The "Move to Growing" button on a Shared card should open the item page (like
   "wrapping-up → Share finding") so the team must fill in the grow fields first.
   - *Implemented per the stated intent: rather than a `NEXT` auto-advance (which would skip the grow form), `buildMove()` special-cases `finding-shared` to link to `item.html` — exactly like `wrapping-up`. `NEXT` is left unchanged so the board never moves a card to Growing without the grow decision.*
-- [x] **`Site/v2/js/pages/item.js`** — add a "Growing" section that appears when
+- [x] **`Site/js/pages/item.js`** — add a "Growing" section that appears when
   `status === 'growing'`:
   - `grow_decision` — radio: "Scale it", "Adopt as standard", "Stop — not worth scaling", "Run again with changes"
   - `active_ingredients` — textarea, label "What specifically caused the effect? (active ingredients)"
   - `grow_owner` — input, label "Who is leading the scale-up?"
   - `grow_date` — date, label "Target scale-up date"
   - *The grow form also appears on a `finding-shared` item (the entry point into Growing) and submitting it sets `status: 'growing'`. A read-only "Growing" snapshot renders once a decision is recorded.*
-- [x] **`Site/v2/js/data.js` → `migrateItem()`** — add defaults:
+- [x] **`Site/js/data.js` → `migrateItem()`** — add defaults:
   ```js
   if (typeof item.grow_decision !== 'string') item.grow_decision = '';
   if (typeof item.active_ingredients !== 'string') item.active_ingredients = '';
@@ -121,22 +121,22 @@ learning chain visible.
 
 ### To-do
 
-- [x] **`Site/v2/js/data.js` → `migrateItem()`** — add:
+- [x] **`Site/js/data.js` → `migrateItem()`** — add:
   ```js
   if (typeof item.learn_decision !== 'string') item.learn_decision = '';
   if (!Array.isArray(item.spawned_ids)) item.spawned_ids = [];
   if (typeof item.parent_id !== 'string') item.parent_id = '';
   ```
-- [x] **`Site/v2/js/pages/item.js`** — in the "Wrapping up" section, add:
+- [x] **`Site/js/pages/item.js`** — in the "Wrapping up" section, add:
   - `learn_decision` — radio: "Persevere", "Pivot — run a variation", "Stop", "Escalate for scaling"
   - "Spawn follow-on experiment" button — creates a new experiment pre-filled with:
     - `parent_id` set to current experiment's `item_id`
     - hypothesis pre-populated with "Follow-on from: [parent title]"
   - Display existing `spawned_ids` as links: "Spawned: [title]", "…"
   - *The `learn_decision` radio is in the share-finding form (the wrapping-up section). The spawn button appears on `finding-shared`/`growing` items and opens the new-experiment form pre-seeded via `?parent_id=&parent_title=`. Spawned follow-ons are listed as links on the item page.*
-- [x] **`Site/v2/js/pages/item.js`** — show `parent_id` breadcrumb at top of item page
+- [x] **`Site/js/pages/item.js`** — show `parent_id` breadcrumb at top of item page
   when it exists: "Part of a learning chain — view parent experiment →"
-- [x] **`Site/v2/js/pages/pipeline.js` → `buildCard()`** — show a "Spawned N" chip on
+- [x] **`Site/js/pages/pipeline.js` → `buildCard()`** — show a "Spawned N" chip on
   cards where `spawned_ids.length > 0`, linking to the board filtered to those ids.
   - *The chip links to the parent item page (`#spawned-heading`), where the follow-ons are listed — the board has no id-filter view, so this is the working equivalent.*
 - [x] **`api/function.js`** — when saving a spawn, verify `parent_id` points to a real
@@ -170,15 +170,15 @@ generating evidence and how the portfolio is progressing against real goals.
   - Each outcome blob: `{ outcome_id, title, goal_metric, target_value, target_date, owner_oid, owner_name }`
   - Add server-side tests.
   - *Any signed-in user may create/update (ownership server-managed via the pure `prepareOutcome()` helper in `api/outcomes.js`); delete is admin-only. Server tests in `api/tests/outcomes.test.js`.*
-- [x] **`Site/v2/js/data.js`** — add `loadOutcomes()`, `saveOutcome()`, `deleteOutcome()` following the same pattern as `loadItems()`. *Plus `migrateOutcome()`.*
-- [x] **`Site/v2/js/pages/item.js`** — add `outcome_id` select picker on the experiment
+- [x] **`Site/js/data.js`** — add `loadOutcomes()`, `saveOutcome()`, `deleteOutcome()` following the same pattern as `loadItems()`. *Plus `migrateOutcome()`.*
+- [x] **`Site/js/pages/item.js`** — add `outcome_id` select picker on the experiment
   form (populated from `loadOutcomes()`). Label: "Which goal does this test evidence?"
   - *Picker added to the create (`new-experiment`) and edit (`edit-item`) forms — where the experiment is actually built. `item.js` shows the linked goal as a "Goal" detail row.*
-- [x] **`Site/v2/js/data.js` → `migrateItem()`** — add:
+- [x] **`Site/js/data.js` → `migrateItem()`** — add:
   ```js
   if (typeof item.outcome_id !== 'string') item.outcome_id = '';
   ```
-- [x] **New page `Site/v2/outcomes.html` + `js/pages/outcomes.js`** — outcome dashboard:
+- [x] **New page `Site/outcomes.html` + `js/pages/outcomes.js`** — outcome dashboard:
   - Table: outcome title, goal metric, target date, experiments linked, stage breakdown
   - Expandable rows: list linked experiments with their current status
   - "Add outcome" form (inline, same GOV.UK pattern as other forms)
@@ -186,7 +186,7 @@ generating evidence and how the portfolio is progressing against real goals.
   - *Each goal renders as a card (title, metric, target, owner, linked count) with a native `<details>` disclosure listing linked experiments and their status chips — the accessible equivalent of expandable table rows.*
 - [x] **Shell nav update** — add `outcomes.html` link to all 14 + 1 HTML pages
   simultaneously (CLAUDE.md rule 4). *Inserted into the 14 shell pages via a single byte-identical search-replace; CI shell-sync check passes. signin.html has no shell.*
-- [x] **`Site/v2/js/pages/admin.js`** — add outcomes management section for admins. *Lists goals with an admin-only inline-confirm delete.*
+- [x] **`Site/js/pages/admin.js`** — add outcomes management section for admins. *Lists goals with an admin-only inline-confirm delete.*
 
 ### Acceptance criteria
 
@@ -205,16 +205,16 @@ per-experiment "evidence card" printable view and a portfolio-level summary expo
 
 ### To-do
 
-- [x] **`Site/v2/css/base.css` print section** — add print-optimised layout for
+- [x] **`Site/css/base.css` print section** — add print-optimised layout for
   experiment evidence cards (already has `@media print` — extend it):
   - Show: title, hypothesis, success_metric, verdict, learning_expected vs actual, grow_decision, active_ingredients.
   - Hide: nav, pipeline controls, move buttons.
   - *Print block now hides `.site-header`, `.breadcrumb`, `.report-controls`, `.board-toolbar`, pipeline move controls and buttons; strips card chrome and URL annotations from the evidence card; and avoids mid-section page breaks.*
-- [x] **New page `Site/v2/report.html` + `js/pages/report.js`** — URL param `?id=…` loads one experiment and renders a structured evidence card for printing / PDF export.
+- [x] **New page `Site/report.html` + `js/pages/report.js`** — URL param `?id=…` loads one experiment and renders a structured evidence card for printing / PDF export.
   - "Print / Save as PDF" button (`window.print()`).
   - Link from item page: "Export evidence card".
   - *Renders The test / What happened / Growing / Who and how sections. The item page shows "Export evidence card" once a finding or verdict exists.*
-- [x] **`Site/v2/js/pages/outcomes.js`** — "Export portfolio summary" button — generates a
+- [x] **`Site/js/pages/outcomes.js`** — "Export portfolio summary" button — generates a
   plain-text / CSV summary of all experiments per outcome (no server round-trip;
   use `Blob` + `URL.createObjectURL`).
   - *Implemented with `Blob` + `URL.createObjectURL`, one row per linked experiment (plus an "(No goal)" section for unlinked experiments), with RFC-style CSV escaping.*

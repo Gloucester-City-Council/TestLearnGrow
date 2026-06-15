@@ -2,7 +2,7 @@
 
 **Goal:** Improve the v2 product from a strong Test–Learn–Grow activity board into a stronger Grow operating system: one that makes scale/adopt decisions evidence-led, records why something should grow, assigns accountable owners, and helps leaders see which findings are ready to adopt, repeat, stop, or scale.
 
-**Basis:** Product review of the current `Site/v2/` TLG implementation on 2026-06-13.
+**Basis:** Product review of the current `Site/` TLG implementation on 2026-06-13.
 
 **Scope:** This plan focuses on the Grow side of the loop while preserving the existing no-build, vanilla JS, WCAG 2.2 AAA, token-only colour, and Azure Functions architecture.
 
@@ -70,9 +70,9 @@ This plan phases improvements so the product first tightens the individual Grow 
 
 ### Candidate files
 
-- `Site/v2/js/pages/item.js`
-- `Site/v2/js/pages/report.js`
-- `Site/v2/js/decisions.js` if labels or decision metadata need to become structured
+- `Site/js/pages/item.js`
+- `Site/js/pages/report.js`
+- `Site/js/decisions.js` if labels or decision metadata need to become structured
 - `api/tests/points.test.js` only if reward logic changes; otherwise not needed
 
 ### Acceptance criteria
@@ -134,11 +134,11 @@ Add display surfaces:
 
 ### Candidate files
 
-- `Site/v2/js/data.js`
-- `Site/v2/js/pages/item.js`
-- `Site/v2/js/pages/pipeline.js`
-- `Site/v2/js/pages/report.js`
-- `Site/v2/js/decisions.js`
+- `Site/js/data.js`
+- `Site/js/pages/item.js`
+- `Site/js/pages/pipeline.js`
+- `Site/js/pages/report.js`
+- `Site/js/decisions.js`
 - `api/tests/auth.test.js` fixture updates if server write/permission tests include full experiment payloads
 
 ### Acceptance criteria
@@ -203,9 +203,9 @@ Add item action logic:
 
 ### Candidate files
 
-- `Site/v2/js/data.js`
-- `Site/v2/js/pages/item.js`
-- `Site/v2/js/pages/pipeline.js`
+- `Site/js/data.js`
+- `Site/js/pages/item.js`
+- `Site/js/pages/pipeline.js`
 - `api/auth.js` and `api/tests/auth.test.js` if task completion permissions need server-side protection beyond full item writes
 
 ### Acceptance criteria
@@ -263,8 +263,8 @@ Update portfolio CSV export:
 
 ### Candidate files
 
-- `Site/v2/js/data.js`
-- `Site/v2/js/pages/outcomes.js`
+- `Site/js/data.js`
+- `Site/js/pages/outcomes.js`
 - `api/outcomes.js`
 - `api/function.js`
 - `api/tests/outcomes.test.js`
@@ -320,10 +320,10 @@ Update pipeline:
 
 ### Candidate files
 
-- `Site/v2/js/data.js`
-- `Site/v2/js/pages/item.js`
-- `Site/v2/js/pages/pipeline.js`
-- `Site/v2/js/pages/report.js`
+- `Site/js/data.js`
+- `Site/js/pages/item.js`
+- `Site/js/pages/pipeline.js`
+- `Site/js/pages/report.js`
 - `api/tests/points.test.js` only if scaled transition starts awarding points
 
 ### Acceptance criteria
@@ -372,10 +372,10 @@ Add quality prompts:
 
 ### Candidate files
 
-- `Site/v2/js/pages/outcomes.js`
-- `Site/v2/js/pages/board.js`
-- `Site/v2/js/pages/learning.js`
-- `Site/v2/js/data.js`
+- `Site/js/pages/outcomes.js`
+- `Site/js/pages/board.js`
+- `Site/js/pages/learning.js`
+- `Site/js/data.js`
 
 ### Acceptance criteria
 
