@@ -167,3 +167,5 @@ Routing, auth, and the 404 page are configured in `Site/staticwebapp.config.json
 - `/admin.html` requires an authenticated session.
 - Unauthenticated requests (401) redirect to `/signin.html`.
 - Unmatched paths serve `/404.html`.
+
+The same file also sets a `mimeTypes` map (`.js` → `text/javascript`, `.css` → `text/css`, …). This is required: Azure SWA sends `X-Content-Type-Options: nosniff`, so a browser with strict MIME checking will refuse to run the ES module scripts (`<script type="module">`) or apply the stylesheets unless they are served with the correct `Content-Type`. Without this block the app loads a blank, unstyled page.

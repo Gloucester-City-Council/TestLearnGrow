@@ -16,6 +16,12 @@
       "rewrite": "/404.html"
     }
   },
+  "mimeTypes": {
+    ".js": "text/javascript",
+    ".mjs": "text/javascript",
+    ".css": "text/css",
+    ".json": "application/json"
+  },
   "auth": {
     "identityProviders": {
       "azureActiveDirectory": {
