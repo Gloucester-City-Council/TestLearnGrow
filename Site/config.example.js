@@ -1,16 +1,15 @@
-// config.js is committed with API_URL: '/api/data' for Azure Static Web Apps deployment.
-// That path works because SWA serves the API on the same domain — no secrets needed.
-//
-// For local dev against a local Azure Function (func start):
-//   Change API_URL to 'http://localhost:7071/api'
-//
-// Without an API (pure local dev), leave API_URL empty or absent and the app
-// falls back to localStorage automatically.
-
+// Copy this file to config.js and edit for your deployment.
 window.SW_CONFIG = {
+  // For local dev with swa cli: keep '/api'. For production: '/api'
   API_URL: '/api',
 
-  // Optional — override display strings shown in the UI
-  // network_name: 'South West Test & Learn Network',
-  // season_label: 'Season 3 — The Reorganisation Arc',
+  // 'swa' = Azure Static Web Apps Entra auth (production)
+  // 'mock' = local dev picker (no real auth)
+  AUTH_MODE: 'swa',
+
+  // Optional: override specific config keys without going via the admin UI.
+  // These are merged last and override both DEFAULT_CONFIG and the server blob.
+  // config: {
+  //   branding: { org_name: 'My Organisation' },
+  // },
 };

@@ -1,30 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Side Quest Board — South West Test &amp; Learn Network</title>
-  <meta name="description" content="Post side quests, log progress, earn XP. A quest board for the South West Test &amp; Learn Network." />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=IM+Fell+English:ital@0;1&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
-
-  <link rel="stylesheet" href="quest-styles.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Board — Activity Board</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <script src="config.js"></script>
 </head>
-<body>
-  <div id="root"></div>
+<body class="site-wrapper">
+  <a class="skip-link" href="#main">Skip to main content</a>
 
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <!-- shell:start -->
+  <header class="site-header">
+    <div class="site-header-bar">
+      <a class="site-name" href="index.html" id="site-name">Activity Board</a>
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-controls="main-nav" aria-expanded="false" hidden>
+        <span class="nav-toggle-icon" aria-hidden="true"></span>
+        Menu
+      </button>
+      <div class="shell-actions">
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false">
+          <span class="theme-toggle-glyph" aria-hidden="true"></span>
+          <span class="theme-toggle-label">Dark mode</span>
+        </button>
+        <div class="shell-user" id="shell-user" hidden>
+          <span class="shell-avatar" id="user-avatar" aria-hidden="true"></span>
+          <span class="user-name" id="user-name"></span>
+          <button type="button" id="sign-out" class="shell-signout" hidden>Sign out</button>
+        </div>
+      </div>
+    </div>
+    <nav aria-label="Main navigation" id="main-nav">
+      <ul>
+        <li><a href="index.html">Board</a></li>
+        <li><a href="pipeline.html">Pipeline</a></li>
+        <li><a href="outcomes.html">Outcomes</a></li>
+        <li><a href="learning.html">Learning</a></li>
+        <li><a href="members.html">Members</a></li>
+        <li><a href="leaderboard.html">Leaderboard</a></li>
+        <li><a href="guide.html">Guide</a></li>
+        <li><a href="admin.html" id="nav-admin" hidden>Admin</a></li>
+      </ul>
+    </nav>
+  </header>
+  <!-- shell:end -->
 
-  <!-- Optional site config: sets window.SW_CONFIG.API_URL for Azure Blob Storage. Falls back to localStorage if absent or if the API is unreachable. -->
-  <script src="config.js" onerror="void 0"></script>
+  <main id="main" class="site-main" tabindex="-1">
+    <div class="section-toolbar">
+      <h1 id="page-title">Board</h1>
+      <div class="board-controls" role="group" aria-label="Board controls">
+        <button type="button" id="refresh-board" class="btn-secondary">Refresh board</button>
+        <label class="label-inline" for="auto-update">
+          <input type="checkbox" id="auto-update">
+          Auto-refresh every 60 seconds
+        </label>
+      </div>
+    </div>
 
-  <script type="text/babel" src="quest-data.jsx"></script>
-  <script type="text/babel" src="quest-components.jsx"></script>
-  <script type="text/babel" src="quest-app-1.jsx"></script>
-  <script type="text/babel" src="quest-app-2.jsx"></script>
+    <p id="board-intro" class="board-intro"></p>
+    <p id="home-greeting" class="home-greeting"></p>
+
+    <div class="home-grid" id="home-grid">
+      <section aria-labelledby="next-steps-heading">
+        <h2 id="next-steps-heading">Your next steps</h2>
+        <div id="next-steps">
+          <p class="loading">Loading…</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="learning-heading" id="learning-section" hidden>
+        <h2 id="learning-heading">Fresh learning</h2>
+        <div id="learning-list"></div>
+      </section>
+    </div>
+
+    <section aria-labelledby="all-activity-heading">
+      <h2 id="all-activity-heading">All activity</h2>
+
+      <fieldset class="filter-bar">
+        <legend>Filter activities</legend>
+        <div class="filter-options">
+          <label class="label-inline" for="board-filter-all">
+            <input type="radio" name="board-filter" id="board-filter-all" value="all" checked>
+            All
+          </label>
+          <label class="label-inline" for="board-filter-mine">
+            <input type="radio" name="board-filter" id="board-filter-mine" value="mine">
+            Mine
+          </label>
+          <label class="label-inline" for="board-filter-active">
+            <input type="radio" name="board-filter" id="board-filter-active" value="active">
+            Active
+          </label>
+          <label class="label-inline" for="board-filter-done">
+            <input type="radio" name="board-filter" id="board-filter-done" value="done">
+            Completed
+          </label>
+        </div>
+      </fieldset>
+
+      <p id="board-loading" class="loading" hidden>Loading activities…</p>
+
+      <div id="board-sections">
+        <p class="loading">Loading activities…</p>
+      </div>
+    </section>
+  </main>
+
+  <div role="status" aria-live="polite" id="live-region" class="sr-only"></div>
+
+  <noscript>
+    <div class="noscript-notice">
+      <p>JavaScript is required to load activities. Navigation and headings work without it, but the board list requires JS.</p>
+    </div>
+  </noscript>
+
+  <script type="module" src="js/shell.js"></script>
+  <script type="module" src="js/pages/board.js"></script>
 </body>
 </html>

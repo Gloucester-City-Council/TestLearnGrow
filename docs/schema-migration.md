@@ -9,7 +9,7 @@ the safe migration strategy for existing data.
 
 1. **All new fields are optional at the API level.** The server never rejects a blob
    that is missing a new field — it simply passes it through unchanged.
-2. **`migrateItem()` in `Site/v2/js/data.js` is the single source of defaults.**
+2. **`migrateItem()` in `Site/js/data.js` is the single source of defaults.**
    Every time a blob is loaded client-side, it passes through `migrateItem()`, which
    fills in missing fields with safe defaults. Old blobs are therefore normalised on
    first load without a backfill script.

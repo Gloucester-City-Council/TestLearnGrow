@@ -45,7 +45,7 @@ Step-by-step guide to deploying a new instance of the Activity Board for your or
 2. Select **Standard** pricing tier.
 3. Choose **GitHub** as the deployment source and authorise Azure to access your fork.
 4. Select your fork, the `main` branch, and set:
-   - App location: `/Site/v2`
+   - App location: `/Site`
    - API location: `/api`
    - Output location: *(leave blank)*
 5. Azure will add a workflow file to your repository. **Delete it** — the repo already has `.github/workflows/azure-static-web-apps.yml`.
@@ -85,7 +85,7 @@ In the Azure portal, open your Static Web Apps resource → **Settings → Confi
 
 ## 6 — Set your tenant ID in the static config
 
-Edit `Site/v2/staticwebapp.config.json` and replace `<TENANT_ID>` with the Directory (tenant) ID from step 4:
+Edit `Site/staticwebapp.config.json` and replace `<TENANT_ID>` with the Directory (tenant) ID from step 4:
 
 ```json
 "openIdIssuer": "https://login.microsoftonline.com/YOUR-TENANT-ID-HERE/v2.0"
@@ -94,7 +94,7 @@ Edit `Site/v2/staticwebapp.config.json` and replace `<TENANT_ID>` with the Direc
 Commit and push this change:
 
 ```
-git add Site/v2/staticwebapp.config.json
+git add Site/staticwebapp.config.json
 git commit -m "Set Entra tenant ID for <org name>"
 git push
 ```
@@ -139,15 +139,15 @@ npm install -g @azure/static-web-apps-cli
 Create a local dev config:
 
 ```
-cp Site/v2/config.example.js Site/v2/config.js
+cp Site/config.example.js Site/config.js
 ```
 
-Edit `Site/v2/config.js` and set `AUTH_MODE: 'mock'` for local dev without real Entra auth.
+Edit `Site/config.js` and set `AUTH_MODE: 'mock'` for local dev without real Entra auth.
 
 Start the local dev server:
 
 ```
-swa start Site/v2 --api-location api
+swa start Site --api-location api
 ```
 
 Browse to `http://localhost:4280/`. The mock sign-in page lets you switch between test accounts.
@@ -156,20 +156,16 @@ Browse to `http://localhost:4280/`. The mock sign-in page lets you switch betwee
 
 ## What gets deployed
 
-This is a **v2-only deployment**. The Static Web App's `app_location` is `/Site/v2`, so only the rebuilt v2 app is published, served at the site root:
+The Static Web App's `app_location` is `/Site`, so the app is published and served at the site root:
 
-- `https://<site>/` — the v2 app (board, pipeline, members, admin, …)
+- `https://<site>/` — the app (board, pipeline, members, admin, …)
 - `https://<site>/api/*` — the Azure Functions API
 
-The legacy React app and its files still live in `Site/` at the repo root, but they are **outside `app_location` and are never deployed**. They are retained only as a reference until they are removed in a later cleanup; nothing in production serves them.
-
-Routing, auth, and the 404 page are configured in `Site/v2/staticwebapp.config.json`:
+Routing, auth, and the 404 page are configured in `Site/staticwebapp.config.json`:
 
 - `/api/*` requires an authenticated session (with `/api/config` and `/api/me` allowing anonymous).
 - `/admin.html` requires an authenticated session.
 - Unauthenticated requests (401) redirect to `/signin.html`.
 - Unmatched paths serve `/404.html`.
 
-### Removing the legacy React app entirely
-
-When you are ready, you can delete the legacy files (`Site/index.html`, `Site/quest-*.jsx`, `Site/quest-styles.css`, `Site/staticwebapp.config.json`, `Site/avatars/`, `Site/config*.js`). The deployment does not depend on any of them — `app_location` already points at `/Site/v2`.
+The same file also sets a `mimeTypes` map (`.js` → `text/javascript`, `.css` → `text/css`, …). This is required: Azure SWA sends `X-Content-Type-Options: nosniff`, so a browser with strict MIME checking will refuse to run the ES module scripts (`<script type="module">`) or apply the stylesheets unless they are served with the correct `Content-Type`. Without this block the app loads a blank, unstyled page.
